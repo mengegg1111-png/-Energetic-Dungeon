@@ -234,7 +234,6 @@
       </div>
     </div>
   </div>
-
   <script>
     // 【一、職業資料結構】
     const CLASSES = {
@@ -382,19 +381,17 @@
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
 
-    // 【WEAPONS 字典】包含 4 把通用武器 + 6 把職業專屬武器
+    // 【WEAPONS 字典】包含通用武器 + 職業專屬武器（已修改戰斧數值）
     const WEAPONS = {
-      // --- 通用武器 ---
       pistol: { name: '經典手槍', fireRate: 220, speed: 16, damage: 22, color: '#f59e0b', size: 4, count: 1, spread: 0, recoil: 2, penetrate: false, range: 75, icon: '🔫' },
       shotgun: { name: '霰彈槍', fireRate: 600, speed: 14, damage: 16, color: '#ef4444', size: 3.5, count: 5, spread: 0.25, recoil: 6, penetrate: false, range: 75, icon: '💥' },
       rifle: { name: '突擊步槍', fireRate: 110, speed: 18, damage: 14, color: '#38bdf8', size: 3, count: 1, spread: 0.08, recoil: 1.5, penetrate: false, range: 75, icon: '🔫' },
       laser: { name: '毀滅雷射', fireRate: 6000, speed: 30, damage: 280, color: '#a855f7', size: 8, count: 1, spread: 0, recoil: 8, penetrate: true, range: 300, icon: '⚡', isBeam: true, beamLength: 400, beamWidth: 6 },
 
-      // --- 職業專屬武器 ---
       healBeam: { name: '治療光束', fireRate: 400, speed: 30, damage: 0, color: '#4ade80', size: 6, count: 1, spread: 0, recoil: 1, penetrate: true, range: 100, exclusiveTo: 'medic', icon: '💉', isBeam: true, beamLength: 300, beamWidth: 6 },
       grenade: { name: '榴彈發射器', fireRate: 900, speed: 8, damage: 60, color: '#f59e0b', size: 8, count: 1, spread: 0, recoil: 5, penetrate: false, range: 120, exclusiveTo: 'assault', icon: '🚀', isGrenade: true, splashDamage: 40, splashRadius: 80 },
       sniperRifle: { name: '重型狙擊槍', fireRate: 1500, speed: 35, damage: 120, color: '#38bdf8', size: 4, count: 1, spread: 0, recoil: 10, penetrate: false, range: 500, exclusiveTo: 'sniper', icon: '🎯', isBeam: true, beamLength: 500, beamWidth: 3 },
-      throwingAxe: { name: '投擲戰斧', fireRate: 600, speed: 10, damage: 80, color: '#ef4444', size: 12, count: 1, spread: 0, recoil: 3, penetrate: true, range: 80, exclusiveTo: 'berserker', icon: '🪓', isAxe: true },
+      throwingAxe: { name: '投擲戰斧', fireRate: 600, speed: 10, damage: 50, color: '#ef4444', size: 20, count: 1, spread: 0, recoil: 3, penetrate: true, range: 80, exclusiveTo: 'berserker', icon: '🪓', isAxe: true },
       teslaGun: { name: '電擊槍', fireRate: 700, speed: 18, damage: 25, color: '#a855f7', size: 5, count: 1, spread: 0, recoil: 2, penetrate: false, range: 80, exclusiveTo: 'engineer', icon: '⚡', isTesla: true },
       dualSMG: { name: '雙持衝鋒槍', fireRate: 100, speed: 18, damage: 8, color: '#22d3ee', size: 3, count: 2, spread: 0.12, recoil: 1.5, penetrate: false, range: 60, exclusiveTo: 'scout', icon: '🔫' }
     };
@@ -989,10 +986,10 @@
       const now = Date.now();
       const w = WEAPONS[me.weapon];
 
-      // 【Bug 3 修正】若為戰斧且場上已有 3 個，直接返回不發射
+      // 【改動二 修正】限制戰斧場上最多 1 把
       if (w.isAxe) {
         const activeAxes = bullets.filter(b => b.isAxe && b.ownerId === myPlayerId).length;
-        if (activeAxes >= 3) return;
+        if (activeAxes >= 1) return;
       }
 
       if (now - lastShootTime >= w.fireRate) {
@@ -1107,7 +1104,6 @@
       return Math.hypot(px - (ax + t * (bx - ax)), py - (ay + t * (by - ay)));
     }
 
-    // 【Bug 2 修正】榴彈爆炸改為倒序迴圈，處理敵人死亡與掉落物
     function triggerGrenadeExplosion(x, y, damage, radius, ownerId) {
       playSound('explosion');
       screenShakeTime = 0.2;
@@ -1272,12 +1268,11 @@
         document.getElementById('gameOverModal').classList.remove('hidden');
       }
 
-      // --- 子彈邏輯更新（包含光束, 榴彈, 戰斧折返, 電擊槍） ---
+      // --- 子彈邏輯更新 ---
       for (let i = bullets.length - 1; i >= 0; i--) {
         const b = bullets[i];
         const owner = players[b.ownerId];
 
-        // 1. 【Bug 1 & 4 修正】長條光束判定與存活時間處理
         if (b.isBeam) {
           if (!b.hasHit) {
             b.hasHit = true;
@@ -1481,6 +1476,44 @@
           }
         }
       });
+
+      // 【改動一 修正】殭屍相互排斥力（防止相互重疊擠壓）
+      for (let i = 0; i < zombies.length; i++) {
+        for (let j = i + 1; j < zombies.length; j++) {
+          const z1 = zombies[i];
+          const z2 = zombies[j];
+
+          let isNearAnyPlayer = false;
+          for (let p of playerList) {
+            if (!p.isDead && (Math.hypot(z1.x - p.x, z1.y - p.y) < 800 || Math.hypot(z2.x - p.x, z2.y - p.y) < 800)) {
+              isNearAnyPlayer = true;
+              break;
+            }
+          }
+          if (!isNearAnyPlayer) continue;
+
+          const dx = z2.x - z1.x;
+          const dy = z2.y - z1.y;
+          const dist = Math.hypot(dx, dy);
+          const minDist = (z1.size + z2.size) * 0.6;
+
+          if (dist < minDist && dist > 0) {
+            const overlap = (minDist - dist) * 0.5;
+            const angle = Math.atan2(dy, dx);
+            const pushX = Math.cos(angle) * overlap;
+            const pushY = Math.sin(angle) * overlap;
+
+            const mass1 = (z1.type === 'boss' ? 4 : (z1.type === 'tank' ? 2 : 1));
+            const mass2 = (z2.type === 'boss' ? 4 : (z2.type === 'tank' ? 2 : 1));
+            const totalMass = mass1 + mass2;
+
+            z1.x -= pushX * (mass2 / totalMass);
+            z1.y -= pushY * (mass2 / totalMass);
+            z2.x += pushX * (mass1 / totalMass);
+            z2.y += pushY * (mass1 / totalMass);
+          }
+        }
+      }
 
       for (let i = expGems.length - 1; i >= 0; i--) {
         const gem = expGems[i];
@@ -1722,11 +1755,12 @@
 
           ctx.restore();
         } else if (b.isAxe) {
+          // 【改動三 修正】繪製放大版戰斧文字模型 (32px)
           ctx.save();
           ctx.translate(b.x, b.y);
           ctx.rotate(b.rotationAngle || 0);
           ctx.fillStyle = b.color;
-          ctx.font = '16px system-ui';
+          ctx.font = '32px system-ui';
           ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
           ctx.fillText('🪓', 0, 0);
           ctx.restore();
