@@ -167,7 +167,7 @@
           <div id="colorPickerContainer" class="flex items-center justify-between bg-slate-900/90 p-1.5 rounded-xl border border-slate-800"></div>
         </div>
 
-        <!-- 職業選擇 UI 區塊 -->
+        <!-- 職業選擇 UI 區塊 (延伸至9種職業) -->
         <div class="flex flex-col gap-1.5 text-left">
           <label class="text-xs font-bold text-slate-300 flex justify-between items-center">
             <span>選擇英雄職業</span>
@@ -236,7 +236,7 @@
   </div>
 
   <script>
-    // 【一、職業資料結構】
+    // 【一、職業資料結構 (新增 3 個職業，共 9 個)】
     const CLASSES = {
       medic: {
         id: 'medic',
@@ -246,22 +246,8 @@
         exclusiveWeaponName: '💉 治療光束',
         desc: '復活隊友速度快，治療量高，但血量較低',
         color: '#4ade80',
-        baseStats: {
-          maxHp: 80,
-          maxShield: 40,
-          speed: 5.2,
-          dmgMult: 1.0,
-          bulletScale: 1.0,
-          magnetRange: 140,
-          dashMaxCooldown: 90,
-          invulnDuration: 20,
-          lifesteal: 0
-        },
-        special: {
-          reviveSpeedMult: 2.0,
-          healAmountMult: 1.5,
-          bulletRangeMult: 1.0
-        }
+        baseStats: { maxHp: 80, maxShield: 40, speed: 5.2, dmgMult: 1.0, bulletScale: 1.0, magnetRange: 140, dashMaxCooldown: 90, invulnDuration: 20, lifesteal: 0 },
+        special: { reviveSpeedMult: 2.0, healAmountMult: 1.5, bulletRangeMult: 1.0 }
       },
       assault: {
         id: 'assault',
@@ -271,11 +257,7 @@
         exclusiveWeaponName: '🚀 榴彈發射器',
         desc: '均衡型戰士，傷害與機動性兼備',
         color: '#f59e0b',
-        baseStats: {
-          maxHp: 110, maxShield: 55, speed: 5.5,
-          dmgMult: 1.1, bulletScale: 1.0,
-          magnetRange: 140, dashMaxCooldown: 90, invulnDuration: 20, lifesteal: 0
-        },
+        baseStats: { maxHp: 110, maxShield: 55, speed: 5.5, dmgMult: 1.1, bulletScale: 1.0, magnetRange: 140, dashMaxCooldown: 90, invulnDuration: 20, lifesteal: 0 },
         special: { reviveSpeedMult: 1.0, healAmountMult: 1.0, bulletRangeMult: 1.0 }
       },
       sniper: {
@@ -286,11 +268,7 @@
         exclusiveWeaponName: '🎯 重型狙擊槍',
         desc: '遠距離高傷害，但體質較弱',
         color: '#38bdf8',
-        baseStats: {
-          maxHp: 80, maxShield: 40, speed: 5.0,
-          dmgMult: 1.3, bulletScale: 1.0,
-          magnetRange: 140, dashMaxCooldown: 90, invulnDuration: 20, lifesteal: 0
-        },
+        baseStats: { maxHp: 80, maxShield: 40, speed: 5.0, dmgMult: 1.3, bulletScale: 1.0, magnetRange: 140, dashMaxCooldown: 90, invulnDuration: 20, lifesteal: 0 },
         special: { reviveSpeedMult: 1.0, healAmountMult: 1.0, bulletRangeMult: 1.5 }
       },
       berserker: {
@@ -301,11 +279,7 @@
         exclusiveWeaponName: '🪓 投擲戰斧',
         desc: '近距離傷害翻倍，移動迅速，但射程短',
         color: '#ef4444',
-        baseStats: {
-          maxHp: 120, maxShield: 45, speed: 6.5,
-          dmgMult: 1.0, bulletScale: 1.2,
-          magnetRange: 140, dashMaxCooldown: 70, invulnDuration: 25, lifesteal: 0
-        },
+        baseStats: { maxHp: 120, maxShield: 45, speed: 6.5, dmgMult: 1.0, bulletScale: 1.2, magnetRange: 140, dashMaxCooldown: 70, invulnDuration: 25, lifesteal: 0 },
         special: { reviveSpeedMult: 1.0, healAmountMult: 1.0, bulletRangeMult: 0.7, closeRangeDoubleDmg: true }
       },
       engineer: {
@@ -316,11 +290,7 @@
         exclusiveWeaponName: '⚡ 電擊槍',
         desc: '護盾上限高、回復快，但攻擊力稍弱',
         color: '#a855f7',
-        baseStats: {
-          maxHp: 90, maxShield: 80, speed: 5.2,
-          dmgMult: 0.9, bulletScale: 1.0,
-          magnetRange: 160, dashMaxCooldown: 90, invulnDuration: 20, lifesteal: 0
-        },
+        baseStats: { maxHp: 90, maxShield: 80, speed: 5.2, dmgMult: 0.9, bulletScale: 1.0, magnetRange: 160, dashMaxCooldown: 90, invulnDuration: 20, lifesteal: 0 },
         special: { reviveSpeedMult: 1.0, healAmountMult: 1.0, bulletRangeMult: 1.0, shieldRegenRate: 0.15 }
       },
       scout: {
@@ -331,12 +301,41 @@
         exclusiveWeaponName: '🔫 雙持衝鋒槍',
         desc: '移動極快、衝刺冷卻短，但血量偏低',
         color: '#22d3ee',
-        baseStats: {
-          maxHp: 85, maxShield: 45, speed: 7.0,
-          dmgMult: 1.0, bulletScale: 1.0,
-          magnetRange: 180, dashMaxCooldown: 45, invulnDuration: 25, lifesteal: 0
-        },
+        baseStats: { maxHp: 85, maxShield: 45, speed: 7.0, dmgMult: 1.0, bulletScale: 1.0, magnetRange: 180, dashMaxCooldown: 45, invulnDuration: 25, lifesteal: 0 },
         special: { reviveSpeedMult: 1.0, healAmountMult: 1.0, bulletRangeMult: 1.0 }
+      },
+      flameMage: {
+        id: 'flameMage',
+        name: '火焰法師',
+        icon: '🔥',
+        exclusiveWeaponKey: 'fireBeam',
+        exclusiveWeaponName: '🔥 烈焰噴射器',
+        desc: '噴射火焰灼燒敵人，持續傷害',
+        color: '#f97316',
+        baseStats: { maxHp: 85, maxShield: 45, speed: 5.2, dmgMult: 1.0, bulletScale: 1.0, magnetRange: 150, dashMaxCooldown: 90, invulnDuration: 20, lifesteal: 0 },
+        special: { igniteDuration: 2.0 }
+      },
+      frostHunter: {
+        id: 'frostHunter',
+        name: '冰霜獵人',
+        icon: '❄️',
+        exclusiveWeaponKey: 'frostBow',
+        exclusiveWeaponName: '❄️ 寒冰弓',
+        desc: '冰凍彈藥減速敵人，控場能力強',
+        color: '#67e8f9',
+        baseStats: { maxHp: 95, maxShield: 50, speed: 5.5, dmgMult: 1.0, bulletScale: 1.1, magnetRange: 140, dashMaxCooldown: 80, invulnDuration: 20, lifesteal: 0 },
+        special: { slowOnHit: 0.5 }
+      },
+      paladin: {
+        id: 'paladin',
+        name: '聖騎士',
+        icon: '🛡️',
+        exclusiveWeaponKey: 'holyHammer',
+        exclusiveWeaponName: '🔨 神聖戰錘',
+        desc: '護盾極高，可為隊友提供護盾光環',
+        color: '#fbbf24',
+        baseStats: { maxHp: 130, maxShield: 100, speed: 4.8, dmgMult: 0.85, bulletScale: 1.0, magnetRange: 130, dashMaxCooldown: 110, invulnDuration: 30, lifesteal: 0 },
+        special: { auraShield: 3 }
       }
     };
 
@@ -382,6 +381,7 @@
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
 
+    // 【二、WEAPONS 物件 (加入三把新專屬武器，神聖戰錘設為近戰 isMelee)】
     const WEAPONS = {
       pistol: { name: '經典手槍', fireRate: 220, speed: 16, damage: 22, color: '#f59e0b', size: 4, count: 1, spread: 0, recoil: 2, penetrate: false, range: 75, icon: '🔫' },
       shotgun: { name: '霰彈槍', fireRate: 600, speed: 14, damage: 16, color: '#ef4444', size: 3.5, count: 5, spread: 0.25, recoil: 6, penetrate: false, range: 75, icon: '💥' },
@@ -393,7 +393,27 @@
       sniperRifle: { name: '重型狙擊槍', fireRate: 1500, speed: 35, damage: 120, color: '#38bdf8', size: 4, count: 1, spread: 0, recoil: 10, penetrate: false, range: 500, exclusiveTo: 'sniper', icon: '🎯', isBeam: true, beamLength: 500, beamWidth: 3 },
       throwingAxe: { name: '投擲戰斧', fireRate: 600, speed: 10, damage: 50, color: '#ef4444', size: 20, count: 1, spread: 0, recoil: 3, penetrate: true, range: 80, exclusiveTo: 'berserker', icon: '🪓', isAxe: true },
       teslaGun: { name: '電擊槍', fireRate: 700, speed: 18, damage: 25, color: '#a855f7', size: 5, count: 1, spread: 0, recoil: 2, penetrate: false, range: 80, exclusiveTo: 'engineer', icon: '⚡', isTesla: true },
-      dualSMG: { name: '雙持衝鋒槍', fireRate: 100, speed: 18, damage: 8, color: '#22d3ee', size: 3, count: 2, spread: 0.12, recoil: 1.5, penetrate: false, range: 60, exclusiveTo: 'scout', icon: '🔫' }
+      dualSMG: { name: '雙持衝鋒槍', fireRate: 100, speed: 18, damage: 8, color: '#22d3ee', size: 3, count: 2, spread: 0.12, recoil: 1.5, penetrate: false, range: 60, exclusiveTo: 'scout', icon: '🔫' },
+
+      fireBeam: {
+        name: '烈焰噴射器', fireRate: 80, speed: 12, damage: 6, color: '#f97316',
+        size: 5, count: 1, spread: 0.3, recoil: 0.5, penetrate: true, range: 50,
+        exclusiveTo: 'flameMage', icon: '🔥', isFlame: true,
+        igniteDamage: 5, igniteDuration: 2, maxBurnStacks: 3
+      },
+      frostBow: {
+        name: '寒冰弓', fireRate: 500, speed: 20, damage: 45, color: '#67e8f9',
+        size: 5, count: 1, spread: 0, recoil: 3, penetrate: false, range: 120,
+        exclusiveTo: 'frostHunter', icon: '❄️', isFrost: true,
+        slowFactor: 0.5, slowDuration: 1.5
+      },
+      holyHammer: {
+        name: '神聖戰錘', fireRate: 700, damage: 80, color: '#fbbf24',
+        exclusiveTo: 'paladin', icon: '🔨', isMelee: true,
+        meleeRange: 70, meleeAngle: Math.PI * 2 / 3,
+        knockback: 30, stunChance: 0.3, stunDuration: 1.0,
+        shieldOnHit: 5
+      }
     };
 
     const SKIN_COLORS = [
@@ -425,6 +445,7 @@
     let particles = [];
     let floatingTexts = [];
     let lightningArcs = [];
+    let meleeSwingEffects = []; // 全域近戰揮砍視覺效果陣列
 
     let currentWave = 1;
     let zombiesToSpawn = 0;
@@ -578,6 +599,13 @@
           osc.type = 'sine'; osc.frequency.setValueAtTime(300, now); osc.frequency.exponentialRampToValueAtTime(900, now + 0.3);
           gain.gain.setValueAtTime(0.25, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
           osc.start(now); osc.stop(now + 0.3);
+        } else if (type === 'hammerSwing') { // 近戰神聖戰錘音效
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(180, now);
+          osc.frequency.exponentialRampToValueAtTime(60, now + 0.15);
+          gain.gain.setValueAtTime(0.25, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+          osc.start(now); osc.stop(now + 0.15);
         }
       } catch (e) {}
     }
@@ -956,7 +984,6 @@
 
         btn.className = `px-2.5 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1 border ${borderStyle} ${bgStyle}`;
         
-        let labelIcon = w.icon || '🔫';
         let displayName = w.name;
         if (isExclusive) {
           displayName = `${clsDef.icon} ${w.name}`;
@@ -976,6 +1003,98 @@
       playSound('dash');
       for (let i = 0; i < 10; i++) {
         particles.push({ x: p.x, y: p.y, vx: (Math.random() - 0.5) * 4, vy: (Math.random() - 0.5) * 4, life: 20, maxLife: 20, color: p.color, size: 3 });
+      }
+    }
+
+    // 【三、近戰武器系統實作】
+    function triggerMeleeAttack() {
+      const me = players[myPlayerId];
+      if (!me || me.isDowned || me.isDead) return;
+
+      const now = Date.now();
+      const w = WEAPONS[me.weapon];
+      if (!w || !w.isMelee) return;
+
+      if (now - lastShootTime >= w.fireRate) {
+        lastShootTime = now;
+
+        // 計算瞄準角度
+        let attackAngle = me.angle;
+        if (aimJoystickData.active) {
+          attackAngle = Math.atan2(aimJoystickData.y, aimJoystickData.x);
+          me.angle = attackAngle;
+        }
+
+        playSound('hammerSwing');
+        flashLightIntensity = 60;
+
+        if (isHost) {
+          meleeHitCheck(me, w);
+        } else if (hostConn && hostConn.open) {
+          hostConn.send({ type: 'MELEE_ATTACK', id: myPlayerId, angle: attackAngle });
+        }
+
+        // 推送區域揮砍視覺效果
+        meleeSwingEffects.push({
+          x: me.x,
+          y: me.y,
+          angle: attackAngle,
+          range: w.meleeRange || 70,
+          arc: w.meleeAngle || (Math.PI * 2 / 3),
+          color: w.color || '#fbbf24',
+          life: 0.15,
+          maxLife: 0.15
+        });
+      }
+    }
+
+    function meleeHitCheck(player, weapon) {
+      if (!player || !weapon) return;
+      const facing = player.angle;
+      const range = weapon.meleeRange || 70;
+      const halfArc = (weapon.meleeAngle || (Math.PI * 2 / 3)) / 2;
+
+      let hitAny = false;
+
+      for (let i = zombies.length - 1; i >= 0; i--) {
+        const z = zombies[i];
+        const dx = z.x - player.x;
+        const dy = z.y - player.y;
+        const dist = Math.hypot(dx, dy);
+
+        if (dist > range + z.size / 2) continue;
+
+        const angleToZombie = Math.atan2(dy, dx);
+        let angleDiff = Math.abs(angleToZombie - facing);
+        if (angleDiff > Math.PI) angleDiff = Math.PI * 2 - angleDiff;
+
+        if (angleDiff <= halfArc) {
+          hitAny = true;
+          let actualDmg = Math.round(weapon.damage * (player.dmgMult || 1));
+          z.hp -= actualDmg;
+
+          createFloatingText(z.x, z.y - z.size / 2 - 5, `-${actualDmg}`, weapon.color || '#fbbf24', 22);
+
+          // 擊退機制
+          z.vx += Math.cos(angleToZombie) * ((weapon.knockback || 30) / 5);
+          z.vy += Math.sin(angleToZombie) * ((weapon.knockback || 30) / 5);
+
+          // 30% 機率眩暈 1 秒
+          if (Math.random() < (weapon.stunChance || 0.3)) {
+            z.stunTimer = weapon.stunDuration || 1.0;
+          }
+
+          // 擊中殭屍回復玩家護盾
+          if (weapon.shieldOnHit) {
+            player.shield = Math.min(player.maxShield, player.shield + weapon.shieldOnHit);
+          }
+
+          // 擊殺判斷與掉落
+          if (z.hp <= 0) {
+            expGems.push({ x: z.x, y: z.y, value: z.type === 'boss' ? 25 : 2 });
+            zombies.splice(i, 1);
+          }
+        }
       }
     }
 
@@ -1046,6 +1165,8 @@
             returning: false,
             rotationAngle: 0,
             isTesla: !!w.isTesla,
+            isFlame: !!w.isFlame,
+            isFrost: !!w.isFrost,
             healsTeammates: me.weapon === 'healBeam'
           };
 
@@ -1084,7 +1205,8 @@
         maxHp: Math.round((40 + currentWave * 15) * diffs.hpMult),
         speed: (2.2 + Math.random() * 0.8) * diffs.spdMult, color: '#22c55e',
         damage: Math.round((10 + currentWave * 2) * diffs.dmgMult),
-        shootCooldown: 0, angle: 0
+        shootCooldown: 0, angle: 0,
+        burnStacks: 0, burnTimer: 0, slowTimer: 0, stunTimer: 0 // 狀態異常欄位
       };
 
       if (type === 'fast') { z.hp *= 0.6; z.speed *= 1.6; z.size = 22; z.color = '#eab308'; }
@@ -1210,8 +1332,10 @@
       return pts;
     }
 
+    // 【四、主機端邏輯與狀態計算】
     function updateWorldHost() {
       const now = Date.now();
+      const deltaTime = 0.016; // 固定幀率時間補償
       const { darkFactor } = getDayNightColorOverlay();
 
       let spawnDelay = Math.max(200, 1500 - currentWave * 100);
@@ -1227,11 +1351,20 @@
       const playerList = Object.values(players);
       let livingCount = 0;
 
+      // 聖騎士護盾光環處理
       playerList.forEach(p => {
         applyTopDownPhysicsAndCollision(p);
         if (!p.isDowned && !p.isDead) livingCount++;
         if (p.dashCooldown > 0) p.dashCooldown--;
         if (p.invulnerableTime > 0) p.invulnerableTime--;
+
+        if (p.classId === 'paladin' && !p.isDowned && !p.isDead) {
+          playerList.forEach(ally => {
+            if (!ally.isDead && !ally.isDowned && Math.hypot(ally.x - p.x, ally.y - p.y) < 150) {
+              ally.shield = Math.min(ally.maxShield, ally.shield + 3 * deltaTime);
+            }
+          });
+        }
 
         const pCls = CLASSES[p.classId] || CLASSES.assault;
         const regenChance = 0.05 + (pCls.special?.shieldRegenRate || 0);
@@ -1391,6 +1524,17 @@
             z.hp -= actualDamage; playSound('hit'); flashLightIntensity = 60;
             createFloatingText(z.x, z.y - z.size / 2 - 5, `-${actualDamage}`, actualDamage > b.damage ? '#ff2222' : '#ef4444', actualDamage > b.damage ? 20 : 16);
             
+            // 烈焰噴射器施加燃燒狀態
+            if (b.isFlame) {
+              z.burnStacks = Math.min(3, (z.burnStacks || 0) + 1);
+              z.burnTimer = 2.0;
+            }
+
+            // 寒冰弓施加減速狀態
+            if (b.isFrost) {
+              z.slowTimer = 1.5;
+            }
+
             if (b.isGrenade) {
               triggerGrenadeExplosion(b.x, b.y, b.splashDamage, b.splashRadius, b.ownerId);
               bullets.splice(i, 1);
@@ -1442,7 +1586,40 @@
         });
       }
 
-      zombies.forEach(z => {
+      // 殭屍燃燒、減速與眩暈狀態邏輯更新
+      for (let i = zombies.length - 1; i >= 0; i--) {
+        const z = zombies[i];
+
+        // 燃燒狀態處理
+        if (z.burnTimer > 0) {
+          z.burnTimer -= deltaTime;
+          z.hp -= (z.burnStacks || 1) * 5 * deltaTime;
+
+          if (Math.random() < 0.3) {
+            particles.push({
+              x: z.x + (Math.random() - 0.5) * z.size,
+              y: z.y - z.size / 2,
+              vx: (Math.random() - 0.5) * 1,
+              vy: -1 - Math.random(),
+              life: 15, maxLife: 15,
+              color: '#f97316', size: 3
+            });
+          }
+
+          if (z.hp <= 0) {
+            expGems.push({ x: z.x, y: z.y, value: z.type === 'boss' ? 25 : 2 });
+            zombies.splice(i, 1);
+            continue;
+          }
+          if (z.burnTimer <= 0) z.burnStacks = 0;
+        }
+
+        // 眩暈狀態處理 (暫停移動)
+        if (z.stunTimer > 0) {
+          z.stunTimer -= deltaTime;
+          continue;
+        }
+
         applyTopDownPhysicsAndCollision(z);
         let nearestPlayer = null, minDist = Infinity;
         playerList.forEach(p => {
@@ -1453,7 +1630,13 @@
 
         if (nearestPlayer) {
           z.angle = Math.atan2(nearestPlayer.y - z.y, nearestPlayer.x - z.x);
-          z.vx += Math.cos(z.angle) * 0.4; z.vy += Math.sin(z.angle) * 0.4;
+
+          // 減速狀態處理
+          const speedMult = (z.slowTimer > 0) ? 0.5 : 1.0;
+          if (z.slowTimer > 0) z.slowTimer -= deltaTime;
+
+          z.vx += Math.cos(z.angle) * 0.4 * speedMult;
+          z.vy += Math.sin(z.angle) * 0.4 * speedMult;
 
           if (z.type === 'shooter' || z.type === 'boss') {
             z.shootCooldown = (z.shootCooldown || 0) + 1;
@@ -1474,7 +1657,7 @@
             nearestPlayer.invulnerableTime = nearestPlayer.invulnDuration || 20;
           }
         }
-      });
+      }
 
       for (let i = 0; i < zombies.length; i++) {
         for (let j = i + 1; j < zombies.length; j++) {
@@ -1525,7 +1708,6 @@
             if (d < 25) {
               p.exp += gem.value; playSound('pickup'); 
 
-              // 檢查是否升級，並更新等級與最大經驗值
               let levelUps = 0;
               while (p.exp >= p.maxExp) {
                 p.exp -= p.maxExp;
@@ -1534,7 +1716,6 @@
                 levelUps++;
               }
 
-              // 主機自己的玩家若升級則彈出選單
               if (levelUps > 0 && p.id === myPlayerId) {
                 playSound('levelup');
                 showUpgradeModal();
@@ -1728,6 +1909,21 @@
         }
       });
 
+      // 繪製聖騎士護盾光環
+      Object.values(players).forEach(p => {
+        if (!p.isDead && p.classId === 'paladin') {
+          ctx.save();
+          ctx.fillStyle = 'rgba(251, 191, 36, 0.12)';
+          ctx.strokeStyle = 'rgba(251, 191, 36, 0.4)';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, 150, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          ctx.restore();
+        }
+      });
+
       const { darkFactor } = getDayNightColorOverlay();
       zombies.forEach(z => drawZombieMonster(z, darkFactor));
 
@@ -1770,6 +1966,24 @@
           ctx.beginPath(); ctx.arc(b.x, b.y, b.size, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
         }
       });
+
+      // 渲染近戰扇形揮砍特效
+      meleeSwingEffects.forEach(eff => {
+        eff.life -= 0.016;
+        const alpha = Math.max(0, eff.life / eff.maxLife);
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.strokeStyle = eff.color;
+        ctx.lineWidth = 8;
+        ctx.lineCap = 'round';
+        ctx.shadowColor = eff.color;
+        ctx.shadowBlur = 15;
+        ctx.beginPath();
+        ctx.arc(eff.x, eff.y, eff.range * 0.7, eff.angle - eff.arc / 2, eff.angle + eff.arc / 2);
+        ctx.stroke();
+        ctx.restore();
+      });
+      meleeSwingEffects = meleeSwingEffects.filter(eff => eff.life > 0);
 
       for (let i = lightningArcs.length - 1; i >= 0; i--) {
         const arc = lightningArcs[i];
@@ -1867,6 +2081,7 @@
       renderDarknessAndLightingOverlay(darkFactor);
     }
 
+    // 修復 Bug 2：確保繪製玩家時從正確的 p.classId 取得職業資料
     function drawPlayerCharacter(p) {
       ctx.save();
       ctx.translate(p.x, p.y);
@@ -1914,6 +2129,12 @@
       const radius = (z.size || 28) / 2;
       ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.beginPath(); ctx.ellipse(0, 0, radius + 2, radius + 2, 0, 0, Math.PI * 2); ctx.fill();
 
+      // 減速狀態冰藍色光暈
+      if (z.slowTimer > 0) {
+        ctx.fillStyle = 'rgba(103, 232, 249, 0.35)';
+        ctx.beginPath(); ctx.arc(0, 0, radius + 8, 0, Math.PI * 2); ctx.fill();
+      }
+
       ctx.save();
       ctx.rotate(z.angle || 0);
       ctx.fillStyle = z.color; ctx.beginPath(); ctx.arc(0, 0, radius, 0, Math.PI * 2); ctx.fill();
@@ -1932,6 +2153,18 @@
         ctx.fillStyle = '#f43f5e'; ctx.beginPath(); ctx.arc(0, 0, 8, 0, Math.PI * 2); ctx.fill();
       }
       ctx.restore();
+
+      // 眩暈狀態星星標記
+      if (z.stunTimer > 0) {
+        ctx.fillStyle = '#facc15'; ctx.font = 'bold 14px system-ui'; ctx.textAlign = 'center';
+        ctx.fillText('⭐', 0, -radius - 16);
+      }
+
+      // 減速雪花標記
+      if (z.slowTimer > 0 && z.stunTimer <= 0) {
+        ctx.fillStyle = '#67e8f9'; ctx.font = 'bold 12px system-ui'; ctx.textAlign = 'center';
+        ctx.fillText('❄️', 0, -radius - 16);
+      }
 
       if (z.hp < z.maxHp) {
         const barW = radius * 2.8;
@@ -1954,7 +2187,17 @@
       updateDayNightAndWeather(deltaTime);
       updateWeatherAudio();
 
-      if (isMouseDown || aimJoystickData.active) triggerShooting();
+      // 【近戰與遠程攻擊判定切換】
+      if (isMouseDown || aimJoystickData.active) {
+        const me = players[myPlayerId];
+        const w = WEAPONS[me?.weapon];
+        if (w && w.isMelee) {
+          triggerMeleeAttack();
+        } else {
+          triggerShooting();
+        }
+      }
+
       const me = players[myPlayerId];
 
       if (me && !me.isDowned && !me.isDead) {
@@ -1971,13 +2214,14 @@
           me.vx = (dx / len) * me.speed; me.vy = (dy / len) * me.speed;
           me.x += me.vx * 0.5;
           me.y += me.vy * 0.5;
-          // 邊界檢查
-          const r = me.size / 2;
-          if (me.x - r < MAP_BOUNDS.minX) me.x = MAP_BOUNDS.minX + r;
-          if (me.x + r > MAP_BOUNDS.maxX) me.x = MAP_BOUNDS.maxX - r;
-          if (me.y - r < MAP_BOUNDS.minY) me.y = MAP_BOUNDS.minY + r;
-          if (me.y + r > MAP_BOUNDS.maxY) me.y = MAP_BOUNDS.maxY + r;
         }
+
+        // 【五、修復 Bug 1：客戶端本地移動邊界鉗制，防止卡出地圖】
+        const r = me.size / 2;
+        if (me.x - r < MAP_BOUNDS.minX) { me.x = MAP_BOUNDS.minX + r; me.vx = 0; }
+        if (me.x + r > MAP_BOUNDS.maxX) { me.x = MAP_BOUNDS.maxX - r; me.vx = 0; }
+        if (me.y - r < MAP_BOUNDS.minY) { me.y = MAP_BOUNDS.minY + r; me.vy = 0; }
+        if (me.y + r > MAP_BOUNDS.maxY) { me.y = MAP_BOUNDS.maxY + r; me.vy = 0; }
 
         if (!aimJoystickData.active) {
           me.angle = Math.atan2((mousePos.y + camera.y) - me.y, (mousePos.x + camera.x) - me.x);
@@ -2097,7 +2341,13 @@
           conn.metadata.playerId = data.id;
         }
 
-        players[data.id] = createPlayerWithClass(data.id, data.name, data.color || '#f59e0b', data.classId || 'assault');
+        // 【六、修復 Bug 2：主機端檢查 data.classId 防呆】
+        if (!data.classId || !CLASSES[data.classId]) {
+          console.warn('收到無效的 classId:', data.classId, '使用預設 assault');
+          data.classId = 'assault';
+        }
+
+        players[data.id] = createPlayerWithClass(data.id, data.name, data.color || '#f59e0b', data.classId);
         const connTxt = document.getElementById('connectedPlayersText');
         if (connTxt) connTxt.innerText = `已連接 ${connections.length} 位隊友`;
         broadcastState();
@@ -2107,6 +2357,13 @@
           p.x = data.x; p.y = data.y; p.vx = data.vx; p.vy = data.vy; p.angle = data.angle;
           if (data.weapon) p.weapon = data.weapon;
           applyTopDownPhysicsAndCollision(p);
+        }
+      } else if (data.type === 'MELEE_ATTACK' && isHost) {
+        // 處理客戶端發送的近戰攻擊請求
+        const p = players[data.id];
+        if (p) {
+          p.angle = data.angle;
+          meleeHitCheck(p, WEAPONS[p.weapon]);
         }
       } else if (data.type === 'WEAPON_CHANGE' && isHost) {
         const p = players[data.id];
@@ -2145,10 +2402,12 @@
           if (pid === myPlayerId && myLocalP) {
             const serverP = data.players[pid];
 
-            // 1. 保留本地已解鎖的武器、當前武器、職業與天賦加成屬性
             serverP.unlockedWeapons = myLocalP.unlockedWeapons;
             serverP.weapon = myLocalP.weapon;
+
+            // 【六、修復 Bug 2：確保同步客戶端 classId】
             serverP.classId = myLocalP.classId;
+
             serverP.maxHp = myLocalP.maxHp;
             serverP.maxShield = myLocalP.maxShield;
             serverP.dmgMult = myLocalP.dmgMult;
@@ -2161,7 +2420,6 @@
             serverP.bulletScale = myLocalP.bulletScale;
             serverP.hasClutch = myLocalP.hasClutch;
 
-            // 2. 檢查主機傳來的等級是否高於本地，是的話觸發升級彈窗
             if (serverP.level > myLocalP.level) {
               const levelDiff = serverP.level - myLocalP.level;
               myLocalP.level = serverP.level;
@@ -2178,12 +2436,10 @@
                 }, 600);
               }
             } else {
-              // 等級相同時只同步經驗值進度
               myLocalP.exp = serverP.exp;
               myLocalP.maxExp = serverP.maxExp;
             }
 
-            // 3. 最後把本地最新的等級與經驗寫回 serverP
             serverP.level = myLocalP.level;
             serverP.exp = myLocalP.exp;
             serverP.maxExp = myLocalP.maxExp;
@@ -2272,6 +2528,7 @@
       });
     }
 
+    // 【七、UI 更新】更新選單職業面板資訊
     function updateClassStatsDisplay() {
       const cls = CLASSES[selectedClassId] || CLASSES.assault;
       const statsText = document.getElementById('classStatsText');
@@ -2292,6 +2549,7 @@
       }
     }
 
+    // 【七、UI 更新】載入 9 張職業選擇卡片
     function initClassPicker() {
       const container = document.getElementById('classPickerContainer');
       if (!container) return;
@@ -2408,7 +2666,13 @@
     window.addEventListener('mousedown', (e) => {
       if (e.target.closest('#chatContainer') || e.target.closest('#weaponBar') || e.target.closest('#mainMenu')) return;
       initAudio();
-      if (e.button === 0 && gameRunning) { isMouseDown = true; triggerShooting(); }
+      if (e.button === 0 && gameRunning) {
+        isMouseDown = true;
+        const me = players[myPlayerId];
+        const w = WEAPONS[me?.weapon];
+        if (w && w.isMelee) triggerMeleeAttack();
+        else triggerShooting();
+      }
       if (e.button === 2 && gameRunning) triggerPlayerDash(myPlayerId);
     });
 
@@ -2526,7 +2790,9 @@
 
             let nick = (nickInput && nickInput.value) ? nickInput.value.trim() : '';
             if (!nick) nick = '隊友';
-            console.log('加入房間，使用暱稱:', nick);
+
+            // 【六、修復 Bug 2：發送 JOIN_PLAYER 並記錄 Log】
+            console.log('發送 JOIN_PLAYER，classId =', selectedClassId);
 
             players[myPlayerId] = createPlayerWithClass(myPlayerId, nick, selectedSkinColor, selectedClassId);
 
