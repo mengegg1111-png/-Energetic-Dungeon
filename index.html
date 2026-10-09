@@ -57,7 +57,8 @@
         <div class="flex items-center justify-between text-xs font-bold text-slate-300">
           <span id="playerRoleTag" class="text-amber-400 flex items-center gap-1">
             <span id="playerColorIndicator" class="w-3 h-3 rounded-full bg-cyan-400 inline-block shadow"></span>
-            <span id="playerNameDisplay">🎖️ 勇者</span>
+            <!-- Bug 4 修正：點擊名字可線上改名 -->
+            <span id="playerNameDisplay" style="cursor:pointer" onclick="const n = prompt('輸入新名稱：'); if(n) renamePlayer(n);">🎖️ 勇者</span>
           </span>
           <span id="levelText" class="text-cyan-400 font-extrabold">Lv. 1</span>
         </div>
@@ -234,6 +235,7 @@
       </div>
     </div>
   </div>
+
   <script>
     // 【一、職業資料結構】
     const CLASSES = {
@@ -381,7 +383,6 @@
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
 
-    // 【WEAPONS 字典】包含通用武器 + 職業專屬武器（已修改戰斧數值）
     const WEAPONS = {
       pistol: { name: '經典手槍', fireRate: 220, speed: 16, damage: 22, color: '#f59e0b', size: 4, count: 1, spread: 0, recoil: 2, penetrate: false, range: 75, icon: '🔫' },
       shotgun: { name: '霰彈槍', fireRate: 600, speed: 14, damage: 16, color: '#ef4444', size: 3.5, count: 5, spread: 0.25, recoil: 6, penetrate: false, range: 75, icon: '💥' },
@@ -986,7 +987,6 @@
       const now = Date.now();
       const w = WEAPONS[me.weapon];
 
-      // 【改動二 修正】限制戰斧場上最多 1 把
       if (w.isAxe) {
         const activeAxes = bullets.filter(b => b.isAxe && b.ownerId === myPlayerId).length;
         if (activeAxes >= 1) return;
@@ -1477,7 +1477,6 @@
         }
       });
 
-      // 【改動一 修正】殭屍相互排斥力（防止相互重疊擠壓）
       for (let i = 0; i < zombies.length; i++) {
         for (let j = i + 1; j < zombies.length; j++) {
           const z1 = zombies[i];
@@ -1515,6 +1514,7 @@
         }
       }
 
+      // Bug 1 修正：經驗值拾取與升級通知
       for (let i = expGems.length - 1; i >= 0; i--) {
         const gem = expGems[i];
         playerList.forEach(p => {
@@ -1525,7 +1525,31 @@
             gem.x += (p.x - gem.x) * 0.15; gem.y += (p.y - gem.y) * 0.15;
             if (d < 25) {
               p.exp += gem.value; playSound('pickup'); 
-              checkPlayerLevelUp(p);
+
+              // 檢查是否升級，並記錄升級次數
+              let levelUps = 0;
+              while (p.exp >= p.maxExp) {
+                p.exp -= p.maxExp;
+                p.level++;
+                p.maxExp = Math.round(p.maxExp * 1.5);
+                levelUps++;
+              }
+
+              // 如果是客戶端玩家升級，發送通知給該客戶端
+              if (levelUps > 0 && p.id !== myPlayerId && isHost) {
+                connections.forEach(c => {
+                  if (c.open && c.metadata && c.metadata.playerId === p.id) {
+                    c.send({ type: 'SHOW_UPGRADE_MODAL', levelUps });
+                  }
+                });
+              }
+
+              // 主機自己的玩家仍用原本邏輯
+              if (levelUps > 0 && p.id === myPlayerId) {
+                playSound('levelup');
+                showUpgradeModal();
+              }
+
               expGems.splice(i, 1);
             }
           }
@@ -1577,18 +1601,6 @@
       if (p.hp <= 0) {
         p.hp = 0; p.isDowned = true; p.reviveProgress = 0;
         createFloatingText(p.x, p.y - 45, '倒地！需要救援', '#ef4444', 20);
-      }
-    }
-
-    function checkPlayerLevelUp(p) {
-      if (p.exp >= p.maxExp) {
-        p.exp -= p.maxExp; 
-        p.level++; 
-        p.maxExp = Math.round(p.maxExp * 1.5);
-        if (p.id === myPlayerId) {
-          playSound('levelup');
-          showUpgradeModal();
-        }
       }
     }
 
@@ -1755,7 +1767,6 @@
 
           ctx.restore();
         } else if (b.isAxe) {
-          // 【改動三 修正】繪製放大版戰斧文字模型 (32px)
           ctx.save();
           ctx.translate(b.x, b.y);
           ctx.rotate(b.rotationAngle || 0);
@@ -1965,9 +1976,18 @@
 
         if (moveJoystickData.active) { dx = moveJoystickData.x; dy = moveJoystickData.y; }
 
+        // Bug 3 修正：客戶端本地移動邊界與碰撞預先檢查
         if (dx !== 0 || dy !== 0) {
           const len = Math.hypot(dx, dy);
           me.vx = (dx / len) * me.speed; me.vy = (dy / len) * me.speed;
+          me.x += me.vx * 0.5;
+          me.y += me.vy * 0.5;
+          // 邊界檢查
+          const r = me.size / 2;
+          if (me.x - r < MAP_BOUNDS.minX) me.x = MAP_BOUNDS.minX + r;
+          if (me.x + r > MAP_BOUNDS.maxX) me.x = MAP_BOUNDS.maxX - r;
+          if (me.y - r < MAP_BOUNDS.minY) me.y = MAP_BOUNDS.minY + r;
+          if (me.y + r > MAP_BOUNDS.maxY) me.y = MAP_BOUNDS.maxY + r;
         }
 
         if (!aimJoystickData.active) {
@@ -2011,6 +2031,23 @@
       }
     }
 
+    // Bug 4 修正：玩家線上改名函式
+    function renamePlayer(newName) {
+      if (!newName || !newName.trim()) return;
+      const trimmedName = newName.trim();
+      const me = players[myPlayerId];
+      if (!me) return;
+      me.name = trimmedName;
+
+      if (!isHost && hostConn && hostConn.open) {
+        hostConn.send({ type: 'PLAYER_RENAME', id: myPlayerId, name: trimmedName });
+      } else if (isHost) {
+        broadcastState();
+      }
+      console.log('改名為:', trimmedName);
+    }
+    window.renamePlayer = renamePlayer;
+
     function broadcastChat(msgObj) {
       connections.forEach(c => { if (c.open) c.send({ type: 'CHAT_MESSAGE', msg: msgObj }); });
     }
@@ -2030,7 +2067,8 @@
     function startGame(singlePlayerMode = true) {
       isSinglePlayer = singlePlayerMode;
       const nickInput = document.getElementById('nicknameInput');
-      const nick = (nickInput && nickInput.value) ? nickInput.value : '勇者';
+      let nick = (nickInput && nickInput.value) ? nickInput.value.trim() : '';
+      if (!nick) nick = '勇者';
 
       if (isHost) {
         const selected = getRandomMapAndSeed();
@@ -2066,15 +2104,23 @@
 
     function handleNetworkData(data, conn) {
       if (data.type === 'JOIN_PLAYER' && isHost) {
+        // Bug 1 修正：記錄 playerId 至 metadata 供通知發送
+        if (conn) {
+          if (!conn.metadata) conn.metadata = {};
+          conn.metadata.playerId = data.id;
+        }
+
         players[data.id] = createPlayerWithClass(data.id, data.name, data.color || '#f59e0b', data.classId || 'assault');
         const connTxt = document.getElementById('connectedPlayersText');
         if (connTxt) connTxt.innerText = `已連接 ${connections.length} 位隊友`;
         broadcastState();
       } else if (data.type === 'PLAYER_INPUT' && isHost) {
+        // Bug 3 修正：主機驗證位置並做物理與邊界限制
         const p = players[data.id];
         if (p && !p.isDowned && !p.isDead) {
           p.x = data.x; p.y = data.y; p.vx = data.vx; p.vy = data.vy; p.angle = data.angle;
           if (data.weapon) p.weapon = data.weapon;
+          applyTopDownPhysicsAndCollision(p);
         }
       } else if (data.type === 'WEAPON_CHANGE' && isHost) {
         const p = players[data.id];
@@ -2098,6 +2144,16 @@
             players[data.msg.senderId].chatBubble = { text: data.msg.text, time: Date.now() };
           }
         }
+      } else if (data.type === 'PLAYER_RENAME' && isHost) {
+        // Bug 4 修正：收到客戶端改名請求
+        if (players[data.id]) {
+          players[data.id].name = data.name;
+          broadcastState();
+        }
+      } else if (data.type === 'SHOW_UPGRADE_MODAL' && !isHost) {
+        // Bug 1 修正：客戶端收到升級彈窗觸發
+        playSound('levelup');
+        showUpgradeModal();
       } else if (data.type === 'STATE_UPDATE' && !isHost) {
         if (data.mapId && data.seed && (data.mapId !== currentMap.id || data.seed !== currentSeed)) {
           generateMap(data.mapId, data.seed);
@@ -2109,12 +2165,16 @@
             const serverP = data.players[pid];
             serverP.unlockedWeapons = myLocalP.unlockedWeapons;
             serverP.weapon = myLocalP.weapon;
+
+            // Bug 2 修正：如果主機傳來的 classId 與本地不同，以主機為準（確保同步）
+            if (serverP.classId && serverP.classId !== myLocalP.classId) {
+              myLocalP.classId = serverP.classId;
+            }
             serverP.classId = myLocalP.classId;
 
             if (serverP.exp > myLocalP.exp || serverP.level > myLocalP.level) {
               myLocalP.exp = serverP.exp;
               myLocalP.maxExp = serverP.maxExp;
-              checkPlayerLevelUp(myLocalP);
             }
             serverP.exp = myLocalP.exp;
             serverP.level = myLocalP.level;
@@ -2136,9 +2196,11 @@
         updateHud();
         renderWeaponHotbar();
       } else if (data.type === 'GAME_START' && !isHost) {
+        // Bug 2 修正：加上除錯訊息
         if (data.mapId && data.seed) {
           generateMap(data.mapId, data.seed);
         }
+        console.log('GAME_START 收到，本地 classId:', players[myPlayerId] ? players[myPlayerId].classId : '未初始化');
         startGame(false);
       }
     }
@@ -2391,7 +2453,14 @@
         }
 
         const spBtn = document.getElementById('singlePlayerBtn');
-        if (spBtn) spBtn.onclick = () => { initAudio(); isHost = true; startGame(true); };
+        if (spBtn) spBtn.onclick = () => {
+          initAudio(); isHost = true;
+          const nickInput = document.getElementById('nicknameInput');
+          let nick = (nickInput && nickInput.value) ? nickInput.value.trim() : '';
+          if (!nick) nick = '勇者';
+          console.log('單人遊戲，使用暱稱:', nick);
+          startGame(true);
+        };
 
         const crRoomBtn = document.getElementById('createRoomBtn');
         if (crRoomBtn) {
@@ -2399,7 +2468,10 @@
             initAudio(); isHost = true;
             const shortCode = generateShortRoomCode();
             const nickInput = document.getElementById('nicknameInput');
-            const nick = (nickInput && nickInput.value) ? nickInput.value : '房主';
+            let nick = (nickInput && nickInput.value) ? nickInput.value.trim() : '';
+            if (!nick) nick = '房主';
+            console.log('創立房間，使用暱稱:', nick);
+
             players[myPlayerId] = createPlayerWithClass(myPlayerId, nick, selectedSkinColor, selectedClassId);
 
             try {
@@ -2409,6 +2481,8 @@
                 document.getElementById('myPeerIdText').innerText = shortCode;
               });
               peer.on('connection', (conn) => {
+                // Bug 1 修正：初始化連線 metadata
+                conn.metadata = {};
                 connections.push(conn);
                 conn.on('data', (data) => handleNetworkData(data, conn));
                 conn.on('close', () => {
@@ -2425,6 +2499,10 @@
         const stHostBtn = document.getElementById('startHostGameBtn');
         if (stHostBtn) {
           stHostBtn.onclick = () => {
+            const nickInput = document.getElementById('nicknameInput');
+            let nick = (nickInput && nickInput.value) ? nickInput.value.trim() : '';
+            if (!nick) nick = '房主';
+            console.log('開始遊戲，使用暱稱:', nick);
             startGame(false);
             connections.forEach(c => { 
               if(c.open) c.send({ type: 'GAME_START', mapId: currentMap.id, seed: currentSeed }); 
@@ -2443,7 +2521,12 @@
             const hostPeerId = 'dungeon_' + rawCode;
             isHost = false;
             const nickInput = document.getElementById('nicknameInput');
-            const nick = (nickInput && nickInput.value) ? nickInput.value : '隊友';
+
+            // Bug 4 修正：對暱稱輸入進行清理防護與 log 紀錄
+            let nick = (nickInput && nickInput.value) ? nickInput.value.trim() : '';
+            if (!nick) nick = '隊友';
+            console.log('加入房間，使用暱稱:', nick);
+
             players[myPlayerId] = createPlayerWithClass(myPlayerId, nick, selectedSkinColor, selectedClassId);
 
             try {
