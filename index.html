@@ -57,7 +57,6 @@
         <div class="flex items-center justify-between text-xs font-bold text-slate-300">
           <span id="playerRoleTag" class="text-amber-400 flex items-center gap-1">
             <span id="playerColorIndicator" class="w-3 h-3 rounded-full bg-cyan-400 inline-block shadow"></span>
-            <!-- Bug 4 修正：點擊名字可線上改名 -->
             <span id="playerNameDisplay" style="cursor:pointer" onclick="const n = prompt('輸入新名稱：'); if(n) renamePlayer(n);">🎖️ 勇者</span>
           </span>
           <span id="levelText" class="text-cyan-400 font-extrabold">Lv. 1</span>
@@ -1514,7 +1513,7 @@
         }
       }
 
-      // Bug 1 修正：經驗值拾取與升級通知
+      // 經驗值拾取與主機端計算等級
       for (let i = expGems.length - 1; i >= 0; i--) {
         const gem = expGems[i];
         playerList.forEach(p => {
@@ -1526,7 +1525,7 @@
             if (d < 25) {
               p.exp += gem.value; playSound('pickup'); 
 
-              // 檢查是否升級，並記錄升級次數
+              // 檢查是否升級，並更新等級與最大經驗值
               let levelUps = 0;
               while (p.exp >= p.maxExp) {
                 p.exp -= p.maxExp;
@@ -1535,16 +1534,7 @@
                 levelUps++;
               }
 
-              // 如果是客戶端玩家升級，發送通知給該客戶端
-              if (levelUps > 0 && p.id !== myPlayerId && isHost) {
-                connections.forEach(c => {
-                  if (c.open && c.metadata && c.metadata.playerId === p.id) {
-                    c.send({ type: 'SHOW_UPGRADE_MODAL', levelUps });
-                  }
-                });
-              }
-
-              // 主機自己的玩家仍用原本邏輯
+              // 主機自己的玩家若升級則彈出選單
               if (levelUps > 0 && p.id === myPlayerId) {
                 playSound('levelup');
                 showUpgradeModal();
@@ -1976,7 +1966,6 @@
 
         if (moveJoystickData.active) { dx = moveJoystickData.x; dy = moveJoystickData.y; }
 
-        // Bug 3 修正：客戶端本地移動邊界與碰撞預先檢查
         if (dx !== 0 || dy !== 0) {
           const len = Math.hypot(dx, dy);
           me.vx = (dx / len) * me.speed; me.vy = (dy / len) * me.speed;
@@ -2031,7 +2020,6 @@
       }
     }
 
-    // Bug 4 修正：玩家線上改名函式
     function renamePlayer(newName) {
       if (!newName || !newName.trim()) return;
       const trimmedName = newName.trim();
@@ -2104,7 +2092,6 @@
 
     function handleNetworkData(data, conn) {
       if (data.type === 'JOIN_PLAYER' && isHost) {
-        // Bug 1 修正：記錄 playerId 至 metadata 供通知發送
         if (conn) {
           if (!conn.metadata) conn.metadata = {};
           conn.metadata.playerId = data.id;
@@ -2115,7 +2102,6 @@
         if (connTxt) connTxt.innerText = `已連接 ${connections.length} 位隊友`;
         broadcastState();
       } else if (data.type === 'PLAYER_INPUT' && isHost) {
-        // Bug 3 修正：主機驗證位置並做物理與邊界限制
         const p = players[data.id];
         if (p && !p.isDowned && !p.isDead) {
           p.x = data.x; p.y = data.y; p.vx = data.vx; p.vy = data.vy; p.angle = data.angle;
@@ -2145,15 +2131,10 @@
           }
         }
       } else if (data.type === 'PLAYER_RENAME' && isHost) {
-        // Bug 4 修正：收到客戶端改名請求
         if (players[data.id]) {
           players[data.id].name = data.name;
           broadcastState();
         }
-      } else if (data.type === 'SHOW_UPGRADE_MODAL' && !isHost) {
-        // Bug 1 修正：客戶端收到升級彈窗觸發
-        playSound('levelup');
-        showUpgradeModal();
       } else if (data.type === 'STATE_UPDATE' && !isHost) {
         if (data.mapId && data.seed && (data.mapId !== currentMap.id || data.seed !== currentSeed)) {
           generateMap(data.mapId, data.seed);
@@ -2163,26 +2144,49 @@
         Object.keys(data.players).forEach(pid => {
           if (pid === myPlayerId && myLocalP) {
             const serverP = data.players[pid];
+
+            // 1. 保留本地已解鎖的武器、當前武器、職業與天賦加成屬性
             serverP.unlockedWeapons = myLocalP.unlockedWeapons;
             serverP.weapon = myLocalP.weapon;
-
-            // Bug 2 修正：如果主機傳來的 classId 與本地不同，以主機為準（確保同步）
-            if (serverP.classId && serverP.classId !== myLocalP.classId) {
-              myLocalP.classId = serverP.classId;
-            }
             serverP.classId = myLocalP.classId;
-
-            if (serverP.exp > myLocalP.exp || serverP.level > myLocalP.level) {
-              myLocalP.exp = serverP.exp;
-              myLocalP.maxExp = serverP.maxExp;
-            }
-            serverP.exp = myLocalP.exp;
-            serverP.level = myLocalP.level;
-            serverP.maxExp = myLocalP.maxExp;
             serverP.maxHp = myLocalP.maxHp;
             serverP.maxShield = myLocalP.maxShield;
             serverP.dmgMult = myLocalP.dmgMult;
             serverP.speed = myLocalP.speed;
+            serverP.magnetRange = myLocalP.magnetRange;
+            serverP.dashMaxCooldown = myLocalP.dashMaxCooldown;
+            serverP.invulnDuration = myLocalP.invulnDuration;
+            serverP.lifesteal = myLocalP.lifesteal;
+            serverP.penetrate = myLocalP.penetrate;
+            serverP.bulletScale = myLocalP.bulletScale;
+            serverP.hasClutch = myLocalP.hasClutch;
+
+            // 2. 檢查主機傳來的等級是否高於本地，是的話觸發升級彈窗
+            if (serverP.level > myLocalP.level) {
+              const levelDiff = serverP.level - myLocalP.level;
+              myLocalP.level = serverP.level;
+              myLocalP.maxExp = serverP.maxExp;
+              myLocalP.exp = serverP.exp;
+
+              playSound('levelup');
+              showUpgradeModal();
+
+              if (levelDiff > 1) {
+                setTimeout(() => {
+                  playSound('levelup');
+                  showUpgradeModal();
+                }, 600);
+              }
+            } else {
+              // 等級相同時只同步經驗值進度
+              myLocalP.exp = serverP.exp;
+              myLocalP.maxExp = serverP.maxExp;
+            }
+
+            // 3. 最後把本地最新的等級與經驗寫回 serverP
+            serverP.level = myLocalP.level;
+            serverP.exp = myLocalP.exp;
+            serverP.maxExp = myLocalP.maxExp;
             players[pid] = serverP;
           } else {
             players[pid] = data.players[pid];
@@ -2196,7 +2200,6 @@
         updateHud();
         renderWeaponHotbar();
       } else if (data.type === 'GAME_START' && !isHost) {
-        // Bug 2 修正：加上除錯訊息
         if (data.mapId && data.seed) {
           generateMap(data.mapId, data.seed);
         }
@@ -2481,7 +2484,6 @@
                 document.getElementById('myPeerIdText').innerText = shortCode;
               });
               peer.on('connection', (conn) => {
-                // Bug 1 修正：初始化連線 metadata
                 conn.metadata = {};
                 connections.push(conn);
                 conn.on('data', (data) => handleNetworkData(data, conn));
@@ -2522,7 +2524,6 @@
             isHost = false;
             const nickInput = document.getElementById('nicknameInput');
 
-            // Bug 4 修正：對暱稱輸入進行清理防護與 log 紀錄
             let nick = (nickInput && nickInput.value) ? nickInput.value.trim() : '';
             if (!nick) nick = '隊友';
             console.log('加入房間，使用暱稱:', nick);
