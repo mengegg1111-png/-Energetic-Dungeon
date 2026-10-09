@@ -58,6 +58,7 @@
           <span id="playerRoleTag" class="text-amber-400 flex items-center gap-1">
             <span id="playerColorIndicator" class="w-3 h-3 rounded-full bg-cyan-400 inline-block shadow"></span>
             <span id="playerNameDisplay" style="cursor:pointer" onclick="const n = prompt('輸入新名稱：'); if(n) renamePlayer(n);">🎖️ 勇者</span>
+            <span id="minionCountTag" class="text-purple-300 font-extrabold ml-1 hidden">💀 x 0</span>
           </span>
           <span id="levelText" class="text-cyan-400 font-extrabold">Lv. 1</span>
         </div>
@@ -167,7 +168,7 @@
           <div id="colorPickerContainer" class="flex items-center justify-between bg-slate-900/90 p-1.5 rounded-xl border border-slate-800"></div>
         </div>
 
-        <!-- 職業選擇 UI 區塊 (延伸至9種職業) -->
+        <!-- 職業選擇 UI 區塊 (延伸至10種職業) -->
         <div class="flex flex-col gap-1.5 text-left">
           <label class="text-xs font-bold text-slate-300 flex justify-between items-center">
             <span>選擇英雄職業</span>
@@ -236,7 +237,7 @@
   </div>
 
   <script>
-    // 【一、職業資料結構 (新增 3 個職業，共 9 個)】
+    // 【一、職業資料結構 (包含亡靈術士)】
     const CLASSES = {
       medic: {
         id: 'medic',
@@ -336,6 +337,17 @@
         color: '#fbbf24',
         baseStats: { maxHp: 130, maxShield: 100, speed: 4.8, dmgMult: 0.85, bulletScale: 1.0, magnetRange: 130, dashMaxCooldown: 110, invulnDuration: 30, lifesteal: 0 },
         special: { auraShield: 3 }
+      },
+      necromancer: {
+        id: 'necromancer',
+        name: '亡靈術士',
+        icon: '💀',
+        exclusiveWeaponKey: 'necroStaff',
+        exclusiveWeaponName: '💀 亡靈權杖',
+        desc: '擊殺敵人有 30% 機率召喚亡靈為你作戰',
+        color: '#a78bfa',
+        baseStats: { maxHp: 85, maxShield: 50, speed: 5.3, dmgMult: 1.0, bulletScale: 1.0, magnetRange: 150, dashMaxCooldown: 85, invulnDuration: 20, lifesteal: 0 },
+        special: { summonChance: 0.3 }
       }
     };
 
@@ -381,7 +393,7 @@
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
 
-    // 【二、WEAPONS 物件 (加入三把新專屬武器，神聖戰錘設為近戰 isMelee)】
+    // 【【四、修改 WEAPONS.fireBeam】】調整火焰噴射器參數
     const WEAPONS = {
       pistol: { name: '經典手槍', fireRate: 220, speed: 16, damage: 22, color: '#f59e0b', size: 4, count: 1, spread: 0, recoil: 2, penetrate: false, range: 75, icon: '🔫' },
       shotgun: { name: '霰彈槍', fireRate: 600, speed: 14, damage: 16, color: '#ef4444', size: 3.5, count: 5, spread: 0.25, recoil: 6, penetrate: false, range: 75, icon: '💥' },
@@ -396,8 +408,8 @@
       dualSMG: { name: '雙持衝鋒槍', fireRate: 100, speed: 18, damage: 8, color: '#22d3ee', size: 3, count: 2, spread: 0.12, recoil: 1.5, penetrate: false, range: 60, exclusiveTo: 'scout', icon: '🔫' },
 
       fireBeam: {
-        name: '烈焰噴射器', fireRate: 80, speed: 12, damage: 6, color: '#f97316',
-        size: 5, count: 1, spread: 0.3, recoil: 0.5, penetrate: true, range: 50,
+        name: '烈焰噴射器', fireRate: 80, speed: 10, damage: 4, color: '#f97316',
+        size: 4, count: 2, spread: 0.45, recoil: 0.3, penetrate: true, range: 50,
         exclusiveTo: 'flameMage', icon: '🔥', isFlame: true,
         igniteDamage: 5, igniteDuration: 2, maxBurnStacks: 3
       },
@@ -413,6 +425,12 @@
         meleeRange: 70, meleeAngle: Math.PI * 2 / 3,
         knockback: 30, stunChance: 0.3, stunDuration: 1.0,
         shieldOnHit: 5
+      },
+      necroStaff: {
+        name: '亡靈權杖', fireRate: 400, speed: 16, damage: 35, color: '#a78bfa',
+        size: 5, count: 1, spread: 0, recoil: 2, penetrate: true, range: 100,
+        exclusiveTo: 'necromancer', icon: '💀', isNecro: true,
+        summonChance: 0.3
       }
     };
 
@@ -446,6 +464,7 @@
     let floatingTexts = [];
     let lightningArcs = [];
     let meleeSwingEffects = []; // 全域近戰揮砍視覺效果陣列
+    let minions = []; // 全域亡靈陣列
 
     let currentWave = 1;
     let zombiesToSpawn = 0;
@@ -551,6 +570,7 @@
       } catch(e) {}
     }
 
+    // 【【五、新增火焰音效 'flame'】】
     function playSound(type) {
       if (!audioCtx || audioCtx.state !== 'running') return;
       try {
@@ -562,6 +582,13 @@
         if (type === 'shoot') {
           osc.type = 'sawtooth'; osc.frequency.setValueAtTime(350, now); osc.frequency.exponentialRampToValueAtTime(60, now + 0.08);
           gain.gain.setValueAtTime(0.12, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+          osc.start(now); osc.stop(now + 0.08);
+        } else if (type === 'flame') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(120, now);
+          osc.frequency.linearRampToValueAtTime(80, now + 0.08);
+          gain.gain.setValueAtTime(0.08, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
           osc.start(now); osc.stop(now + 0.08);
         } else if (type === 'laser') {
           osc.type = 'triangle'; osc.frequency.setValueAtTime(120, now); osc.frequency.exponentialRampToValueAtTime(40, now + 0.25);
@@ -1006,7 +1033,6 @@
       }
     }
 
-    // 【三、近戰武器系統實作】
     function triggerMeleeAttack() {
       const me = players[myPlayerId];
       if (!me || me.isDowned || me.isDead) return;
@@ -1018,7 +1044,6 @@
       if (now - lastShootTime >= w.fireRate) {
         lastShootTime = now;
 
-        // 計算瞄準角度
         let attackAngle = me.angle;
         if (aimJoystickData.active) {
           attackAngle = Math.atan2(aimJoystickData.y, aimJoystickData.x);
@@ -1034,7 +1059,6 @@
           hostConn.send({ type: 'MELEE_ATTACK', id: myPlayerId, angle: attackAngle });
         }
 
-        // 推送區域揮砍視覺效果
         meleeSwingEffects.push({
           x: me.x,
           y: me.y,
@@ -1043,7 +1067,8 @@
           arc: w.meleeAngle || (Math.PI * 2 / 3),
           color: w.color || '#fbbf24',
           life: 0.15,
-          maxLife: 0.15
+          maxLife: 0.15,
+          progress: 0
         });
       }
     }
@@ -1075,22 +1100,19 @@
 
           createFloatingText(z.x, z.y - z.size / 2 - 5, `-${actualDmg}`, weapon.color || '#fbbf24', 22);
 
-          // 擊退機制
           z.vx += Math.cos(angleToZombie) * ((weapon.knockback || 30) / 5);
           z.vy += Math.sin(angleToZombie) * ((weapon.knockback || 30) / 5);
 
-          // 30% 機率眩暈 1 秒
           if (Math.random() < (weapon.stunChance || 0.3)) {
             z.stunTimer = weapon.stunDuration || 1.0;
           }
 
-          // 擊中殭屍回復玩家護盾
           if (weapon.shieldOnHit) {
             player.shield = Math.min(player.maxShield, player.shield + weapon.shieldOnHit);
           }
 
-          // 擊殺判斷與掉落
           if (z.hp <= 0) {
+            trySummonMinionOnKill(player, z);
             expGems.push({ x: z.x, y: z.y, value: z.type === 'boss' ? 25 : 2 });
             zombies.splice(i, 1);
           }
@@ -1098,6 +1120,39 @@
       }
     }
 
+    function trySummonMinionOnKill(killer, zombie) {
+      if (!killer || !zombie) return;
+      const w = WEAPONS[killer.weapon];
+      if (w && w.isNecro && zombie.type !== 'boss') {
+        if (Math.random() < (w.summonChance || 0.3)) {
+          const ownerMinions = minions.filter(m => m.ownerId === killer.id);
+          if (ownerMinions.length >= 5) {
+            const oldest = ownerMinions[0];
+            const idx = minions.indexOf(oldest);
+            if (idx >= 0) minions.splice(idx, 1);
+          }
+          minions.push({
+            id: Math.random().toString(36).substr(2, 8),
+            ownerId: killer.id,
+            ownerName: killer.name,
+            x: zombie.x,
+            y: zombie.y,
+            vx: 0,
+            vy: 0,
+            size: 24,
+            hp: Math.min(killer.hp, killer.maxHp * 0.8),
+            maxHp: Math.min(killer.maxHp, killer.maxHp * 0.8),
+            damage: Math.round(WEAPONS[killer.weapon].damage * (killer.dmgMult || 1)),
+            speed: 4.5,
+            angle: 0,
+            attackCooldown: 0,
+            lastDamageTime: Date.now()
+          });
+        }
+      }
+    }
+
+    // 【【五、修改 triggerShooting 音效觸發】】
     function triggerShooting() {
       const me = players[myPlayerId];
       if (!me || me.isDowned || me.isDead) return;
@@ -1131,6 +1186,7 @@
         if (w.isBeam) playSound('laser');
         else if (w.isGrenade) playSound('shoot');
         else if (w.isTesla) playSound('tesla');
+        else if (w.isFlame) playSound('flame');
         else playSound('shoot');
 
         flashLightIntensity = 80;
@@ -1206,7 +1262,7 @@
         speed: (2.2 + Math.random() * 0.8) * diffs.spdMult, color: '#22c55e',
         damage: Math.round((10 + currentWave * 2) * diffs.dmgMult),
         shootCooldown: 0, angle: 0,
-        burnStacks: 0, burnTimer: 0, slowTimer: 0, stunTimer: 0 // 狀態異常欄位
+        burnStacks: 0, burnTimer: 0, slowTimer: 0, stunTimer: 0
       };
 
       if (type === 'fast') { z.hp *= 0.6; z.speed *= 1.6; z.size = 22; z.color = '#eab308'; }
@@ -1239,6 +1295,7 @@
           createFloatingText(z.x, z.y - z.size / 2 - 5, `-${damage}`, '#f59e0b', 18);
 
           if (z.hp <= 0) {
+            if (owner) trySummonMinionOnKill(owner, z);
             if (owner && owner.lifesteal > 0 && Math.random() < owner.lifesteal) {
               owner.hp = Math.min(owner.maxHp, owner.hp + 3);
               createFloatingText(owner.x, owner.y - 20, '+3 HP', '#4ade80', 14);
@@ -1332,10 +1389,9 @@
       return pts;
     }
 
-    // 【四、主機端邏輯與狀態計算】
     function updateWorldHost() {
       const now = Date.now();
-      const deltaTime = 0.016; // 固定幀率時間補償
+      const deltaTime = 0.016;
       const { darkFactor } = getDayNightColorOverlay();
 
       let spawnDelay = Math.max(200, 1500 - currentWave * 100);
@@ -1351,7 +1407,6 @@
       const playerList = Object.values(players);
       let livingCount = 0;
 
-      // 聖騎士護盾光環處理
       playerList.forEach(p => {
         applyTopDownPhysicsAndCollision(p);
         if (!p.isDowned && !p.isDead) livingCount++;
@@ -1400,7 +1455,76 @@
         document.getElementById('gameOverModal').classList.remove('hidden');
       }
 
-      // --- 子彈邏輯更新 ---
+      for (let i = minions.length - 1; i >= 0; i--) {
+        const m = minions[i];
+        const owner = players[m.ownerId];
+        if (!owner || owner.isDead || owner.isDowned) {
+          for (let k = 0; k < 8; k++) {
+            particles.push({
+              x: m.x, y: m.y,
+              vx: (Math.random() - 0.5) * 3,
+              vy: (Math.random() - 0.5) * 3,
+              life: 20, maxLife: 20,
+              color: '#a78bfa', size: 2.5
+            });
+          }
+          minions.splice(i, 1);
+          continue;
+        }
+      }
+
+      for (let i = minions.length - 1; i >= 0; i--) {
+        const m = minions[i];
+        applyTopDownPhysicsAndCollision(m);
+
+        let nearestZombie = null;
+        let minZDist = Infinity;
+        zombies.forEach(z => {
+          if (z.hp > 0) {
+            const d = Math.hypot(z.x - m.x, z.y - m.y);
+            if (d < minZDist) { minZDist = d; nearestZombie = z; }
+          }
+        });
+
+        if (nearestZombie) {
+          m.angle = Math.atan2(nearestZombie.y - m.y, nearestZombie.x - m.x);
+          if (minZDist > 40) {
+            m.vx += Math.cos(m.angle) * 0.4;
+            m.vy += Math.sin(m.angle) * 0.4;
+          } else {
+            m.attackCooldown = (m.attackCooldown || 0) - deltaTime;
+            if (m.attackCooldown <= 0) {
+              m.attackCooldown = 0.8;
+              nearestZombie.hp -= m.damage;
+              createFloatingText(nearestZombie.x, nearestZombie.y - 15, `-${m.damage}`, '#a78bfa', 16);
+              playSound('hit');
+
+              if (nearestZombie.hp <= 0) {
+                const owner = players[m.ownerId];
+                if (owner) trySummonMinionOnKill(owner, nearestZombie);
+                expGems.push({ x: nearestZombie.x, y: nearestZombie.y, value: nearestZombie.type === 'boss' ? 25 : 2 });
+                const zIdx = zombies.indexOf(nearestZombie);
+                if (zIdx >= 0) zombies.splice(zIdx, 1);
+              }
+            }
+          }
+        } else {
+          const owner = players[m.ownerId];
+          if (owner) {
+            const dOwner = Math.hypot(owner.x - m.x, owner.y - m.y);
+            if (dOwner > 100) {
+              const angleToOwner = Math.atan2(owner.y - m.y, owner.x - m.x);
+              m.vx += Math.cos(angleToOwner) * 0.3;
+              m.vy += Math.sin(angleToOwner) * 0.3;
+            }
+          }
+        }
+
+        if (now - m.lastDamageTime > 5000 && m.hp < m.maxHp) {
+          m.hp = Math.min(m.maxHp, m.hp + 2 * deltaTime);
+        }
+      }
+
       for (let i = bullets.length - 1; i >= 0; i--) {
         const b = bullets[i];
         const owner = players[b.ownerId];
@@ -1437,6 +1561,7 @@
                   createFloatingText(z.x, z.y - z.size / 2 - 5, `-${actualDamage}`, '#38bdf8', 20);
 
                   if (z.hp <= 0) {
+                    if (owner) trySummonMinionOnKill(owner, z);
                     expGems.push({ x: z.x, y: z.y, value: z.type === 'boss' ? 25 : 2 });
                     zombies.splice(j, 1);
                   }
@@ -1478,6 +1603,7 @@
               z.hp -= actualDamage; playSound('hit');
               createFloatingText(z.x, z.y - z.size / 2 - 5, `-${actualDamage}`, '#ef4444', 18);
               if (z.hp <= 0) {
+                if (owner) trySummonMinionOnKill(owner, z);
                 expGems.push({ x: z.x, y: z.y, value: z.type === 'boss' ? 25 : 2 });
                 zombies.splice(j, 1);
               }
@@ -1487,6 +1613,20 @@
         }
 
         b.x += b.vx; b.y += b.vy; b.range--;
+
+        // 【【二、火焰拖尾粒子】】
+        if (b.isFlame && Math.random() < 0.8) {
+          particles.push({
+            x: b.x + (Math.random() - 0.5) * 6,
+            y: b.y + (Math.random() - 0.5) * 6,
+            vx: (Math.random() - 0.5) * 0.5,
+            vy: -0.5 - Math.random() * 0.5,
+            life: 12 + Math.random() * 8,
+            maxLife: 20,
+            color: Math.random() < 0.5 ? '#f97316' : '#fbbf24',
+            size: 2 + Math.random() * 2
+          });
+        }
 
         if (b.isGrenade && Math.random() < 0.6) {
           particles.push({
@@ -1524,13 +1664,22 @@
             z.hp -= actualDamage; playSound('hit'); flashLightIntensity = 60;
             createFloatingText(z.x, z.y - z.size / 2 - 5, `-${actualDamage}`, actualDamage > b.damage ? '#ff2222' : '#ef4444', actualDamage > b.damage ? 20 : 16);
             
-            // 烈焰噴射器施加燃燒狀態
+            // 【【六、火焰命中時的額外視覺粒子】】
             if (b.isFlame) {
               z.burnStacks = Math.min(3, (z.burnStacks || 0) + 1);
               z.burnTimer = 2.0;
+              for (let k = 0; k < 6; k++) {
+                particles.push({
+                  x: z.x, y: z.y,
+                  vx: (Math.random() - 0.5) * 5,
+                  vy: (Math.random() - 0.5) * 5 - 1,
+                  life: 15, maxLife: 15,
+                  color: Math.random() < 0.5 ? '#f97316' : '#fbbf24',
+                  size: 3
+                });
+              }
             }
 
-            // 寒冰弓施加減速狀態
             if (b.isFrost) {
               z.slowTimer = 1.5;
             }
@@ -1552,6 +1701,7 @@
             if (!b.penetrate) bullets.splice(i, 1);
             if (z.hp <= 0) {
               const killer = players[b.ownerId];
+              if (killer) trySummonMinionOnKill(killer, z);
               if (killer && killer.lifesteal > 0 && Math.random() < killer.lifesteal) {
                 killer.hp = Math.min(killer.maxHp, killer.hp + 3);
                 createFloatingText(killer.x, killer.y - 20, '+3 HP', '#4ade80', 14);
@@ -1586,11 +1736,9 @@
         });
       }
 
-      // 殭屍燃燒、減速與眩暈狀態邏輯更新
       for (let i = zombies.length - 1; i >= 0; i--) {
         const z = zombies[i];
 
-        // 燃燒狀態處理
         if (z.burnTimer > 0) {
           z.burnTimer -= deltaTime;
           z.hp -= (z.burnStacks || 1) * 5 * deltaTime;
@@ -1614,24 +1762,29 @@
           if (z.burnTimer <= 0) z.burnStacks = 0;
         }
 
-        // 眩暈狀態處理 (暫停移動)
         if (z.stunTimer > 0) {
           z.stunTimer -= deltaTime;
           continue;
         }
 
         applyTopDownPhysicsAndCollision(z);
-        let nearestPlayer = null, minDist = Infinity;
+
+        let nearestTarget = null, minDist = Infinity, targetType = null;
+
         playerList.forEach(p => {
           if (p.isDowned || p.isDead) return;
           const d = Math.hypot(p.x - z.x, p.y - z.y);
-          if (d < minDist) { minDist = d; nearestPlayer = p; }
+          if (d < minDist) { minDist = d; nearestTarget = p; targetType = 'player'; }
         });
 
-        if (nearestPlayer) {
-          z.angle = Math.atan2(nearestPlayer.y - z.y, nearestPlayer.x - z.x);
+        minions.forEach(m => {
+          const d = Math.hypot(m.x - z.x, m.y - z.y);
+          if (d < minDist) { minDist = d; nearestTarget = m; targetType = 'minion'; }
+        });
 
-          // 減速狀態處理
+        if (nearestTarget) {
+          z.angle = Math.atan2(nearestTarget.y - z.y, nearestTarget.x - z.x);
+
           const speedMult = (z.slowTimer > 0) ? 0.5 : 1.0;
           if (z.slowTimer > 0) z.slowTimer -= deltaTime;
 
@@ -1652,9 +1805,29 @@
             }
           }
 
-          if (Math.hypot(nearestPlayer.x - z.x, nearestPlayer.y - z.y) < (z.size / 2) + 12 && nearestPlayer.invulnerableTime <= 0) {
-            damagePlayer(nearestPlayer, z.damage);
-            nearestPlayer.invulnerableTime = nearestPlayer.invulnDuration || 20;
+          if (minDist < (z.size / 2) + (nearestTarget.size / 2) + 4) {
+            if (targetType === 'player' && nearestTarget.invulnerableTime <= 0) {
+              damagePlayer(nearestTarget, z.damage);
+              nearestTarget.invulnerableTime = nearestTarget.invulnDuration || 20;
+            } else if (targetType === 'minion') {
+              nearestTarget.hp -= z.damage;
+              nearestTarget.lastDamageTime = Date.now();
+              createFloatingText(nearestTarget.x, nearestTarget.y - 20, `-${z.damage}`, '#f87171', 14);
+
+              if (nearestTarget.hp <= 0) {
+                for (let k = 0; k < 10; k++) {
+                  particles.push({
+                    x: nearestTarget.x, y: nearestTarget.y,
+                    vx: (Math.random() - 0.5) * 4,
+                    vy: (Math.random() - 0.5) * 4,
+                    life: 20, maxLife: 20,
+                    color: '#a78bfa', size: 3
+                  });
+                }
+                const idx = minions.indexOf(nearestTarget);
+                if (idx >= 0) minions.splice(idx, 1);
+              }
+            }
           }
         }
       }
@@ -1696,7 +1869,6 @@
         }
       }
 
-      // 經驗值拾取與主機端計算等級
       for (let i = expGems.length - 1; i >= 0; i--) {
         const gem = expGems[i];
         playerList.forEach(p => {
@@ -1829,6 +2001,17 @@
       const nameDisp = document.getElementById('playerNameDisplay');
       if (nameDisp) nameDisp.innerText = `${clsDef.icon} ${me.name}`;
 
+      const minionTag = document.getElementById('minionCountTag');
+      if (minionTag) {
+        if (me.classId === 'necromancer') {
+          const myMinionCount = minions.filter(m => m.ownerId === myPlayerId).length;
+          minionTag.innerText = `💀 x ${myMinionCount}`;
+          minionTag.classList.remove('hidden');
+        } else {
+          minionTag.classList.add('hidden');
+        }
+      }
+
       const colInd = document.getElementById('playerColorIndicator');
       if (colInd) colInd.style.backgroundColor = me.color;
       const lvlTxt = document.getElementById('levelText');
@@ -1909,7 +2092,6 @@
         }
       });
 
-      // 繪製聖騎士護盾光環
       Object.values(players).forEach(p => {
         if (!p.isDead && p.classId === 'paladin') {
           ctx.save();
@@ -1927,6 +2109,7 @@
       const { darkFactor } = getDayNightColorOverlay();
       zombies.forEach(z => drawZombieMonster(z, darkFactor));
 
+      // 【【一、修改子彈渲染】】加入 isFlame 判斷的分支
       bullets.forEach(b => {
         if (b.isBeam) {
           ctx.save();
@@ -1961,26 +2144,95 @@
           ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
           ctx.fillText('🪓', 0, 0);
           ctx.restore();
+        } else if (b.isFlame) {
+          // 火焰特效渲染
+          ctx.save();
+          ctx.translate(b.x, b.y);
+
+          // 用「隨機角度偏移」讓火焰看起來在跳動
+          const flicker = Math.sin(Date.now() * 0.02 + b.id.charCodeAt(0)) * 0.3;
+          const flameScale = 1 + flicker;
+
+          // 第一層：外圈紅色光暈
+          ctx.shadowColor = '#ef4444';
+          ctx.shadowBlur = 20;
+          ctx.fillStyle = 'rgba(239, 68, 68, 0.6)';
+          ctx.beginPath();
+          ctx.arc(0, 0, b.size * 1.8 * flameScale, 0, Math.PI * 2);
+          ctx.fill();
+
+          // 第二層：橙色主體
+          ctx.shadowColor = '#f97316';
+          ctx.shadowBlur = 15;
+          ctx.fillStyle = 'rgba(249, 115, 22, 0.85)';
+          ctx.beginPath();
+          ctx.arc(0, 0, b.size * 1.3 * flameScale, 0, Math.PI * 2);
+          ctx.fill();
+
+          // 第三層：黃色核心
+          ctx.shadowColor = '#fbbf24';
+          ctx.shadowBlur = 10;
+          ctx.fillStyle = 'rgba(251, 191, 36, 0.95)';
+          ctx.beginPath();
+          ctx.arc(0, 0, b.size * 0.8 * flameScale, 0, Math.PI * 2);
+          ctx.fill();
+
+          // 第四層：白色最內核
+          ctx.shadowBlur = 5;
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(0, 0, b.size * 0.4 * flameScale, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.restore();
         } else {
           ctx.fillStyle = b.color; ctx.shadowColor = b.color; ctx.shadowBlur = b.penetrate ? 16 : 8;
           ctx.beginPath(); ctx.arc(b.x, b.y, b.size, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
         }
       });
 
-      // 渲染近戰扇形揮砍特效
       meleeSwingEffects.forEach(eff => {
         eff.life -= 0.016;
+        eff.progress = Math.min(1, (eff.progress || 0) + 0.12);
         const alpha = Math.max(0, eff.life / eff.maxLife);
+        const startA = eff.angle - eff.arc / 2;
+        const endA = startA + eff.arc * eff.progress;
+
         ctx.save();
         ctx.globalAlpha = alpha;
-        ctx.strokeStyle = eff.color;
-        ctx.lineWidth = 8;
         ctx.lineCap = 'round';
+
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
         ctx.shadowColor = eff.color;
+        ctx.shadowBlur = 20;
+        ctx.beginPath();
+        ctx.arc(eff.x, eff.y, eff.range * 1.0, startA, endA);
+        ctx.stroke();
+
+        ctx.strokeStyle = eff.color;
+        ctx.lineWidth = 6;
         ctx.shadowBlur = 15;
         ctx.beginPath();
-        ctx.arc(eff.x, eff.y, eff.range * 0.7, eff.angle - eff.arc / 2, eff.angle + eff.arc / 2);
+        ctx.arc(eff.x, eff.y, eff.range * 0.85, startA, endA);
         ctx.stroke();
+
+        ctx.strokeStyle = 'rgba(255, 200, 50, 0.6)';
+        ctx.lineWidth = 12;
+        ctx.shadowBlur = 10;
+        ctx.beginPath();
+        ctx.arc(eff.x, eff.y, eff.range * 0.7, startA, endA);
+        ctx.stroke();
+
+        const tipX = eff.x + Math.cos(endA) * eff.range * 0.85;
+        const tipY = eff.y + Math.sin(endA) * eff.range * 0.85;
+        ctx.fillStyle = '#ffffff';
+        ctx.shadowColor = '#ffffff';
+        ctx.shadowBlur = 25;
+        ctx.beginPath();
+        ctx.arc(tipX, tipY, 4, 0, Math.PI * 2);
+        ctx.fill();
+
         ctx.restore();
       });
       meleeSwingEffects = meleeSwingEffects.filter(eff => eff.life > 0);
@@ -2012,11 +2264,54 @@
 
       Object.values(players).forEach(p => { if (!p.isDead) drawPlayerCharacter(p); });
 
-      for (let i = particles.length - 1; i >= 0; i--) {
-        const pt = particles[i]; pt.x += pt.vx; pt.y += pt.vy; pt.life--;
-        ctx.fillStyle = pt.color; ctx.beginPath(); ctx.arc(pt.x, pt.y, pt.size, 0, Math.PI * 2); ctx.fill();
-        if (pt.life <= 0) particles.splice(i, 1);
-      }
+      minions.forEach(m => {
+        ctx.save();
+        ctx.translate(m.x, m.y);
+        const r = m.size / 2;
+
+        ctx.shadowColor = '#a78bfa';
+        ctx.shadowBlur = 12;
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(0, 0, r, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#4c1d95';
+        ctx.beginPath();
+        ctx.arc(-r * 0.3, -r * 0.15, r * 0.15, 0, Math.PI * 2);
+        ctx.arc(r * 0.3, -r * 0.15, r * 0.15, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = 'rgba(196, 181, 253, 0.85)';
+        ctx.font = '8px system-ui';
+        ctx.textAlign = 'center';
+        const displayName = m.ownerName.length > 6 ? m.ownerName.substring(0, 6) + '…' : m.ownerName;
+        ctx.fillText(displayName, 0, -r - 4);
+
+        if (m.hp < m.maxHp) {
+          const barW = m.size;
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.8)';
+          ctx.fillRect(-barW / 2, m.size / 2 + 4, barW, 3);
+          ctx.fillStyle = '#a78bfa';
+          ctx.fillRect(-barW / 2, m.size / 2 + 4, barW * (m.hp / m.maxHp), 3);
+        }
+
+        ctx.restore();
+      });
+
+      // 【【三、修改粒子渲染】】加入 alpha 透明度漸變
+      particles.forEach(pt => {
+        pt.x += pt.vx; pt.y += pt.vy; pt.life--;
+        const alpha = Math.max(0, pt.life / pt.maxLife);
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = pt.color;
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, pt.size, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.globalAlpha = 1.0;
+      particles = particles.filter(pt => pt.life > 0);
 
       envParticles.forEach(p => {
         p.x += p.vx; p.y += p.vy;
@@ -2081,7 +2376,6 @@
       renderDarknessAndLightingOverlay(darkFactor);
     }
 
-    // 修復 Bug 2：確保繪製玩家時從正確的 p.classId 取得職業資料
     function drawPlayerCharacter(p) {
       ctx.save();
       ctx.translate(p.x, p.y);
@@ -2129,7 +2423,6 @@
       const radius = (z.size || 28) / 2;
       ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.beginPath(); ctx.ellipse(0, 0, radius + 2, radius + 2, 0, 0, Math.PI * 2); ctx.fill();
 
-      // 減速狀態冰藍色光暈
       if (z.slowTimer > 0) {
         ctx.fillStyle = 'rgba(103, 232, 249, 0.35)';
         ctx.beginPath(); ctx.arc(0, 0, radius + 8, 0, Math.PI * 2); ctx.fill();
@@ -2154,13 +2447,11 @@
       }
       ctx.restore();
 
-      // 眩暈狀態星星標記
       if (z.stunTimer > 0) {
         ctx.fillStyle = '#facc15'; ctx.font = 'bold 14px system-ui'; ctx.textAlign = 'center';
         ctx.fillText('⭐', 0, -radius - 16);
       }
 
-      // 減速雪花標記
       if (z.slowTimer > 0 && z.stunTimer <= 0) {
         ctx.fillStyle = '#67e8f9'; ctx.font = 'bold 12px system-ui'; ctx.textAlign = 'center';
         ctx.fillText('❄️', 0, -radius - 16);
@@ -2187,7 +2478,6 @@
       updateDayNightAndWeather(deltaTime);
       updateWeatherAudio();
 
-      // 【近戰與遠程攻擊判定切換】
       if (isMouseDown || aimJoystickData.active) {
         const me = players[myPlayerId];
         const w = WEAPONS[me?.weapon];
@@ -2216,7 +2506,6 @@
           me.y += me.vy * 0.5;
         }
 
-        // 【五、修復 Bug 1：客戶端本地移動邊界鉗制，防止卡出地圖】
         const r = me.size / 2;
         if (me.x - r < MAP_BOUNDS.minX) { me.x = MAP_BOUNDS.minX + r; me.vx = 0; }
         if (me.x + r > MAP_BOUNDS.maxX) { me.x = MAP_BOUNDS.maxX - r; me.vx = 0; }
@@ -2240,7 +2529,7 @@
     function broadcastState() {
       const state = {
         type: 'STATE_UPDATE',
-        players, zombies, bullets, enemyBullets, expGems, drops, currentWave,
+        players, zombies, bullets, enemyBullets, expGems, drops, minions, currentWave,
         dayNightTime, currentWeather,
         mapId: currentMap.id, seed: currentSeed
       };
@@ -2341,7 +2630,6 @@
           conn.metadata.playerId = data.id;
         }
 
-        // 【六、修復 Bug 2：主機端檢查 data.classId 防呆】
         if (!data.classId || !CLASSES[data.classId]) {
           console.warn('收到無效的 classId:', data.classId, '使用預設 assault');
           data.classId = 'assault';
@@ -2359,7 +2647,6 @@
           applyTopDownPhysicsAndCollision(p);
         }
       } else if (data.type === 'MELEE_ATTACK' && isHost) {
-        // 處理客戶端發送的近戰攻擊請求
         const p = players[data.id];
         if (p) {
           p.angle = data.angle;
@@ -2405,7 +2692,6 @@
             serverP.unlockedWeapons = myLocalP.unlockedWeapons;
             serverP.weapon = myLocalP.weapon;
 
-            // 【六、修復 Bug 2：確保同步客戶端 classId】
             serverP.classId = myLocalP.classId;
 
             serverP.maxHp = myLocalP.maxHp;
@@ -2452,6 +2738,15 @@
         zombies = data.zombies; bullets = data.bullets; enemyBullets = data.enemyBullets;
         expGems = data.expGems; drops = data.drops; currentWave = data.currentWave;
         dayNightTime = data.dayNightTime; currentWeather = data.currentWeather;
+
+        minions = data.minions || [];
+        for (let i = minions.length - 1; i >= 0; i--) {
+          const m = minions[i];
+          const owner = players[m.ownerId];
+          if (!owner || owner.isDead || owner.isDowned) {
+            minions.splice(i, 1);
+          }
+        }
 
         updateHud();
         renderWeaponHotbar();
@@ -2528,7 +2823,6 @@
       });
     }
 
-    // 【七、UI 更新】更新選單職業面板資訊
     function updateClassStatsDisplay() {
       const cls = CLASSES[selectedClassId] || CLASSES.assault;
       const statsText = document.getElementById('classStatsText');
@@ -2549,7 +2843,6 @@
       }
     }
 
-    // 【七、UI 更新】載入 9 張職業選擇卡片
     function initClassPicker() {
       const container = document.getElementById('classPickerContainer');
       if (!container) return;
@@ -2791,7 +3084,6 @@
             let nick = (nickInput && nickInput.value) ? nickInput.value.trim() : '';
             if (!nick) nick = '隊友';
 
-            // 【六、修復 Bug 2：發送 JOIN_PLAYER 並記錄 Log】
             console.log('發送 JOIN_PLAYER，classId =', selectedClassId);
 
             players[myPlayerId] = createPlayerWithClass(myPlayerId, nick, selectedSkinColor, selectedClassId);
