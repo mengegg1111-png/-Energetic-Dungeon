@@ -21,6 +21,7 @@
     .chat-bubble { animation: popIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
     .room-card { transition: all 0.2s ease; }
     .room-card:hover { border-color: rgba(56, 189, 248, 0.6); box-shadow: 0 0 16px rgba(56, 189, 248, 0.2); }
+    .room-card button { pointer-events: auto; position: relative; z-index: 1; }
     @keyframes popIn { 0% { transform: scale(0.5) translateY(10px); opacity: 0; } 100% { transform: scale(1) translateY(0); opacity: 1; } }
     @keyframes bloodPulse { 0% { box-shadow: inset 0 0 30px rgba(239, 68, 68, 0.4); } 50% { box-shadow: inset 0 0 80px rgba(239, 68, 68, 0.85); } 100% { box-shadow: inset 0 0 30px rgba(239, 68, 68, 0.4); } }
     .blood-moon-vignette { animation: bloodPulse 1.5s infinite ease-in-out; pointer-events: none; }
@@ -243,7 +244,7 @@
         </div>
 
         <div id="lobbyRoomList" class="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-2.5 pr-1">
-          <!-- 房間卡片由 JS 動態渲染 -->
+          <!-- 房間卡片由 JS 動態 DOM diff 渲染 -->
         </div>
 
         <div class="flex justify-between items-center border-t border-slate-800 pt-3 text-xs text-slate-400">
@@ -275,7 +276,7 @@
   </div>
 
   <script>
-    // 【職業資料結構】 - 移動速度降低 30%
+    // 【職業資料結構】
     const CLASSES = {
       medic: {
         id: 'medic',
@@ -491,7 +492,7 @@
     let isSinglePlayer = true;
     let gameRunning = false;
 
-    // 【MQTT 大廳連線相關配置與變數】
+    // 【MQTT 大廳連線配置】
     const MQTT_BROKERS = [
       'wss://broker.hivemq.com:8884/mqtt',
       'wss://broker.emqx.io:8084/mqtt',
@@ -504,6 +505,7 @@
     let roomBroadcastInterval = null;
     let roomCleanupInterval = null;
     let myHostRoomCode = null;
+    let renderLobbyScheduled = false;
 
     let players = {};
     let bullets = [];
@@ -688,6 +690,15 @@
     }
 
     // 【MQTT 大廳連線與事件】
+    function scheduleRenderLobby() {
+      if (renderLobbyScheduled) return;
+      renderLobbyScheduled = true;
+      setTimeout(() => {
+        renderLobbyScheduled = false;
+        renderLobby();
+      }, 300);
+    }
+
     function initMqttLobby() {
       if (mqttClient && mqttClient.connected) return;
 
@@ -715,7 +726,7 @@
               } else {
                 roomList[data.roomCode] = data;
               }
-              renderLobby();
+              scheduleRenderLobby();
             }
           } catch(e) {}
         });
@@ -742,7 +753,7 @@
               delete roomList[code];
             }
           });
-          renderLobby();
+          scheduleRenderLobby();
         }, 1000);
       }
     }
@@ -806,59 +817,122 @@
       stopHostingBroadcast();
     });
 
+    // 【DOM Diff 渲染大廳列表，防止按鈕閃爍消失】
     function renderLobby() {
       const container = document.getElementById('lobbyRoomList');
       const countText = document.getElementById('lobbyRoomCountText');
       if (!container) return;
 
-      const validRooms = Object.values(roomList).filter(r => {
-        return r.roomCode !== myHostRoomCode && r.playerCount < r.maxPlayers;
-      });
+      const validRooms = Object.values(roomList)
+        .filter(r => r.roomCode !== myHostRoomCode && r.playerCount < r.maxPlayers)
+        .sort((a, b) => {
+          if (a.isPlaying !== b.isPlaying) return a.isPlaying ? 1 : -1;
+          return a.roomCode.localeCompare(b.roomCode);
+        });
 
       if (countText) countText.innerText = `已找到 ${validRooms.length} 個開放房間`;
 
       if (validRooms.length === 0) {
-        container.innerHTML = `
-          <div class="flex flex-col items-center justify-center h-48 text-slate-500 gap-2">
-            <span class="text-3xl">🏚️</span>
-            <span class="text-xs">目前沒有公開房間，試著自己創建一個吧！</span>
-          </div>
-        `;
+        if (container.dataset.emptyState !== 'true') {
+          container.innerHTML = `
+            <div class="flex flex-col items-center justify-center h-48 text-slate-500 gap-2">
+              <span class="text-3xl">🏚️</span>
+              <span class="text-xs">目前沒有公開房間，試著自己創建一個吧！</span>
+            </div>
+          `;
+          container.dataset.emptyState = 'true';
+        }
         return;
       }
 
-      container.innerHTML = '';
-      validRooms.forEach(r => {
-        const card = document.createElement('div');
-        card.className = 'room-card glass-panel p-3.5 rounded-2xl border border-slate-800 flex justify-between items-center gap-3';
+      container.dataset.emptyState = 'false';
 
-        const statusTag = r.isPlaying
+      const currentRoomCodes = new Set();
+      validRooms.forEach(r => currentRoomCodes.add(r.roomCode));
+
+      Array.from(container.children).forEach(child => {
+        const code = child.dataset.roomCode;
+        if (code && !currentRoomCodes.has(code)) {
+          child.remove();
+        }
+      });
+
+      validRooms.forEach((r, index) => {
+        let card = container.querySelector(`[data-room-code="${r.roomCode}"]`);
+
+        const statusTagHtml = r.isPlaying
           ? '<span class="text-[10px] px-2 py-0.5 rounded-full border border-amber-500/50 text-amber-400 bg-amber-950/40">⚔️ 遊戲中</span>'
           : '<span class="text-[10px] px-2 py-0.5 rounded-full border border-emerald-500/50 text-emerald-400 bg-emerald-950/40">🟢 等待中</span>';
 
-        card.innerHTML = `
-          <div class="flex flex-col gap-1 text-left">
-            <div class="flex items-center gap-2">
-              <span class="text-base font-black text-amber-400 font-mono tracking-widest">${r.roomCode}</span>
-              ${statusTag}
+        if (!card) {
+          card = document.createElement('div');
+          card.className = 'room-card glass-panel p-3.5 rounded-2xl border border-slate-800 flex justify-between items-center gap-3';
+          card.dataset.roomCode = r.roomCode;
+          card.innerHTML = `
+            <div class="flex flex-col gap-1 text-left">
+              <div class="flex items-center gap-2">
+                <span class="text-base font-black text-amber-400 font-mono tracking-widest" data-field="roomCode">${r.roomCode}</span>
+                <span data-field="statusTag">${statusTagHtml}</span>
+              </div>
+              <div class="text-xs text-slate-300 font-bold" data-field="hostName">👑 ${r.hostName} 的小隊</div>
+              <div class="text-[11px] text-slate-400 flex items-center gap-3">
+                <span data-field="mapName">🗺️ ${r.mapName}</span>
+                <span data-field="wave">🌊 波次 ${r.wave}</span>
+                <span data-field="playerCount">👥 ${r.playerCount} / ${r.maxPlayers} 人</span>
+              </div>
             </div>
-            <div class="text-xs text-slate-300 font-bold">👑 ${r.hostName} 的小隊</div>
-            <div class="text-[11px] text-slate-400 flex items-center gap-3">
-              <span>🗺️ ${r.mapName}</span>
-              <span>🌊 波次 ${r.wave}</span>
-              <span>👥 ${r.playerCount} / ${r.maxPlayers} 人</span>
-            </div>
-          </div>
-          <button onclick="joinRoomByCode('${r.roomCode}')" class="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold px-4 py-2 rounded-xl text-xs active:scale-95 transition-all shadow-md">
-            加入
-          </button>
-        `;
-        container.appendChild(card);
+            <button data-action="join" class="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold px-4 py-2 rounded-xl text-xs active:scale-95 transition-all shadow-md">
+              加入
+            </button>
+          `;
+          card.querySelector('[data-action="join"]').onclick = () => joinRoomByCode(r.roomCode);
+
+          if (index === 0) {
+            container.prepend(card);
+          } else {
+            const prevCard = container.children[index - 1];
+            if (prevCard) {
+              prevCard.after(card);
+            } else {
+              container.appendChild(card);
+            }
+          }
+        } else {
+          const statusTagEl = card.querySelector('[data-field="statusTag"]');
+          if (statusTagEl) statusTagEl.innerHTML = statusTagHtml;
+
+          const hostEl = card.querySelector('[data-field="hostName"]');
+          if (hostEl) hostEl.innerText = `👑 ${r.hostName} 的小隊`;
+
+          const mapEl = card.querySelector('[data-field="mapName"]');
+          if (mapEl) mapEl.innerText = `🗺️ ${r.mapName}`;
+
+          const waveEl = card.querySelector('[data-field="wave"]');
+          if (waveEl) waveEl.innerText = `🌊 波次 ${r.wave}`;
+
+          const playerEl = card.querySelector('[data-field="playerCount"]');
+          if (playerEl) playerEl.innerText = `👥 ${r.playerCount} / ${r.maxPlayers} 人`;
+
+          const currentIndex = Array.from(container.children).indexOf(card);
+          if (currentIndex !== index) {
+            if (index === 0) {
+              container.prepend(card);
+            } else {
+              const prevCard = container.children[index - 1];
+              if (prevCard && prevCard !== card) {
+                prevCard.after(card);
+              }
+            }
+          }
+        }
       });
     }
 
     function joinRoomByCode(code) {
       if (!code) return;
+      if (window._joinInProgress) return;
+      window._joinInProgress = true;
+
       const joinInput = document.getElementById('joinRoomInput');
       if (joinInput) joinInput.value = code;
       
@@ -867,6 +941,10 @@
 
       const joinBtn = document.getElementById('joinRoomBtn');
       if (joinBtn) joinBtn.click();
+
+      setTimeout(() => {
+        window._joinInProgress = false;
+      }, 2000);
     }
     window.joinRoomByCode = joinRoomByCode;
 
@@ -1139,31 +1217,26 @@
       });
     }
 
-    // 【單向牆邊界碰撞邏輯 - 外面可進，裡面出不去】
-    function applyTopDownPhysicsAndCollision(e) {
+    // 【邊界單雙向牆碰撞邏輯】
+    function applyTopDownPhysicsAndCollision(e, isStrict = false) {
       if (!e) return;
-      e.vx *= 0.82; e.vy *= 0.82; e.x += e.vx; e.y += e.vy;
+      e.vx *= 0.82; e.vy *= 0.82;
+      e.x += e.vx; e.y += e.vy;
       const r = (e.size || 30) / 2;
 
-      // 左邊界：中心在內才鉗制
-      if (e.x >= MAP_BOUNDS.minX && e.x - r < MAP_BOUNDS.minX) {
-        e.x = MAP_BOUNDS.minX + r;
-        if (e.vx < 0) e.vx = 0;
-      }
-      // 右邊界
-      if (e.x <= MAP_BOUNDS.maxX && e.x + r > MAP_BOUNDS.maxX) {
-        e.x = MAP_BOUNDS.maxX - r;
-        if (e.vx > 0) e.vx = 0;
-      }
-      // 上邊界
-      if (e.y >= MAP_BOUNDS.minY && e.y - r < MAP_BOUNDS.minY) {
-        e.y = MAP_BOUNDS.minY + r;
-        if (e.vy < 0) e.vy = 0;
-      }
-      // 下邊界
-      if (e.y <= MAP_BOUNDS.maxY && e.y + r > MAP_BOUNDS.maxY) {
-        e.y = MAP_BOUNDS.maxY + r;
-        if (e.vy > 0) e.vy = 0;
+      if (isStrict) {
+        if (e.x - r < MAP_BOUNDS.minX) { e.x = MAP_BOUNDS.minX + r; if (e.vx < 0) e.vx = 0; }
+        if (e.x + r > MAP_BOUNDS.maxX) { e.x = MAP_BOUNDS.maxX - r; if (e.vx > 0) e.vx = 0; }
+        if (e.y - r < MAP_BOUNDS.minY) { e.y = MAP_BOUNDS.minY + r; if (e.vy < 0) e.vy = 0; }
+        if (e.y + r > MAP_BOUNDS.maxY) { e.y = MAP_BOUNDS.maxY - r; if (e.vy > 0) e.vy = 0; }
+      } else {
+        if (e.x >= MAP_BOUNDS.minX && e.x <= MAP_BOUNDS.maxX &&
+            e.y >= MAP_BOUNDS.minY && e.y <= MAP_BOUNDS.maxY) {
+          if (e.x - r < MAP_BOUNDS.minX) { e.x = MAP_BOUNDS.minX + r; if (e.vx < 0) e.vx = 0; }
+          if (e.x + r > MAP_BOUNDS.maxX) { e.x = MAP_BOUNDS.maxX - r; if (e.vx > 0) e.vx = 0; }
+          if (e.y - r < MAP_BOUNDS.minY) { e.y = MAP_BOUNDS.minY + r; if (e.vy < 0) e.vy = 0; }
+          if (e.y + r > MAP_BOUNDS.maxY) { e.y = MAP_BOUNDS.maxY - r; if (e.vy > 0) e.vy = 0; }
+        }
       }
 
       trees.forEach(tree => {
@@ -1172,7 +1245,8 @@
         if (dist < minDist) {
           const overlap = minDist - dist;
           const angle = Math.atan2(e.y - tree.y, e.x - tree.x);
-          e.x += Math.cos(angle) * overlap; e.y += Math.sin(angle) * overlap;
+          e.x += Math.cos(angle) * overlap;
+          e.y += Math.sin(angle) * overlap;
         }
       });
     }
@@ -1371,6 +1445,7 @@
       }
     }
 
+    // 【亡靈傷害限制計算】
     function trySummonMinionOnKill(killer, zombie) {
       if (!killer || !zombie) return;
       const w = WEAPONS[killer.weapon];
@@ -1393,7 +1468,7 @@
             size: 24,
             hp: Math.min(killer.hp, killer.maxHp * 0.8),
             maxHp: Math.min(killer.maxHp, killer.maxHp * 0.8),
-            damage: Math.round(WEAPONS[killer.weapon].damage * (killer.dmgMult || 1)),
+            damage: Math.round(Math.min(25, WEAPONS[killer.weapon].damage * 0.4) * (killer.dmgMult || 1)),
             speed: 3.0,
             angle: 0,
             attackCooldown: 0,
@@ -1661,7 +1736,7 @@
       let livingCount = 0;
 
       playerList.forEach(p => {
-        applyTopDownPhysicsAndCollision(p);
+        applyTopDownPhysicsAndCollision(p, true);
         if (!p.isDowned && !p.isDead) livingCount++;
         if (p.dashCooldown > 0) p.dashCooldown--;
         if (p.invulnerableTime > 0) p.invulnerableTime--;
@@ -1726,10 +1801,11 @@
         }
       }
 
+      // 【亡靈攻擊與冷卻機制】
       for (let i = minions.length - 1; i >= 0; i--) {
         const m = minions[i];
         if (m.invulnerableTime > 0) m.invulnerableTime -= 1;
-        m.attackCooldown = Math.max(0, (m.attackCooldown || 0) - deltaTime);
+        if (m.attackCooldown > 0) m.attackCooldown -= deltaTime;
 
         let nearestZombie = null;
         let minZDist = Infinity;
@@ -1743,15 +1819,19 @@
         if (nearestZombie) {
           m.angle = Math.atan2(nearestZombie.y - m.y, nearestZombie.x - m.x);
           
-          m.vx += Math.cos(m.angle) * 0.4 * (m.speed / 4.5);
-          m.vy += Math.sin(m.angle) * 0.4 * (m.speed / 4.5);
+          const dist = Math.hypot(nearestZombie.x - m.x, nearestZombie.y - m.y);
+          const attackRange = (m.size / 2) + (nearestZombie.size / 2) + 4;
 
-          if (minZDist < (m.size / 2) + (nearestZombie.size / 2) + 4) {
-            if (m.attackCooldown <= 0) {
-              m.attackCooldown = 0.8;
+          if (dist > attackRange) {
+            m.vx += Math.cos(m.angle) * 0.4 * (m.speed / 4.5);
+            m.vy += Math.sin(m.angle) * 0.4 * (m.speed / 4.5);
+          } else {
+            if (!m.attackCooldown || m.attackCooldown <= 0) {
               nearestZombie.hp -= m.damage;
               createFloatingText(nearestZombie.x, nearestZombie.y - 15, `-${m.damage}`, '#a78bfa', 16);
               playSound('hit');
+
+              m.attackCooldown = 1.2;
 
               if (nearestZombie.hp <= 0) {
                 const owner = players[m.ownerId];
@@ -1760,6 +1840,9 @@
                 const zIdx = zombies.indexOf(nearestZombie);
                 if (zIdx >= 0) zombies.splice(zIdx, 1);
               }
+            } else {
+              m.vx *= 0.8;
+              m.vy *= 0.8;
             }
           }
         } else {
@@ -1774,7 +1857,7 @@
           }
         }
 
-        applyTopDownPhysicsAndCollision(m);
+        applyTopDownPhysicsAndCollision(m, true);
 
         if (now - m.lastDamageTime > 5000 && m.hp < m.maxHp) {
           m.hp = Math.min(m.maxHp, m.hp + 2 * deltaTime);
@@ -2021,7 +2104,7 @@
           continue;
         }
 
-        applyTopDownPhysicsAndCollision(z);
+        applyTopDownPhysicsAndCollision(z, false);
 
         let nearestTarget = null, minDist = Infinity, targetType = null;
 
@@ -2758,10 +2841,10 @@
         }
 
         const r = me.size / 2;
-        if (me.x >= MAP_BOUNDS.minX && me.x - r < MAP_BOUNDS.minX) { me.x = MAP_BOUNDS.minX + r; if (me.vx < 0) me.vx = 0; }
-        if (me.x <= MAP_BOUNDS.maxX && me.x + r > MAP_BOUNDS.maxX) { me.x = MAP_BOUNDS.maxX - r; if (me.vx > 0) me.vx = 0; }
-        if (me.y >= MAP_BOUNDS.minY && me.y - r < MAP_BOUNDS.minY) { me.y = MAP_BOUNDS.minY + r; if (me.vy < 0) me.vy = 0; }
-        if (me.y <= MAP_BOUNDS.maxY && me.y + r > MAP_BOUNDS.maxY) { me.y = MAP_BOUNDS.maxY + r; if (me.vy > 0) me.vy = 0; }
+        if (me.x - r < MAP_BOUNDS.minX) { me.x = MAP_BOUNDS.minX + r; if (me.vx < 0) me.vx = 0; }
+        if (me.x + r > MAP_BOUNDS.maxX) { me.x = MAP_BOUNDS.maxX - r; if (me.vx > 0) me.vx = 0; }
+        if (me.y - r < MAP_BOUNDS.minY) { me.y = MAP_BOUNDS.minY + r; if (me.vy < 0) me.vy = 0; }
+        if (me.y + r > MAP_BOUNDS.maxY) { me.y = MAP_BOUNDS.maxY - r; if (me.vy > 0) me.vy = 0; }
 
         if (!aimJoystickData.active) {
           me.angle = Math.atan2((mousePos.y + camera.y) - me.y, (mousePos.x + camera.x) - me.x);
@@ -2897,7 +2980,7 @@
         if (p && !p.isDowned && !p.isDead) {
           p.x = data.x; p.y = data.y; p.vx = data.vx; p.vy = data.vy; p.angle = data.angle;
           if (data.weapon) p.weapon = data.weapon;
-          applyTopDownPhysicsAndCollision(p);
+          applyTopDownPhysicsAndCollision(p, true);
         }
       } else if (data.type === 'MELEE_ATTACK' && isHost) {
         const p = players[data.id];
@@ -3265,14 +3348,13 @@
           };
         }
 
-        // 大廳 UI 按鈕事件監聽
         const openLobbyBtn = document.getElementById('openLobbyBtn');
         if (openLobbyBtn) {
           openLobbyBtn.onclick = () => {
             initAudio();
             initMqttLobby();
             document.getElementById('lobbyModal').classList.remove('hidden');
-            renderLobby();
+            scheduleRenderLobby();
           };
         }
 
