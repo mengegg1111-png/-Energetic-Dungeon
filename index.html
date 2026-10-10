@@ -7,6 +7,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
   <style>
     body { touch-action: none; user-select: none; -webkit-user-select: none; overflow: hidden; background-color: #0b0f19; font-family: system-ui, -apple-system, sans-serif; }
     canvas { display: block; background: #0b1307; }
@@ -18,6 +19,8 @@
     .class-card { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
     .class-card.active { transform: scale(1.03); border-color: var(--card-color); box-shadow: 0 0 16px var(--card-color); }
     .chat-bubble { animation: popIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+    .room-card { transition: all 0.2s ease; }
+    .room-card:hover { border-color: rgba(56, 189, 248, 0.6); box-shadow: 0 0 16px rgba(56, 189, 248, 0.2); }
     @keyframes popIn { 0% { transform: scale(0.5) translateY(10px); opacity: 0; } 100% { transform: scale(1) translateY(0); opacity: 1; } }
     @keyframes bloodPulse { 0% { box-shadow: inset 0 0 30px rgba(239, 68, 68, 0.4); } 50% { box-shadow: inset 0 0 80px rgba(239, 68, 68, 0.85); } 100% { box-shadow: inset 0 0 30px rgba(239, 68, 68, 0.4); } }
     .blood-moon-vignette { animation: bloodPulse 1.5s infinite ease-in-out; pointer-events: none; }
@@ -190,10 +193,17 @@
             <div class="border-t border-slate-800 w-full"></div>
             <span class="absolute bg-slate-900 px-3 text-[9px] text-slate-500 uppercase font-bold">多人隊伍連線</span>
           </div>
+          
+          <button id="openLobbyBtn" class="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-black py-2.5 rounded-xl shadow-lg active:scale-95 transition-all text-xs flex flex-col items-center justify-center">
+            <span class="flex items-center gap-1.5"><i class="fa-solid fa-globe"></i> 瀏覽連線大廳</span>
+            <span class="text-[9px] font-normal opacity-80">🌐 尋找並直接加入開放中的小隊房間</span>
+          </button>
+
           <button id="createRoomBtn" class="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-black py-2.5 rounded-xl shadow-lg active:scale-95 transition-all text-xs flex flex-col items-center justify-center">
             <span class="flex items-center gap-1.5"><i class="fa-solid fa-crown"></i> 創建 6 位數短房號</span>
-            <span class="text-[9px] font-normal opacity-80">🎲 房主隨機抽圖並完美同步地形與職業</span>
+            <span class="text-[9px] font-normal opacity-80">🎲 房主隨機抽圖並廣播至大廳面板</span>
           </button>
+          
           <div class="flex gap-2">
             <input type="text" id="joinRoomInput" placeholder="輸入 6 位號碼" maxlength="6" class="flex-1 bg-slate-900/90 border border-slate-700 rounded-xl px-3 py-1.5 text-slate-200 text-xs focus:outline-none focus:border-amber-400 uppercase text-center font-mono tracking-widest" />
             <button id="joinRoomBtn" class="bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold px-4 py-1.5 rounded-xl border border-amber-500/30 active:scale-95 transition-all text-xs">
@@ -211,6 +221,34 @@
           <button id="startHostGameBtn" class="mt-2 w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded-xl text-xs transition-all">
             開始多人遊戲
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- LOBBY MODAL -->
+    <div id="lobbyModal" class="hidden absolute inset-0 bg-slate-950/95 backdrop-blur-md flex flex-col justify-center items-center p-4 z-40">
+      <div class="max-w-2xl w-full h-[85vh] glass-panel p-5 sm:p-6 rounded-3xl shadow-2xl flex flex-col gap-4 border border-slate-700/80">
+        <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+          <div class="flex items-center gap-2">
+            <span class="text-2xl">🌐</span>
+            <h2 class="text-xl font-black text-cyan-400 tracking-wider">公共連線大廳</h2>
+          </div>
+          <button id="closeLobbyBtn" class="text-slate-400 hover:text-white text-lg w-8 h-8 rounded-full bg-slate-800/80 flex items-center justify-center transition-colors">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <div id="lobbyStatus" class="hidden text-xs text-amber-300 bg-amber-950/60 p-2 rounded-xl border border-amber-800/80">
+          <i class="fa-solid fa-triangle-exclamation mr-1"></i> 連線大廳服務連接中...
+        </div>
+
+        <div id="lobbyRoomList" class="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-2.5 pr-1">
+          <!-- 房間卡片由 JS 動態渲染 -->
+        </div>
+
+        <div class="flex justify-between items-center border-t border-slate-800 pt-3 text-xs text-slate-400">
+          <span id="lobbyRoomCountText">已找到 0 個開放房間</span>
+          <span class="text-[10px] text-slate-500">列表每秒自動同步更新</span>
         </div>
       </div>
     </div>
@@ -453,6 +491,20 @@
     let isSinglePlayer = true;
     let gameRunning = false;
 
+    // 【MQTT 大廳連線相關配置與變數】
+    const MQTT_BROKERS = [
+      'wss://broker.hivemq.com:8884/mqtt',
+      'wss://broker.emqx.io:8084/mqtt',
+      'wss://test.mosquitto.org:8081/mqtt'
+    ];
+    let currentBrokerIndex = 0;
+    const MQTT_TOPIC = 'zombie-game-lobby-mengegg-v1';
+    let mqttClient = null;
+    let roomList = {};
+    let roomBroadcastInterval = null;
+    let roomCleanupInterval = null;
+    let myHostRoomCode = null;
+
     let players = {};
     let bullets = [];
     let enemyBullets = [];
@@ -634,6 +686,189 @@
         }
       } catch (e) {}
     }
+
+    // 【MQTT 大廳連線與事件】
+    function initMqttLobby() {
+      if (mqttClient && mqttClient.connected) return;
+
+      const brokerUrl = MQTT_BROKERS[currentBrokerIndex];
+      const statusBox = document.getElementById('lobbyStatus');
+
+      try {
+        mqttClient = mqtt.connect(brokerUrl, {
+          connectTimeout: 4000,
+          reconnectPeriod: 3000
+        });
+
+        mqttClient.on('connect', () => {
+          if (statusBox) statusBox.classList.add('hidden');
+          mqttClient.subscribe(MQTT_TOPIC);
+          if (myHostRoomCode) broadcastRoomInfo();
+        });
+
+        mqttClient.on('message', (topic, payload) => {
+          try {
+            const data = JSON.parse(payload.toString());
+            if (data && data.roomCode) {
+              if (data.closed) {
+                delete roomList[data.roomCode];
+              } else {
+                roomList[data.roomCode] = data;
+              }
+              renderLobby();
+            }
+          } catch(e) {}
+        });
+
+        mqttClient.on('error', (err) => {
+          tryNextBroker();
+        });
+
+        mqttClient.on('close', () => {
+          if (statusBox) {
+            statusBox.innerText = '⚠️ 大廳連線中斷，正在自動重連...';
+            statusBox.classList.remove('hidden');
+          }
+        });
+      } catch(e) {
+        tryNextBroker();
+      }
+
+      if (!roomCleanupInterval) {
+        roomCleanupInterval = setInterval(() => {
+          const now = Date.now();
+          Object.keys(roomList).forEach(code => {
+            if (now - roomList[code].timestamp > 15000) {
+              delete roomList[code];
+            }
+          });
+          renderLobby();
+        }, 1000);
+      }
+    }
+
+    function tryNextBroker() {
+      if (mqttClient) {
+        try { mqttClient.end(true); } catch(e) {}
+      }
+      currentBrokerIndex = (currentBrokerIndex + 1) % MQTT_BROKERS.length;
+      const statusBox = document.getElementById('lobbyStatus');
+      if (statusBox) {
+        statusBox.innerText = `⚠️ 切換大廳伺服器 (${currentBrokerIndex + 1}/${MQTT_BROKERS.length})...`;
+        statusBox.classList.remove('hidden');
+      }
+      setTimeout(() => { initMqttLobby(); }, 1000);
+    }
+
+    function broadcastRoomInfo() {
+      if (!myHostRoomCode || !mqttClient || !mqttClient.connected) return;
+      const nickInput = document.getElementById('nicknameInput');
+      const nick = (nickInput && nickInput.value) ? nickInput.value.trim() : '房主';
+
+      const info = {
+        roomCode: myHostRoomCode,
+        hostName: nick,
+        playerCount: Object.keys(players).length,
+        maxPlayers: 8,
+        mapName: currentMap ? currentMap.name : '黑森林',
+        wave: currentWave,
+        isPlaying: gameRunning,
+        timestamp: Date.now()
+      };
+
+      try {
+        mqttClient.publish(MQTT_TOPIC, JSON.stringify(info));
+      } catch(e) {}
+    }
+
+    function startHostingBroadcast(shortCode) {
+      myHostRoomCode = shortCode;
+      initMqttLobby();
+      if (roomBroadcastInterval) clearInterval(roomBroadcastInterval);
+      broadcastRoomInfo();
+      roomBroadcastInterval = setInterval(broadcastRoomInfo, 5000);
+    }
+
+    function stopHostingBroadcast() {
+      if (myHostRoomCode && mqttClient && mqttClient.connected) {
+        try {
+          mqttClient.publish(MQTT_TOPIC, JSON.stringify({ roomCode: myHostRoomCode, closed: true }));
+        } catch(e) {}
+      }
+      myHostRoomCode = null;
+      if (roomBroadcastInterval) {
+        clearInterval(roomBroadcastInterval);
+        roomBroadcastInterval = null;
+      }
+    }
+
+    window.addEventListener('beforeunload', () => {
+      stopHostingBroadcast();
+    });
+
+    function renderLobby() {
+      const container = document.getElementById('lobbyRoomList');
+      const countText = document.getElementById('lobbyRoomCountText');
+      if (!container) return;
+
+      const validRooms = Object.values(roomList).filter(r => {
+        return r.roomCode !== myHostRoomCode && r.playerCount < r.maxPlayers;
+      });
+
+      if (countText) countText.innerText = `已找到 ${validRooms.length} 個開放房間`;
+
+      if (validRooms.length === 0) {
+        container.innerHTML = `
+          <div class="flex flex-col items-center justify-center h-48 text-slate-500 gap-2">
+            <span class="text-3xl">🏚️</span>
+            <span class="text-xs">目前沒有公開房間，試著自己創建一個吧！</span>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = '';
+      validRooms.forEach(r => {
+        const card = document.createElement('div');
+        card.className = 'room-card glass-panel p-3.5 rounded-2xl border border-slate-800 flex justify-between items-center gap-3';
+
+        const statusTag = r.isPlaying
+          ? '<span class="text-[10px] px-2 py-0.5 rounded-full border border-amber-500/50 text-amber-400 bg-amber-950/40">⚔️ 遊戲中</span>'
+          : '<span class="text-[10px] px-2 py-0.5 rounded-full border border-emerald-500/50 text-emerald-400 bg-emerald-950/40">🟢 等待中</span>';
+
+        card.innerHTML = `
+          <div class="flex flex-col gap-1 text-left">
+            <div class="flex items-center gap-2">
+              <span class="text-base font-black text-amber-400 font-mono tracking-widest">${r.roomCode}</span>
+              ${statusTag}
+            </div>
+            <div class="text-xs text-slate-300 font-bold">👑 ${r.hostName} 的小隊</div>
+            <div class="text-[11px] text-slate-400 flex items-center gap-3">
+              <span>🗺️ ${r.mapName}</span>
+              <span>🌊 波次 ${r.wave}</span>
+              <span>👥 ${r.playerCount} / ${r.maxPlayers} 人</span>
+            </div>
+          </div>
+          <button onclick="joinRoomByCode('${r.roomCode}')" class="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold px-4 py-2 rounded-xl text-xs active:scale-95 transition-all shadow-md">
+            加入
+          </button>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function joinRoomByCode(code) {
+      if (!code) return;
+      const joinInput = document.getElementById('joinRoomInput');
+      if (joinInput) joinInput.value = code;
+      
+      const lobbyModal = document.getElementById('lobbyModal');
+      if (lobbyModal) lobbyModal.classList.add('hidden');
+
+      const joinBtn = document.getElementById('joinRoomBtn');
+      if (joinBtn) joinBtn.click();
+    }
+    window.joinRoomByCode = joinRoomByCode;
 
     function generateMap(mapId, seed) {
       const mapDef = MAPS.find(m => m.id === mapId) || MAPS[0];
@@ -904,7 +1139,7 @@
       });
     }
 
-    // 【修改點：單向牆邊界碰撞邏輯 - 外面可進，裡面出不去】
+    // 【單向牆邊界碰撞邏輯 - 外面可進，裡面出不去】
     function applyTopDownPhysicsAndCollision(e) {
       if (!e) return;
       e.vx *= 0.82; e.vy *= 0.82; e.x += e.vx; e.y += e.vy;
@@ -1038,7 +1273,6 @@
       });
     }
 
-    // 【修改點：降低衝刺速度】
     function triggerPlayerDash(pid) {
       const p = players[pid];
       if (!p || p.dashCooldown > 0 || p.isDowned || p.isDead) return;
@@ -1137,7 +1371,6 @@
       }
     }
 
-    // 【修改點：亡靈移動速度降低至 3.0】
     function trySummonMinionOnKill(killer, zombie) {
       if (!killer || !zombie) return;
       const w = WEAPONS[killer.weapon];
@@ -1257,9 +1490,9 @@
       zombiesToSpawn = (12 + currentWave * 6) * playerCount;
       updateHud();
       createFloatingText(0, -300, `WAVE ${currentWave}`, '#f59e0b', 32);
+      if (isHost && myHostRoomCode) broadcastRoomInfo();
     }
 
-    // 【修改點：殭屍移動速度降低 30%】
     function spawnZombie() {
       if (zombiesToSpawn <= 0) return;
       zombiesToSpawn--;
@@ -2524,7 +2757,6 @@
           me.y += me.vy * 0.5;
         }
 
-        // 【修改點：客戶端玩家邊界單向牆碰撞】
         const r = me.size / 2;
         if (me.x >= MAP_BOUNDS.minX && me.x - r < MAP_BOUNDS.minX) { me.x = MAP_BOUNDS.minX + r; if (me.vx < 0) me.vx = 0; }
         if (me.x <= MAP_BOUNDS.maxX && me.x + r > MAP_BOUNDS.maxX) { me.x = MAP_BOUNDS.maxX - r; if (me.vx > 0) me.vx = 0; }
@@ -2583,6 +2815,7 @@
         hostConn.send({ type: 'PLAYER_RENAME', id: myPlayerId, name: trimmedName });
       } else if (isHost) {
         broadcastState();
+        if (myHostRoomCode) broadcastRoomInfo();
       }
     }
     window.renamePlayer = renamePlayer;
@@ -2628,6 +2861,7 @@
       if (isHost) {
         const playerCount = Math.max(1, Object.keys(players).length);
         zombiesToSpawn = 10 * playerCount;
+        if (myHostRoomCode) broadcastRoomInfo();
       }
 
       lastFrameTime = performance.now();
@@ -2639,6 +2873,7 @@
       const selected = getRandomMapAndSeed();
       generateMap(selected.mapId, selected.seed);
       broadcastState();
+      if (myHostRoomCode) broadcastRoomInfo();
     }
 
     function handleNetworkData(data, conn) {
@@ -2656,6 +2891,7 @@
         const connTxt = document.getElementById('connectedPlayersText');
         if (connTxt) connTxt.innerText = `已連接 ${connections.length} 位隊友`;
         broadcastState();
+        if (myHostRoomCode) broadcastRoomInfo();
       } else if (data.type === 'PLAYER_INPUT' && isHost) {
         const p = players[data.id];
         if (p && !p.isDowned && !p.isDead) {
@@ -2695,6 +2931,7 @@
         if (players[data.id]) {
           players[data.id].name = data.name;
           broadcastState();
+          if (myHostRoomCode) broadcastRoomInfo();
         }
       } else if (data.type === 'STATE_UPDATE' && !isHost) {
         if (data.mapId && data.seed && (data.mapId !== currentMap.id || data.seed !== currentSeed)) {
@@ -2973,7 +3210,7 @@
     window.addEventListener('mousemove', (e) => { mousePos.x = e.clientX; mousePos.y = e.clientY; });
 
     window.addEventListener('mousedown', (e) => {
-      if (e.target.closest('#chatContainer') || e.target.closest('#weaponBar') || e.target.closest('#mainMenu')) return;
+      if (e.target.closest('#chatContainer') || e.target.closest('#weaponBar') || e.target.closest('#mainMenu') || e.target.closest('#lobbyModal')) return;
       initAudio();
       if (e.button === 0 && gameRunning) {
         isMouseDown = true;
@@ -3028,9 +3265,28 @@
           };
         }
 
+        // 大廳 UI 按鈕事件監聽
+        const openLobbyBtn = document.getElementById('openLobbyBtn');
+        if (openLobbyBtn) {
+          openLobbyBtn.onclick = () => {
+            initAudio();
+            initMqttLobby();
+            document.getElementById('lobbyModal').classList.remove('hidden');
+            renderLobby();
+          };
+        }
+
+        const closeLobbyBtn = document.getElementById('closeLobbyBtn');
+        if (closeLobbyBtn) {
+          closeLobbyBtn.onclick = () => {
+            document.getElementById('lobbyModal').classList.add('hidden');
+          };
+        }
+
         const spBtn = document.getElementById('singlePlayerBtn');
         if (spBtn) spBtn.onclick = () => {
           initAudio(); isHost = true;
+          stopHostingBroadcast();
           const nickInput = document.getElementById('nicknameInput');
           let nick = (nickInput && nickInput.value) ? nickInput.value.trim() : '';
           if (!nick) nick = '勇者';
@@ -3053,6 +3309,7 @@
               peer.on('open', () => {
                 document.getElementById('roomInfo').classList.remove('hidden');
                 document.getElementById('myPeerIdText').innerText = shortCode;
+                startHostingBroadcast(shortCode);
               });
               peer.on('connection', (conn) => {
                 conn.metadata = {};
@@ -3062,6 +3319,7 @@
                   connections = connections.filter(c => c !== conn);
                   const cTxt = document.getElementById('connectedPlayersText');
                   if (cTxt) cTxt.innerText = `已連接 ${connections.length} 位隊友`;
+                  broadcastRoomInfo();
                 });
               });
               peer.on('error', () => { document.getElementById('connectionWarn').classList.remove('hidden'); });
@@ -3079,6 +3337,7 @@
             connections.forEach(c => { 
               if(c.open) c.send({ type: 'GAME_START', mapId: currentMap.id, seed: currentSeed }); 
             });
+            if (myHostRoomCode) broadcastRoomInfo();
           };
         }
 
@@ -3092,8 +3351,9 @@
 
             const hostPeerId = 'dungeon_' + rawCode;
             isHost = false;
-            const nickInput = document.getElementById('nicknameInput');
+            stopHostingBroadcast();
 
+            const nickInput = document.getElementById('nicknameInput');
             let nick = (nickInput && nickInput.value) ? nickInput.value.trim() : '';
             if (!nick) nick = '隊友';
 
