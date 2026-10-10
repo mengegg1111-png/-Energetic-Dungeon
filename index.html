@@ -1,365 +1,405 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>元氣地牢:亡靈與火焰</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>2D 殭屍倖存者</title>
+  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <!-- PeerJS CDN -->
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+  <!-- MQTT CDN -->
+  <script src="https://unpkg.com/mqtt@4.3.7/dist/mqtt.min.js"></script>
   <style>
-    body { touch-action: none; user-select: none; -webkit-user-select: none; overflow: hidden; background-color: #0b0f19; font-family: system-ui, -apple-system, sans-serif; }
-    canvas { display: block; background: #0b1307; }
-    .glass-panel { background: rgba(15, 23, 42, 0.88); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.12); }
-    .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-    .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
-    .color-picker-dot { transition: all 0.2s ease; cursor: pointer; }
-    .color-picker-dot.active { transform: scale(1.25); box-shadow: 0 0 12px currentColor; }
-    .class-card { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
-    .class-card.active { transform: scale(1.03); border-color: var(--card-color); box-shadow: 0 0 16px var(--card-color); }
-    .chat-bubble { animation: popIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-    .room-card { transition: all 0.2s ease; }
-    .room-card:hover { border-color: rgba(56, 189, 248, 0.6); box-shadow: 0 0 16px rgba(56, 189, 248, 0.2); }
-    .room-card button { pointer-events: auto; position: relative; z-index: 1; }
-    @keyframes popIn { 0% { transform: scale(0.5) translateY(10px); opacity: 0; } 100% { transform: scale(1) translateY(0); opacity: 1; } }
-    @keyframes bloodPulse { 0% { box-shadow: inset 0 0 30px rgba(239, 68, 68, 0.4); } 50% { box-shadow: inset 0 0 80px rgba(239, 68, 68, 0.85); } 100% { box-shadow: inset 0 0 30px rgba(239, 68, 68, 0.4); } }
-    .blood-moon-vignette { animation: bloodPulse 1.5s infinite ease-in-out; pointer-events: none; }
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background-color: #0b0f19;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+    }
+    canvas {
+      display: block;
+    }
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .chat-bubble {
+      animation: fadeIn 0.2s ease-out forwards;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .joystick-container {
+      touch-action: none;
+    }
+    .color-picker-dot.active {
+      outline: 2px solid #38bdf8;
+      outline-offset: 2px;
+    }
+    .class-card.active {
+      border-color: var(--card-color, #38bdf8);
+      background: rgba(30, 41, 59, 0.9);
+      box-shadow: 0 0 15px rgba(56, 189, 248, 0.3);
+    }
+    /* 隱藏滾動條但保持可滾動 */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
   </style>
 </head>
-<body class="w-screen h-screen flex flex-col justify-center items-center text-slate-100">
+<body class="relative w-screen h-screen overflow-hidden text-white">
 
-  <div id="gameContainer" class="relative w-full h-full overflow-hidden flex items-center justify-center">
-    <canvas id="gameCanvas" class="w-full h-full"></canvas>
+  <!-- 遊戲主畫布 -->
+  <canvas id="gameCanvas" class="w-full h-full absolute inset-0 z-0"></canvas>
 
-    <!-- 爆擊全螢幕閃光 Overlay -->
-    <div id="critFlashOverlay" class="hidden absolute inset-0 z-30 pointer-events-none bg-white/30 transition-opacity duration-100 opacity-0"></div>
+  <!-- 爆擊螢幕閃爍遮罩 -->
+  <div id="critFlashOverlay" class="absolute inset-0 bg-red-500/20 pointer-events-none z-10 transition-opacity duration-100 opacity-0 hidden"></div>
 
-    <div id="bloodVignette" class="hidden absolute inset-0 z-10 blood-moon-vignette border-8 border-red-600/40"></div>
-
-    <!-- 地圖橫幅提示 -->
-    <div id="mapBanner" class="hidden absolute top-1/3 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none transition-opacity duration-500 opacity-0">
-      <div class="glass-panel px-8 py-4 rounded-3xl border border-cyan-500/50 shadow-2xl text-center">
-        <div id="mapBannerTitle" class="text-3xl font-black tracking-widest text-cyan-300">🗺️ 黑森林</div>
-      </div>
+  <!-- 地圖切換橫幅 -->
+  <div id="mapBanner" class="absolute top-12 left-1/2 -translate-x-1/2 pointer-events-none z-20 transition-all duration-500 opacity-0 hidden">
+    <div class="glass-panel px-6 py-2 rounded-2xl border border-amber-500/30 text-amber-400 font-bold text-lg shadow-2xl tracking-wider flex items-center gap-2">
+      <span id="mapBannerTitle">🗺️ 進入黑森林</span>
     </div>
+  </div>
 
-    <!-- 天氣橫幅提示 -->
-    <div id="weatherBanner" class="hidden absolute top-1/4 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none transition-opacity duration-500 opacity-0">
-      <div id="weatherBannerBox" class="glass-panel px-6 py-3 rounded-2xl border border-amber-500/50 shadow-2xl text-center">
-        <div id="weatherBannerTitle" class="text-2xl font-black tracking-widest text-amber-400">天氣變化</div>
-      </div>
+  <!-- 天氣變更橫幅 -->
+  <div id="weatherBanner" class="absolute top-24 left-1/2 -translate-x-1/2 pointer-events-none z-20 transition-all duration-500 opacity-0 hidden">
+    <div class="glass-panel px-5 py-1.5 rounded-xl border border-cyan-500/30 text-cyan-300 font-bold text-sm shadow-xl flex items-center gap-2">
+      <span id="weatherBannerTitle">🌧️ 天氣變更</span>
     </div>
+  </div>
 
-    <!-- 武器解鎖中央提示橫幅 -->
-    <div id="weaponUnlockBanner" class="hidden absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30 pointer-events-none transition-opacity duration-300 opacity-0">
-      <div class="glass-panel px-8 py-4 rounded-3xl border-2 border-amber-400/80 shadow-2xl text-center">
-        <div id="weaponUnlockTitle" class="text-2xl font-black tracking-wider text-amber-300">專屬武器解鎖</div>
-      </div>
+  <!-- 武器解鎖橫幅 -->
+  <div id="weaponUnlockBanner" class="absolute top-36 left-1/2 -translate-x-1/2 pointer-events-none z-20 transition-all duration-500 opacity-0 hidden">
+    <div class="glass-panel px-6 py-2 rounded-2xl border border-emerald-500/40 text-emerald-400 font-black text-base shadow-2xl flex items-center gap-2">
+      <span id="weaponUnlockTitle">🔫 專屬武器解鎖</span>
     </div>
+  </div>
 
-    <!-- Boss 專屬血條 UI -->
-    <div id="bossHealthBarContainer" class="hidden absolute top-4 left-1/2 transform -translate-x-1/2 z-30 pointer-events-none transition-all duration-300 opacity-0">
-      <div class="w-[320px] sm:w-[500px] glass-panel p-2.5 rounded-2xl border-2 border-amber-400/80 shadow-[0_0_20px_rgba(245,158,11,0.4)] flex flex-col gap-1 text-center bg-slate-950/90">
-        <div class="flex justify-between items-center text-xs font-black tracking-wider px-1">
-          <span class="text-red-500 animate-pulse flex items-center gap-1"><i class="fa-solid fa-skull"></i> BOSS</span>
-          <span id="bossNameDisplay" class="text-amber-300 font-bold">腐化之王</span>
-          <span id="bossHpTextDisplay" class="text-slate-200 font-mono">1000 / 1000</span>
+  <!-- HUD 抬頭顯示器 -->
+  <div id="hud" class="absolute top-4 left-4 z-20 flex flex-col gap-2.5 pointer-events-none hidden max-w-[280px] sm:max-w-xs">
+    <!-- 玩家資訊卡片 -->
+    <div class="glass-panel p-3 rounded-2xl border border-slate-700/60 shadow-xl flex flex-col gap-2 pointer-events-auto">
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2 overflow-hidden">
+          <span id="playerNameDisplay" class="font-black text-sm text-slate-100 truncate">勇者</span>
+          <span id="levelText" class="text-xs font-bold text-amber-400 bg-amber-950/60 border border-amber-500/40 px-2 py-0.5 rounded-full shrink-0">Lv.1</span>
         </div>
-        <div class="w-full bg-slate-900 h-4 rounded-xl overflow-hidden border border-amber-500/50 p-0.5 relative">
-          <div id="bossHpBarFill" class="bg-gradient-to-r from-red-700 via-red-500 to-amber-500 h-full w-full rounded-lg transition-all duration-150 shadow-[0_0_10px_rgba(239,68,68,0.8)]"></div>
-        </div>
+        <span id="minionCountTag" class="text-xs font-bold text-purple-400 bg-purple-950/60 border border-purple-500/40 px-2 py-0.5 rounded-full shrink-0 hidden">💀 x 0</span>
       </div>
-    </div>
 
-    <!-- TOP HUD OVERLAY -->
-    <div id="hud" class="hidden absolute top-3 left-3 right-3 flex justify-between items-start pointer-events-none z-20">
-      <div class="flex flex-col gap-2 w-60 sm:w-72 glass-panel p-3 rounded-2xl shadow-2xl pointer-events-auto">
-        <div class="flex items-center justify-between text-xs font-bold text-slate-300">
-          <span id="playerRoleTag" class="text-amber-400 flex items-center gap-1">
-            <span id="playerColorIndicator" class="w-3 h-3 rounded-full bg-cyan-400 inline-block shadow"></span>
-            <span id="playerNameDisplay" style="cursor:pointer" onclick="const n = prompt('輸入新名稱：'); if(n) renamePlayer(n);">🎖️ 勇者</span>
-            <span id="minionCountTag" class="text-purple-300 font-extrabold ml-1 hidden">💀 x 0</span>
-          </span>
-          <span id="levelText" class="text-cyan-400 font-extrabold">Lv. 1</span>
+      <!-- 生命條 -->
+      <div class="flex flex-col gap-1">
+        <div class="flex justify-between text-[11px] font-bold text-slate-300">
+          <span>❤️ 生命值</span>
+          <span id="hpText">100 / 100</span>
         </div>
-        <div class="w-full bg-slate-800 h-3.5 rounded-full overflow-hidden border border-slate-700 relative">
-          <div id="hpBar" class="bg-gradient-to-r from-red-600 to-emerald-500 h-full w-full transition-all duration-200"></div>
-          <span id="hpText" class="absolute inset-0 text-[10px] flex items-center justify-center font-black tracking-wider text-white drop-shadow">100 / 100</span>
-        </div>
-        <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden border border-slate-700 relative">
-          <div id="shieldBar" class="bg-gradient-to-r from-cyan-600 to-blue-400 h-full w-full transition-all duration-200"></div>
-          <span id="shieldText" class="absolute inset-0 text-[9px] flex items-center justify-center font-bold text-cyan-100 drop-shadow">50 / 50</span>
-        </div>
-        <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden border border-slate-700 relative">
-          <div id="expBar" class="bg-amber-400 h-full w-0 transition-all duration-150"></div>
+        <div class="w-full h-3.5 bg-slate-900/90 rounded-full overflow-hidden p-0.5 border border-slate-700">
+          <div id="hpBar" class="h-full bg-gradient-to-r from-red-600 to-emerald-500 rounded-full transition-all duration-200" style="width: 100%"></div>
         </div>
       </div>
 
-      <div class="flex flex-col items-end gap-2 pointer-events-auto">
-        <div class="glass-panel px-4 py-2 rounded-2xl flex items-center gap-3 shadow-2xl">
-          <div class="flex flex-col items-end">
-            <span id="timeNameText" class="text-xs text-amber-300 font-bold">🌞 白天</span>
-            <span id="weatherNameText" class="text-[10px] text-slate-300">☀️ 晴天</span>
-            <span id="hudMapNameText" class="text-[10px] text-cyan-400 font-bold">🗺️ 黑森林</span>
-          </div>
-          <div class="w-px h-8 bg-slate-700"></div>
-          <div class="flex flex-col items-center">
-            <span class="text-[9px] text-slate-400">波次</span>
-            <span id="waveText" class="text-xl font-black text-amber-400">WAVE 1</span>
-          </div>
+      <!-- 護盾條 -->
+      <div class="flex flex-col gap-1">
+        <div class="flex justify-between text-[11px] font-bold text-slate-300">
+          <span>🛡️ 護盾值</span>
+          <span id="shieldText">50 / 50</span>
+        </div>
+        <div class="w-full h-2.5 bg-slate-900/90 rounded-full overflow-hidden p-0.5 border border-slate-700">
+          <div id="shieldBar" class="h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full transition-all duration-200" style="width: 100%"></div>
+        </div>
+      </div>
+
+      <!-- 經驗條 -->
+      <div class="flex flex-col gap-1">
+        <div class="w-full h-1.5 bg-slate-900/90 rounded-full overflow-hidden border border-slate-800">
+          <div id="expBar" class="h-full bg-gradient-to-r from-amber-400 to-yellow-300 rounded-full transition-all duration-150" style="width: 0%"></div>
         </div>
       </div>
     </div>
 
-    <!-- 小地圖 UI -->
-    <div id="miniMapContainer" class="hidden absolute top-20 right-3 z-20 pointer-events-auto border-2 border-slate-700/80 rounded-2xl overflow-hidden shadow-2xl glass-panel bg-slate-950/80">
-      <canvas id="miniMap" width="150" height="150" class="block"></canvas>
-    </div>
-
-    <!-- HUD 每日挑戰指示 -->
-    <div id="dailyChallengeHudTag" class="hidden absolute top-20 left-3 z-20 pointer-events-none">
-      <div class="glass-panel px-3 py-1.5 rounded-xl border border-amber-500/60 shadow-lg flex items-center gap-2 bg-slate-950/80">
-        <span class="text-amber-400 font-bold text-xs flex items-center gap-1 animate-pulse"><i class="fa-solid fa-bolt"></i> 今日挑戰：</span>
-        <span id="hudChallengeName" class="text-xs font-black text-amber-300">手槍之夜</span>
+    <!-- 波次與地圖資訊 -->
+    <div class="flex items-center gap-2">
+      <div class="glass-panel px-3 py-1.5 rounded-xl border border-amber-500/30 text-amber-400 font-black text-xs shadow-lg flex items-center gap-1.5">
+        <span class="animate-pulse">🌊</span>
+        <span id="waveText">WAVE 1</span>
+      </div>
+      <div class="glass-panel px-3 py-1.5 rounded-xl border border-slate-700 text-slate-300 font-bold text-xs shadow-lg flex items-center gap-1.5">
+        <span id="hudMapNameText">🗺️ 黑森林</span>
       </div>
     </div>
 
-    <!-- CHAT OVERLAY BOX -->
-    <div id="chatContainer" class="hidden absolute left-3 top-28 w-64 sm:w-80 glass-panel rounded-2xl p-2.5 flex flex-col gap-2 z-20 shadow-2xl border border-slate-700/80 pointer-events-auto">
-      <div id="chatHeader" class="flex justify-between items-center text-xs font-bold text-slate-400 border-b border-slate-800 pb-1 cursor-move select-none">
-        <span><i class="fa-solid fa-arrows-up-down-left-right text-slate-500 mr-1"></i><i class="fa-solid fa-comments mr-1 text-cyan-400"></i> 小隊通訊頻道</span>
-        <button id="toggleChatBtn" class="text-slate-500 hover:text-slate-200"><i class="fa-solid fa-chevron-down"></i></button>
+    <!-- 每日挑戰 HUD 標籤 -->
+    <div id="dailyChallengeHudTag" class="glass-panel px-3 py-1 rounded-xl border border-purple-500/40 text-purple-300 font-bold text-[11px] shadow-lg flex items-center gap-1.5 hidden">
+      <span>🏆 每日挑戰：</span>
+      <span id="hudChallengeName" class="text-amber-300">手槍之夜</span>
+    </div>
+  </div>
+
+  <!-- BOSS 生命條容器 -->
+  <div id="bossHealthBarContainer" class="absolute top-4 left-1/2 -translate-x-1/2 z-20 pointer-events-none transition-all duration-300 opacity-0 hidden w-11/12 max-w-md">
+    <div class="glass-panel p-2.5 rounded-2xl border border-red-500/50 shadow-2xl flex flex-col gap-1">
+      <div class="flex justify-between items-center text-xs font-black">
+        <span id="bossNameDisplay" class="text-red-400 tracking-wider">🔥 腐化之王</span>
+        <span id="bossHpTextDisplay" class="text-slate-200">1000 / 1000</span>
       </div>
-      <div id="chatMessages" class="h-28 overflow-y-auto text-xs flex flex-col gap-1.5 custom-scrollbar pr-1">
-        <div class="text-slate-500 italic text-[11px]">選擇合適的職業，與隊友並肩作戰！按 [Q] 切換防禦工事模式。</div>
+      <div class="w-full h-3 bg-slate-950 rounded-full overflow-hidden border border-red-900/60 p-0.5">
+        <div id="bossHpBarFill" class="h-full bg-gradient-to-r from-red-600 via-rose-500 to-amber-500 rounded-full transition-all duration-150" style="width: 100%"></div>
       </div>
-      <div class="flex gap-1 overflow-x-auto custom-scrollbar pb-1">
-        <button onclick="sendPresetChat('🆘 需要救援！')" class="bg-red-950/80 hover:bg-red-900 border border-red-800 text-red-300 text-[10px] px-2 py-0.5 rounded-lg whitespace-nowrap">🆘 救援</button>
-        <button onclick="sendPresetChat('⚔️ 衝波次！')" class="bg-amber-950/80 hover:bg-amber-900 border border-amber-800 text-amber-300 text-[10px] px-2 py-0.5 rounded-lg whitespace-nowrap">⚔️ 進攻</button>
-        <button onclick="sendPresetChat('👍 幹得好！')" class="bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-800 text-emerald-300 text-[10px] px-2 py-0.5 rounded-lg whitespace-nowrap">👍 讚</button>
+    </div>
+  </div>
+
+  <!-- 小地圖容器 -->
+  <div id="miniMapContainer" class="absolute top-4 right-4 z-20 pointer-events-auto hidden">
+    <div class="glass-panel p-1.5 rounded-2xl border border-slate-700/70 shadow-xl relative overflow-hidden">
+      <canvas id="miniMap" width="110" height="110" class="rounded-xl block bg-slate-950/80"></canvas>
+    </div>
+  </div>
+
+  <!-- 底部快捷操作欄（武器切換與防禦工事） -->
+  <div id="bottomControls" class="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 pointer-events-auto hidden w-full px-4 max-w-lg">
+    <!-- 武器熱鍵列 -->
+    <div id="weaponBar" class="flex items-center gap-1.5 glass-panel p-1.5 rounded-2xl border border-slate-700/80 shadow-2xl overflow-x-auto max-w-full no-scrollbar"></div>
+
+    <!-- 防禦工事放置欄 -->
+    <div id="defenseBarContainer" class="flex items-center gap-2 glass-panel px-3 py-1.5 rounded-2xl border border-slate-700/80 shadow-xl hidden">
+      <span class="text-[11px] font-bold text-slate-400 shrink-0">工事 (Q):</span>
+      <button id="btnBarricade" onclick="selectDefenseToPlace('barricade')" class="px-2.5 py-1 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all flex items-center gap-1 active:scale-95">
+        <span>📦 路障</span>
+        <span class="text-[10px] text-amber-400 font-mono">(15EX)</span>
+        <span id="barricadeCountTag" class="text-[10px] bg-slate-900 px-1 rounded text-slate-400">0/2</span>
+      </button>
+      <button id="btnTurret" onclick="selectDefenseToPlace('turret')" class="px-2.5 py-1 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all flex items-center gap-1 active:scale-95">
+        <span>🔫 砲塔</span>
+        <span class="text-[10px] text-amber-400 font-mono">(40EX)</span>
+        <span id="turretCountTag" class="text-[10px] bg-slate-900 px-1 rounded text-slate-400">0/2</span>
+      </button>
+      <button id="btnCampfire" onclick="selectDefenseToPlace('campfire')" class="px-2.5 py-1 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all flex items-center gap-1 active:scale-95">
+        <span>🔥 營火</span>
+        <span class="text-[10px] text-amber-400 font-mono">(25EX)</span>
+        <span id="campfireCountTag" class="text-[10px] bg-slate-900 px-1 rounded text-slate-400">0/2</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 手機雙搖桿UI Overlay -->
+  <div id="mobileControls" class="absolute inset-0 z-10 pointer-events-none md:hidden">
+    <!-- 左搖桿：移動 -->
+    <div id="moveJoystickContainer" class="joystick-container absolute bottom-8 left-8 w-28 h-28 rounded-full bg-slate-900/40 border border-white/20 pointer-events-auto flex items-center justify-center">
+      <div id="moveJoystickStick" class="w-12 h-12 rounded-full bg-cyan-500/60 border border-cyan-300/80 shadow-lg absolute transition-transform duration-75" style="left: 50%; top: 50%; transform: translate(-50%, -50%);"></div>
+    </div>
+
+    <!-- 右搖桿：瞄準與射擊 -->
+    <div id="aimJoystickContainer" class="joystick-container absolute bottom-8 right-8 w-28 h-28 rounded-full bg-slate-900/40 border border-white/20 pointer-events-auto flex items-center justify-center">
+      <div id="aimJoystickStick" class="w-12 h-12 rounded-full bg-amber-500/60 border border-amber-300/80 shadow-lg absolute transition-transform duration-75" style="left: 50%; top: 50%; transform: translate(-50%, -50%);"></div>
+    </div>
+
+    <!-- 手機衝刺按鈕 -->
+    <button id="mobileDashBtn" class="absolute bottom-40 right-10 w-14 h-14 rounded-full bg-purple-600/70 border border-purple-300 text-white font-black text-xs pointer-events-auto active:scale-90 transition-transform shadow-xl flex items-center justify-center">
+      💨 衝刺
+    </button>
+  </div>
+
+  <!-- 可拖曳聊天室視窗 -->
+  <div id="chatContainer" class="absolute bottom-20 left-4 z-30 w-64 glass-panel rounded-2xl border border-slate-700/70 shadow-2xl overflow-hidden hidden flex flex-col">
+    <!-- 聊天標頭（可拖曳區域） -->
+    <div id="chatHeader" class="bg-slate-800/80 px-3 py-1.5 flex justify-between items-center cursor-move border-b border-slate-700">
+      <span class="text-xs font-bold text-slate-300 flex items-center gap-1">💬 小隊頻道</span>
+      <button id="toggleChatBtn" class="text-xs text-slate-400 hover:text-white px-1">➖</button>
+    </div>
+
+    <!-- 訊息內容區 -->
+    <div id="chatMessages" class="h-32 p-2 overflow-y-auto flex flex-col gap-1 text-xs no-scrollbar"></div>
+
+    <!-- 預設快捷喊話按鈕區 -->
+    <div class="px-2 py-1 bg-slate-900/50 flex gap-1 overflow-x-auto no-scrollbar border-t border-slate-800">
+      <button onclick="sendPresetChat('🆘 需要救援！')" class="px-2 py-0.5 rounded bg-red-950/60 border border-red-500/40 text-[10px] text-red-300 whitespace-nowrap active:scale-95">🆘 求救</button>
+      <button onclick="sendPresetChat('👍 幹得好！')" class="px-2 py-0.5 rounded bg-emerald-950/60 border border-emerald-500/40 text-[10px] text-emerald-300 whitespace-nowrap active:scale-95">👍 讚</button>
+      <button onclick="sendPresetChat('🏃 快撤退！')" class="px-2 py-0.5 rounded bg-amber-950/60 border border-amber-500/40 text-[10px] text-amber-300 whitespace-nowrap active:scale-95">🏃 撤退</button>
+      <button onclick="sendPresetChat('🔥 集合推進！')" class="px-2 py-0.5 rounded bg-blue-950/60 border border-blue-500/40 text-[10px] text-blue-300 whitespace-nowrap active:scale-95">🔥 集合</button>
+    </div>
+
+    <!-- 文字輸入表單 -->
+    <form id="chatForm" class="p-1.5 flex gap-1 border-t border-slate-700/60 bg-slate-900/80">
+      <input type="text" id="chatInput" placeholder="輸入訊息..." class="w-full bg-slate-950 border border-slate-700 rounded-xl px-2 py-1 text-xs text-white focus:outline-none focus:border-cyan-500">
+      <button type="submit" class="bg-cyan-600 hover:bg-cyan-500 text-white font-bold px-2.5 py-1 rounded-xl text-xs shrink-0 active:scale-95 transition-all">發送</button>
+    </form>
+  </div>
+
+  <!-- 主選單 Modal -->
+  <div id="mainMenu" class="absolute inset-0 z-40 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="glass-panel p-6 rounded-3xl border border-slate-700 shadow-2xl max-w-md w-full flex flex-col gap-4 text-center">
+      <div class="flex flex-col items-center gap-1">
+        <h1 class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-amber-400 to-emerald-400 tracking-wider">
+          2D 殭屍倖存者
+        </h1>
+        <p class="text-xs text-slate-400 font-medium">多人連線末日生存 · 職業專屬天賦與天候系統</p>
       </div>
-      <form id="chatForm" class="flex gap-1.5">
-        <input type="text" id="chatInput" maxlength="30" placeholder="輸入訊息..." class="flex-1 bg-slate-900/90 border border-slate-700 rounded-xl px-2.5 py-1 text-xs text-slate-200 focus:outline-none focus:border-cyan-400" />
-        <button type="submit" class="bg-cyan-600 hover:bg-cyan-500 text-white font-bold px-3 py-1 rounded-xl text-xs transition-colors flex items-center justify-center">
-          <i class="fa-solid fa-paper-plane"></i>
+
+      <!-- 暱稱輸入 -->
+      <div class="flex flex-col gap-1 text-left">
+        <label class="text-xs font-bold text-slate-300">🎮 玩家暱稱</label>
+        <input type="text" id="nicknameInput" maxlength="12" placeholder="輸入你的暱稱..." value="勇者" class="w-full bg-slate-900/90 border border-slate-700 rounded-2xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500 font-bold">
+      </div>
+
+      <!-- 造型外觀色彩選擇 -->
+      <div class="flex flex-col gap-1.5 text-left">
+        <div class="flex justify-between items-center">
+          <label class="text-xs font-bold text-slate-300">🎨 角色塗裝</label>
+          <span id="selectedColorName" class="text-xs font-bold text-cyan-400">極光藍</span>
+        </div>
+        <div id="colorPickerContainer" class="flex items-center gap-2 overflow-x-auto py-1 no-scrollbar"></div>
+      </div>
+
+      <!-- 職業選擇區 -->
+      <div class="flex flex-col gap-1.5 text-left">
+        <div class="flex justify-between items-center">
+          <label class="text-xs font-bold text-slate-300">🛡️ 選擇職業</label>
+          <span id="selectedClassNameDisplay" class="text-xs font-bold text-amber-400">🎖️ 突擊兵</span>
+        </div>
+        <div id="classPickerContainer" class="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-1 no-scrollbar"></div>
+        <div id="classStatsText" class="text-[11px] text-slate-400 font-mono bg-slate-900/60 p-2 rounded-xl border border-slate-800">
+          ❤️ 生命 110 | 🛡️ 護盾 55 | ⚡ 移速 3.7 | 💥 傷害 110%
+        </div>
+        <div id="classExclusiveWeaponText" class="text-[11px] text-amber-400/90 font-bold bg-amber-950/30 p-1.5 rounded-xl border border-amber-500/20 text-center">
+          專屬武器：🚀 榴彈發射器
+        </div>
+      </div>
+
+      <!-- 每日挑戰任務面板 -->
+      <div id="dailyChallengePanel" class="glass-panel p-3 rounded-2xl border border-purple-500/30 bg-purple-950/20 text-left flex flex-col gap-1">
+        <div class="flex justify-between items-center">
+          <span id="challengeTitle" class="text-xs font-black text-purple-300">💥 今日挑戰：手槍之夜</span>
+          <span id="challengeStatusBadge" class="text-[10px] px-2 py-0.5 rounded-full border border-amber-500/50 text-amber-300 bg-amber-900/40 font-bold">未完成</span>
+        </div>
+        <p id="challengeDesc" class="text-[11px] text-slate-300 leading-tight">只能使用經典手槍（其他武器無法解鎖與切換）。</p>
+        <button id="startChallengeBtn" class="mt-1 w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold py-1.5 rounded-xl text-xs shadow-lg active:scale-95 transition-all">
+          🏆 開始挑戰模式
         </button>
-      </form>
-    </div>
-
-    <!-- 防禦工事快捷列 UI -->
-    <div id="defenseBarContainer" class="hidden absolute bottom-24 sm:bottom-28 left-1/2 transform -translate-x-1/2 z-20 pointer-events-auto">
-      <div class="glass-panel p-2 rounded-2xl flex gap-2 border border-slate-700/80 shadow-2xl bg-slate-950/80 items-center">
-        <div class="text-[10px] font-black text-amber-400 px-1 flex flex-col items-center border-r border-slate-800 pr-2">
-          <span>🛡️ 防禦</span>
-          <span class="text-[8px] text-slate-400 font-normal">[Q] 切換</span>
-        </div>
-        
-        <button id="btnBarricade" type="button" onclick="selectDefenseToPlace('barricade')" class="px-2.5 py-1 rounded-xl text-xs font-bold border border-slate-700 bg-slate-800/80 text-slate-300 hover:border-amber-400 transition-all flex flex-col items-center gap-0.5 relative group">
-          <span class="flex items-center gap-1">📦 路障</span>
-          <span class="text-[9px] text-amber-300 font-mono">15 EXP</span>
-          <span id="barricadeCountTag" class="absolute -top-1.5 -right-1.5 bg-slate-900 border border-amber-400/50 text-[8px] text-amber-400 px-1 rounded-full">0/2</span>
-        </button>
-
-        <button id="btnTurret" type="button" onclick="selectDefenseToPlace('turret')" class="px-2.5 py-1 rounded-xl text-xs font-bold border border-slate-700 bg-slate-800/80 text-slate-300 hover:border-amber-400 transition-all flex flex-col items-center gap-0.5 relative group">
-          <span class="flex items-center gap-1">🔫 機槍塔</span>
-          <span class="text-[9px] text-amber-300 font-mono">40 EXP</span>
-          <span id="turretCountTag" class="absolute -top-1.5 -right-1.5 bg-slate-900 border border-amber-400/50 text-[8px] text-amber-400 px-1 rounded-full">0/2</span>
-        </button>
-
-        <button id="btnCampfire" type="button" onclick="selectDefenseToPlace('campfire')" class="px-2.5 py-1 rounded-xl text-xs font-bold border border-slate-700 bg-slate-800/80 text-slate-300 hover:border-amber-400 transition-all flex flex-col items-center gap-0.5 relative group">
-          <span class="flex items-center gap-1">🔥 營火</span>
-          <span class="text-[9px] text-amber-300 font-mono">25 EXP</span>
-          <span id="campfireCountTag" class="absolute -top-1.5 -right-1.5 bg-slate-900 border border-amber-400/50 text-[8px] text-amber-400 px-1 rounded-full">0/2</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- BOTTOM CONTROLS & JOYSTICKS -->
-    <div id="bottomControls" class="hidden absolute bottom-10 sm:bottom-14 left-4 right-4 flex justify-between items-end pointer-events-none z-20">
-      <div id="moveJoystickContainer" class="w-32 h-32 relative pointer-events-auto opacity-85 hover:opacity-100 transition-opacity">
-        <div id="moveJoystickBase" class="w-full h-full rounded-full bg-slate-900/80 border-2 border-slate-600 flex items-center justify-center relative shadow-2xl">
-          <div id="moveJoystickStick" class="w-12 h-12 rounded-full bg-cyan-500 shadow-lg absolute transform -translate-x-1/2 -translate-y-1/2 left-1/2 top-1/2 border-2 border-cyan-300 flex items-center justify-center text-slate-950 text-xs">
-            <i class="fa-solid fa-arrows-up-down-left-right"></i>
-          </div>
-        </div>
       </div>
 
-      <div id="weaponBar" class="glass-panel rounded-2xl p-2 flex gap-1.5 shadow-2xl pointer-events-auto mb-2 sm:mb-0"></div>
-
-      <div class="flex gap-3 items-end pointer-events-auto">
-        <button id="mobileDashBtn" class="w-14 h-14 bg-blue-600 active:bg-blue-500 border-2 border-blue-300 rounded-full flex flex-col items-center justify-center shadow-xl active:scale-90 text-white transition-all mb-1">
-          <i class="fa-solid fa-bolt text-lg"></i>
-          <span class="text-[8px] font-bold mt-0.5">衝刺</span>
+      <!-- 遊戲模式按鈕 -->
+      <div class="flex flex-col gap-2 pt-1">
+        <button id="singlePlayerBtn" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black py-2.5 rounded-2xl text-sm shadow-xl active:scale-95 transition-all">
+          🎮 單人快速開始
         </button>
-
-        <div id="aimJoystickContainer" class="w-32 h-32 relative opacity-85 hover:opacity-100 transition-opacity">
-          <div id="aimJoystickBase" class="w-full h-full rounded-full bg-slate-900/80 border-2 border-amber-600/80 flex items-center justify-center relative shadow-2xl">
-            <div id="aimJoystickStick" class="w-12 h-12 rounded-full bg-amber-500 shadow-lg absolute transform -translate-x-1/2 -translate-y-1/2 left-1/2 top-1/2 border-2 border-amber-300 flex items-center justify-center text-slate-950 font-black text-xs">
-              <i class="fa-solid fa-crosshair"></i>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- MAIN MENU OVERLAY -->
-    <div id="mainMenu" class="absolute inset-0 bg-slate-950/90 backdrop-blur-md flex flex-col justify-center items-center p-3 sm:p-4 z-30 overflow-y-auto custom-scrollbar">
-      <div class="max-w-xl w-full glass-panel p-5 sm:p-6 rounded-3xl shadow-2xl flex flex-col gap-3.5 border border-slate-700/60 text-center my-auto">
-        <div>
-          <h1 class="text-2xl sm:text-3xl font-black tracking-wider bg-gradient-to-r from-emerald-400 via-teal-400 to-amber-400 bg-clip-text text-transparent drop-shadow-md">
-            元氣地牢:亡靈與火焰
-          </h1>
-          <p class="text-[11px] text-slate-400 mt-0.5">多職業合作 / 隨機地形種子 / 晝夜與天候生存</p>
-        </div>
-
-        <div id="connectionWarn" class="hidden text-xs text-amber-300 bg-amber-950/60 p-2 rounded-xl border border-amber-800 text-left">
-          <i class="fa-solid fa-triangle-exclamation mr-1"></i> 連線回應延遲，若斷線請重新產生房間碼。
-        </div>
-
-        <!-- 每日挑戰專區面板 -->
-        <div id="dailyChallengeMenuCard" class="glass-panel p-3 rounded-2xl border border-amber-500/50 bg-amber-950/20 text-left flex flex-col gap-1.5">
-          <div class="flex justify-between items-center">
-            <span class="text-xs font-black text-amber-400 flex items-center gap-1">
-              <i class="fa-solid fa-trophy text-amber-400"></i> 每日特殊挑戰
-            </span>
-            <span id="challengeStatusBadge" class="text-[10px] px-2 py-0.5 rounded-full border border-amber-500/50 text-amber-300 bg-amber-900/40 font-bold">未完成</span>
-          </div>
-          <div id="challengeTitle" class="text-xs font-bold text-slate-200">💥 手槍之夜</div>
-          <div id="challengeDesc" class="text-[11px] text-slate-400">強大的火力被封印了，只能使用經典手槍生存 10 波。</div>
-          <button id="startChallengeBtn" type="button" class="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black py-1.5 rounded-xl shadow-md active:scale-95 transition-all text-xs flex items-center justify-center gap-1">
-            <i class="fa-solid fa-play"></i> 開始每日挑戰
+        <div class="grid grid-cols-2 gap-2">
+          <button id="openLobbyBtn" class="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-2 rounded-2xl text-xs shadow-lg active:scale-95 transition-all">
+            🌐 遊戲大廳 / 列表
           </button>
-        </div>
-
-        <div class="flex flex-col gap-1 text-left">
-          <label class="text-xs font-bold text-slate-300">冒險者暱稱</label>
-          <input type="text" id="nicknameInput" value="森林勇者" class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-3.5 py-1.5 text-slate-200 focus:outline-none focus:border-emerald-400 transition-colors text-xs" />
-        </div>
-
-        <div class="flex flex-col gap-1 text-left">
-          <label class="text-xs font-bold text-slate-300 flex justify-between">
-            <span>自訂靈魂皮膚顏色</span>
-            <span id="selectedColorName" class="text-cyan-400">極光藍</span>
-          </label>
-          <div id="colorPickerContainer" class="flex items-center justify-between bg-slate-900/90 p-1.5 rounded-xl border border-slate-800"></div>
-        </div>
-
-        <!-- 職業選擇 UI 區塊 -->
-        <div class="flex flex-col gap-1.5 text-left">
-          <label class="text-xs font-bold text-slate-300 flex justify-between items-center">
-            <span>選擇英雄職業</span>
-            <span id="selectedClassNameDisplay" class="text-amber-400 font-bold text-[11px]">🎖️ 突擊兵</span>
-          </label>
-          <div id="classPickerContainer" class="grid grid-cols-2 sm:grid-cols-3 gap-2"></div>
-          <div id="classStatsDisplay" class="text-[11px] font-mono text-cyan-300 bg-slate-900/90 px-3 py-1.5 rounded-xl border border-slate-800 text-center flex flex-col gap-0.5">
-            <span id="classStatsText">❤️ 生命 110 | 🛡️ 護盾 55 | ⚡ 移速 3.7 | 💥 傷害 110%</span>
-            <span id="classExclusiveWeaponText" class="text-amber-400 font-bold">專屬武器：🚀 榴彈發射器</span>
-          </div>
-        </div>
-
-        <div class="flex flex-col gap-2 pt-1">
-          <button id="singlePlayerBtn" class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-black py-2.5 rounded-xl shadow-lg active:scale-95 transition-all text-xs flex flex-col items-center justify-center">
-            <span class="flex items-center gap-1.5"><i class="fa-solid fa-user"></i> 單人生存模式</span>
-            <span class="text-[9px] font-normal opacity-80">🎲 每局隨機產生全新地圖與種子</span>
-          </button>
-          <div class="relative my-0.5 flex items-center justify-center">
-            <div class="border-t border-slate-800 w-full"></div>
-            <span class="absolute bg-slate-900 px-3 text-[9px] text-slate-500 uppercase font-bold">多人隊伍連線</span>
-          </div>
-          
-          <button id="openLobbyBtn" class="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-black py-2.5 rounded-xl shadow-lg active:scale-95 transition-all text-xs flex flex-col items-center justify-center">
-            <span class="flex items-center gap-1.5"><i class="fa-solid fa-globe"></i> 瀏覽連線大廳</span>
-            <span class="text-[9px] font-normal opacity-80">🌐 尋找並直接加入開放中的小隊房間</span>
-          </button>
-
-          <button id="createRoomBtn" class="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-black py-2.5 rounded-xl shadow-lg active:scale-95 transition-all text-xs flex flex-col items-center justify-center">
-            <span class="flex items-center gap-1.5"><i class="fa-solid fa-crown"></i> 創建 6 位數短房號</span>
-            <span class="text-[9px] font-normal opacity-80">🎲 房主隨機抽圖並廣播至大廳面板</span>
-          </button>
-          
-          <div class="flex gap-2">
-            <input type="text" id="joinRoomInput" placeholder="輸入 6 位號碼" maxlength="6" class="flex-1 bg-slate-900/90 border border-slate-700 rounded-xl px-3 py-1.5 text-slate-200 text-xs focus:outline-none focus:border-amber-400 uppercase text-center font-mono tracking-widest" />
-            <button id="joinRoomBtn" class="bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold px-4 py-1.5 rounded-xl border border-amber-500/30 active:scale-95 transition-all text-xs">
-              加入
-            </button>
-          </div>
-        </div>
-
-        <div id="roomInfo" class="hidden bg-slate-900/90 p-3 rounded-2xl border border-slate-800 text-xs text-slate-400 flex flex-col gap-1 text-left">
-          <div class="flex justify-between items-center">
-            <span>房間代碼: <strong id="myPeerIdText" class="text-amber-400 select-all font-mono text-base">------</strong></span>
-            <button id="copyIdBtn" class="text-slate-400 hover:text-white"><i class="fa-solid fa-copy"></i></button>
-          </div>
-          <div class="text-[11px] text-emerald-400" id="connectedPlayersText">等待隊友加入...</div>
-          <button id="startHostGameBtn" class="mt-2 w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded-xl text-xs transition-all">
-            開始多人遊戲
+          <button id="createRoomBtn" class="w-full bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold py-2 rounded-2xl text-xs shadow-lg active:scale-95 transition-all">
+            👑 創建房間 (房主)
           </button>
         </div>
       </div>
-    </div>
 
-    <!-- LOBBY MODAL -->
-    <div id="lobbyModal" class="hidden absolute inset-0 bg-slate-950/95 backdrop-blur-md flex flex-col justify-center items-center p-4 z-40">
-      <div class="max-w-2xl w-full h-[85vh] glass-panel p-5 sm:p-6 rounded-3xl shadow-2xl flex flex-col gap-4 border border-slate-700/80">
-        <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-          <div class="flex items-center gap-2">
-            <span class="text-2xl">🌐</span>
-            <h2 class="text-xl font-black text-cyan-400 tracking-wider">公共連線大廳</h2>
-          </div>
-          <button id="closeLobbyBtn" class="text-slate-400 hover:text-white text-lg w-8 h-8 rounded-full bg-slate-800/80 flex items-center justify-center transition-colors">
-            <i class="fa-solid fa-xmark"></i>
-          </button>
+      <!-- 連線房間碼區域（創建後顯示） -->
+      <div id="roomInfo" class="hidden flex flex-col gap-2 p-3 bg-slate-900/80 rounded-2xl border border-slate-700">
+        <div class="flex items-center justify-between">
+          <span class="text-xs text-slate-400">房間短碼：</span>
+          <span id="myPeerIdText" class="text-base font-black text-amber-400 font-mono tracking-widest">------</span>
+          <button id="copyIdBtn" class="bg-slate-800 hover:bg-slate-700 text-xs px-2.5 py-1 rounded-xl border border-slate-600">複製</button>
         </div>
-
-        <div id="lobbyStatus" class="hidden text-xs text-amber-300 bg-amber-950/60 p-2 rounded-xl border border-amber-800/80">
-          <i class="fa-solid fa-triangle-exclamation mr-1"></i> 連線大廳服務連接中...
-        </div>
-
-        <div id="lobbyRoomList" class="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-2.5 pr-1"></div>
-
-        <div class="flex justify-between items-center border-t border-slate-800 pt-3 text-xs text-slate-400">
-          <span id="lobbyRoomCountText">已找到 0 個開放房間</span>
-          <span class="text-[10px] text-slate-500">列表每秒自動同步更新</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- UPGRADE MODAL（【修改 1】：改用 style="display: none;" 避免 classList hidden 被 Tailwind flex 覆蓋） -->
-    <div id="upgradeModal" class="absolute inset-0 bg-slate-950/80 backdrop-blur-md flex flex-col justify-center items-center p-4 z-40" style="display: none;">
-      <div class="max-w-md w-full flex flex-col items-center gap-4 text-center">
-        <h2 class="text-3xl font-black text-amber-400 tracking-wide animate-bounce"><i class="fa-solid fa-angles-up mr-2"></i>等級提升！</h2>
-        <p class="text-xs text-slate-300">選擇一項冒險天賦加成：</p>
-        <div id="upgradeOptions" class="w-full flex flex-col gap-2.5"></div>
-      </div>
-    </div>
-
-    <!-- GAME OVER MODAL -->
-    <div id="gameOverModal" class="hidden absolute inset-0 bg-slate-950/90 backdrop-blur-lg flex flex-col justify-center items-center p-4 z-50">
-      <div class="max-w-sm w-full glass-panel p-6 rounded-3xl text-center flex flex-col gap-4 border border-red-500/30">
-        <h2 id="gameOverTitle" class="text-3xl font-black text-red-500">隊伍滅絕</h2>
-        <p id="gameOverSub" class="text-xs text-slate-400">魔物吞噬了一切...</p>
-        <button id="restartBtn" class="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-black py-3 rounded-xl shadow-lg active:scale-95 transition-all">
-          重新啟動
+        <div id="connectedPlayersText" class="text-xs text-emerald-400 font-bold">等待隊友加入中...</div>
+        <button id="startHostGameBtn" class="w-full bg-gradient-to-r from-red-600 to-rose-600 text-white font-black py-2 rounded-xl text-xs shadow-lg active:scale-95 transition-all">
+          ⚔️ 開始小隊遊戲
         </button>
       </div>
-    </div>
 
-    <!-- 主機斷線全螢幕遮罩 -->
-    <div id="hostDisconnectedModal" class="hidden absolute inset-0 bg-slate-950/95 backdrop-blur-xl flex flex-col justify-center items-center p-4 z-50 text-center">
-      <div class="max-w-md w-full glass-panel p-8 rounded-3xl border border-red-500/40 shadow-[0_0_30px_rgba(239,68,68,0.3)] flex flex-col gap-4">
-        <div class="text-5xl animate-bounce">⚠️</div>
-        <h2 class="text-2xl font-black text-red-500 tracking-wider">主機已離線</h2>
-        <p id="reconnectStatusText" class="text-xs text-slate-300">遊戲連線中斷，正在嘗試重新連線 (0/5)...</p>
-        <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden border border-slate-700">
-          <div id="reconnectProgressBar" class="bg-amber-400 h-full w-0 transition-all duration-300"></div>
+      <!-- 加入房間輸入區域 -->
+      <div id="joinRoomPanel" class="flex gap-2">
+        <input type="text" id="joinRoomInput" placeholder="輸入 6 位房間碼..." class="w-full bg-slate-900 border border-slate-700 rounded-2xl px-3 py-2 text-xs text-white uppercase font-mono tracking-wider focus:outline-none focus:border-cyan-500">
+        <button id="joinRoomBtn" class="bg-cyan-600 hover:bg-cyan-500 text-white font-bold px-4 py-2 rounded-2xl text-xs shrink-0 active:scale-95 transition-all shadow-md">
+          加入
+        </button>
+      </div>
+
+      <div id="connectionWarn" class="text-[11px] text-amber-400/90 hidden">⚠️ 連線伺服器回應較慢，請稍後再試。</div>
+    </div>
+  </div>
+
+  <!-- MQTT 遊戲大廳房間列表 Modal -->
+  <div id="lobbyModal" class="absolute inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 hidden">
+    <div class="glass-panel p-6 rounded-3xl border border-slate-700 shadow-2xl max-w-lg w-full flex flex-col gap-4 max-h-[85vh]">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">🌐</span>
+          <h2 class="text-lg font-black text-white">線上大廳房間</h2>
         </div>
-        <button id="returnToMenuBtn" class="mt-2 w-full bg-gradient-to-r from-slate-700 to-slate-800 hover:from-slate-600 hover:to-slate-700 text-slate-100 font-bold py-3 rounded-xl border border-slate-600 active:scale-95 transition-all text-xs">
-          回到主選單
+        <button id="closeLobbyBtn" class="text-slate-400 hover:text-white text-sm px-2">✕</button>
+      </div>
+
+      <div id="lobbyStatus" class="text-xs text-amber-400 bg-amber-950/40 p-2 rounded-xl border border-amber-500/30 text-center hidden">
+        連線大廳伺服器中...
+      </div>
+
+      <div id="lobbyRoomCountText" class="text-xs text-slate-400 font-bold">已找到 0 個開放房間</div>
+
+      <!-- 房間卡片列表容器 -->
+      <div id="lobbyRoomList" class="flex flex-col gap-2 overflow-y-auto pr-1 no-scrollbar min-h-[200px] max-h-[360px]">
+        <div class="flex flex-col items-center justify-center h-48 text-slate-500 gap-2">
+          <span class="text-3xl">🏚️</span>
+          <span class="text-xs">目前沒有公開房間，試著自己創建一個吧！</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 升級天賦選擇 Modal -->
+  <div id="upgradeModal" class="absolute inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden items-center justify-center p-4">
+    <div class="glass-panel p-6 rounded-3xl border border-amber-500/40 shadow-2xl max-w-sm w-full flex flex-col gap-4 text-center">
+      <div class="flex flex-col items-center gap-1">
+        <span class="text-2xl animate-bounce">🎉</span>
+        <h2 class="text-xl font-black text-amber-400">等級提升！選擇一項天賦</h2>
+      </div>
+      <div id="upgradeOptions" class="flex flex-col gap-2.5"></div>
+    </div>
+  </div>
+
+  <!-- 主機斷線重連 Modal -->
+  <div id="hostDisconnectedModal" class="absolute inset-0 z-50 bg-slate-950/90 backdrop-blur-lg flex items-center justify-center p-4 hidden">
+    <div class="glass-panel p-6 rounded-3xl border border-red-500/40 shadow-2xl max-w-sm w-full flex flex-col gap-4 text-center">
+      <span class="text-3xl">⚠️</span>
+      <h2 class="text-lg font-black text-red-400">與主機連線中斷</h2>
+      <p id="reconnectStatusText" class="text-xs text-slate-300">正在嘗試重新連線 (1/5)...</p>
+      <div class="w-full h-2 bg-slate-900 rounded-full overflow-hidden border border-slate-700">
+        <div id="reconnectProgressBar" class="h-full bg-amber-500 transition-all duration-300" style="width: 20%"></div>
+      </div>
+      <button onclick="location.reload()" class="bg-slate-800 hover:bg-slate-700 text-white font-bold py-2 rounded-xl text-xs border border-slate-600 mt-2">
+        返回主選單
+      </button>
+    </div>
+  </div>
+
+  <!-- 遊戲結束全滅 Modal -->
+  <div id="gameOverModal" class="absolute inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 hidden">
+    <div class="glass-panel p-6 rounded-3xl border border-red-500/50 shadow-2xl max-w-sm w-full flex flex-col gap-4 text-center">
+      <span class="text-4xl">💀</span>
+      <h2 class="text-2xl font-black text-red-500 tracking-wider">小隊全滅！</h2>
+      <p class="text-xs text-slate-300">全體隊友倒地，生存挑戰結束。</p>
+      <div class="flex gap-2">
+        <button id="restartBtn" class="w-full bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold py-2.5 rounded-2xl text-xs shadow-lg active:scale-95 transition-all">
+          🔄 重新開始
+        </button>
+        <button id="returnToMenuBtn" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold py-2.5 rounded-2xl text-xs border border-slate-700 active:scale-95 transition-all">
+          🏠 主選單
         </button>
       </div>
     </div>
   </div>
+
   <script>
     // 【職業資料結構】
     const CLASSES = {
@@ -614,6 +654,7 @@
     let camera = { x: 0, y: 0 };
     let screenShakeTime = 0;
     let hasShownExclusiveBanner = false;
+    let isUpgradeModalOpen = false; // 【修改 1：升級彈窗全域開啟標誌】
     let lastShootTime = 0;
     let isMouseDown = false;
     let flashLightIntensity = 0;
@@ -1220,6 +1261,7 @@
         if (!hostConn || !hostConn.open) attemptReconnection();
       }, 3000);
     }
+
     function handleClientDisconnectionInHost(conn) {
       if (!conn || !conn.metadata || !conn.metadata.playerId) return;
       const pId = conn.metadata.playerId;
@@ -2419,8 +2461,11 @@
       if (p.hp <= 0) { p.hp = 0; p.isDowned = true; p.reviveProgress = 0; createFloatingText(p.x, p.y - 45, '倒地！需要救援', '#ef4444', 20); }
     }
 
-    // 【修改 2 & 3】：showUpgradeModal 函式修復、防呆與邏輯套用
+    // 【修改：showUpgradeModal 防重複開啟與防連點修復】
     function showUpgradeModal() {
+      // 修改 2：防止重複打開
+      if (isUpgradeModalOpen) return;
+
       const modal = document.getElementById('upgradeModal'); 
       const container = document.getElementById('upgradeOptions');
       if (!modal || !container) return; 
@@ -2429,7 +2474,7 @@
       const me = players[myPlayerId]; 
       if (!me) return;
 
-      // 修改 3：防呆機制
+      // 防呆機制
       if (!me.classId || !CLASS_EXCLUSIVE_TALENTS[me.classId]) {
         me.classId = selectedClassId;
       }
@@ -2467,28 +2512,43 @@
         btn.className = `w-full glass-panel p-3.5 rounded-2xl ${borderStyle} text-left transition-all active:scale-95 group flex flex-col gap-0.5 bg-slate-900/90`;
         btn.innerHTML = `<div class="text-sm font-bold text-amber-400 group-hover:text-amber-300 flex items-center justify-between"><span>${u.title}</span>${titleBadge}</div><div class="text-xs text-slate-300">${u.desc}</div>`;
 
-        // 修改 2：點選升級套用與防錯關閉彈窗 (modal.style.display = 'none')
+        // 修改 4：按鈕點擊時重置標誌與連點防護
+        let isClicked = false;
         btn.onclick = () => {
+          if (isClicked) return;
+          isClicked = true;
+
           try {
+            if (typeof u.action !== 'function') {
+              console.error('升級選項 action 不是函式:', u);
+              modal.style.display = 'none';
+              isUpgradeModalOpen = false;
+              return;
+            }
             if (u.isExclusive) {
               if (!me.takenExclusiveTalents) me.takenExclusiveTalents = [];
-              me.takenExclusiveTalents.push(u.id);
+              if (!me.takenExclusiveTalents.includes(u.id)) {
+                me.takenExclusiveTalents.push(u.id);
+              }
             }
             u.action(me);
             modal.style.display = 'none';
+            isUpgradeModalOpen = false;
             if (!isHost && hostConn && hostConn.open) {
               hostConn.send({ type: 'PLAYER_UPGRADE', id: myPlayerId, playerState: me });
             }
           } catch (err) {
             console.error('升級技能套用失敗:', err);
             modal.style.display = 'none';
+            isUpgradeModalOpen = false;
           }
         };
         container.appendChild(btn);
       });
 
-      // 修改 2：顯示彈窗使用 inline style display = 'flex'
+      // 修改 3：顯示彈窗並設定標誌位
       modal.style.display = 'flex';
+      isUpgradeModalOpen = true;
     }
 
     function createFloatingText(x, y, text, color, size = 16) {
@@ -3124,9 +3184,11 @@
             serverP.bulletScale = myLocalP.bulletScale;
             serverP.hasClutch = myLocalP.hasClutch;
             serverP.takenExclusiveTalents = myLocalP.takenExclusiveTalents;
+            // 【修改 5：延遲 100ms 打開升級彈窗，避免與其他同步邏輯衝突】
             if (serverP.level > myLocalP.level) {
               myLocalP.level = serverP.level; myLocalP.maxExp = serverP.maxExp; myLocalP.exp = serverP.exp;
-              playSound('levelup'); showUpgradeModal();
+              playSound('levelup');
+              setTimeout(() => showUpgradeModal(), 100);
             } else { myLocalP.exp = serverP.exp; myLocalP.maxExp = serverP.maxExp; }
             serverP.level = myLocalP.level; serverP.exp = myLocalP.exp; serverP.maxExp = myLocalP.maxExp;
             players[pid] = serverP;
