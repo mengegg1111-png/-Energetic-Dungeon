@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>元氣地牢 2D 多人職業隨機地圖版</title>
+  <title>元氣地牢:亡靈與火焰</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
@@ -146,7 +146,7 @@
       <div class="max-w-xl w-full glass-panel p-5 sm:p-6 rounded-3xl shadow-2xl flex flex-col gap-3.5 border border-slate-700/60 text-center my-auto">
         <div>
           <h1 class="text-2xl sm:text-3xl font-black tracking-wider bg-gradient-to-r from-emerald-400 via-teal-400 to-amber-400 bg-clip-text text-transparent drop-shadow-md">
-            元氣地牢：英雄狂潮
+            元氣地牢:亡靈與火焰
           </h1>
           <p class="text-[11px] text-slate-400 mt-0.5">多職業合作 / 隨機地形種子 / 晝夜與天候生存</p>
         </div>
@@ -176,7 +176,7 @@
           </label>
           <div id="classPickerContainer" class="grid grid-cols-2 sm:grid-cols-3 gap-2"></div>
           <div id="classStatsDisplay" class="text-[11px] font-mono text-cyan-300 bg-slate-900/90 px-3 py-1.5 rounded-xl border border-slate-800 text-center flex flex-col gap-0.5">
-            <span id="classStatsText">❤️ 生命 110 | 🛡️ 護盾 55 | ⚡ 移速 5.5 | 💥 傷害 110%</span>
+            <span id="classStatsText">❤️ 生命 110 | 🛡️ 護盾 55 | ⚡ 移速 3.7 | 💥 傷害 110%</span>
             <span id="classExclusiveWeaponText" class="text-amber-400 font-bold">專屬武器：🚀 榴彈發射器</span>
           </div>
         </div>
@@ -237,7 +237,7 @@
   </div>
 
   <script>
-    // 【職業資料結構】
+    // 【職業資料結構】 - 移動速度降低 30%
     const CLASSES = {
       medic: {
         id: 'medic',
@@ -247,7 +247,7 @@
         exclusiveWeaponName: '💉 治療光束',
         desc: '復活隊友速度快，治療量高，但血量較低',
         color: '#4ade80',
-        baseStats: { maxHp: 80, maxShield: 40, speed: 5.2, dmgMult: 1.0, bulletScale: 1.0, magnetRange: 140, dashMaxCooldown: 90, invulnDuration: 20, lifesteal: 0 },
+        baseStats: { maxHp: 80, maxShield: 40, speed: 3.5, dmgMult: 1.0, bulletScale: 1.0, magnetRange: 140, dashMaxCooldown: 90, invulnDuration: 20, lifesteal: 0 },
         special: { reviveSpeedMult: 2.0, healAmountMult: 1.5, bulletRangeMult: 1.0 }
       },
       assault: {
@@ -258,7 +258,7 @@
         exclusiveWeaponName: '🚀 榴彈發射器',
         desc: '均衡型戰士，傷害與機動性兼備',
         color: '#f59e0b',
-        baseStats: { maxHp: 110, maxShield: 55, speed: 5.5, dmgMult: 1.1, bulletScale: 1.0, magnetRange: 140, dashMaxCooldown: 90, invulnDuration: 20, lifesteal: 0 },
+        baseStats: { maxHp: 110, maxShield: 55, speed: 3.7, dmgMult: 1.1, bulletScale: 1.0, magnetRange: 140, dashMaxCooldown: 90, invulnDuration: 20, lifesteal: 0 },
         special: { reviveSpeedMult: 1.0, healAmountMult: 1.0, bulletRangeMult: 1.0 }
       },
       sniper: {
@@ -269,7 +269,7 @@
         exclusiveWeaponName: '🎯 重型狙擊槍',
         desc: '遠距離高傷害，但體質較弱',
         color: '#38bdf8',
-        baseStats: { maxHp: 80, maxShield: 40, speed: 5.0, dmgMult: 1.3, bulletScale: 1.0, magnetRange: 140, dashMaxCooldown: 90, invulnDuration: 20, lifesteal: 0 },
+        baseStats: { maxHp: 80, maxShield: 40, speed: 3.4, dmgMult: 1.3, bulletScale: 1.0, magnetRange: 140, dashMaxCooldown: 90, invulnDuration: 20, lifesteal: 0 },
         special: { reviveSpeedMult: 1.0, healAmountMult: 1.0, bulletRangeMult: 1.5 }
       },
       berserker: {
@@ -280,7 +280,7 @@
         exclusiveWeaponName: '🪓 投擲戰斧',
         desc: '近距離傷害翻倍，移動迅速，但射程短',
         color: '#ef4444',
-        baseStats: { maxHp: 120, maxShield: 45, speed: 6.5, dmgMult: 1.0, bulletScale: 1.2, magnetRange: 140, dashMaxCooldown: 70, invulnDuration: 25, lifesteal: 0 },
+        baseStats: { maxHp: 120, maxShield: 45, speed: 4.3, dmgMult: 1.0, bulletScale: 1.2, magnetRange: 140, dashMaxCooldown: 70, invulnDuration: 25, lifesteal: 0 },
         special: { reviveSpeedMult: 1.0, healAmountMult: 1.0, bulletRangeMult: 0.7, closeRangeDoubleDmg: true }
       },
       engineer: {
@@ -291,7 +291,7 @@
         exclusiveWeaponName: '⚡ 電擊槍',
         desc: '護盾上限高、回復快，但攻擊力稍弱',
         color: '#a855f7',
-        baseStats: { maxHp: 90, maxShield: 80, speed: 5.2, dmgMult: 0.9, bulletScale: 1.0, magnetRange: 160, dashMaxCooldown: 90, invulnDuration: 20, lifesteal: 0 },
+        baseStats: { maxHp: 90, maxShield: 80, speed: 3.5, dmgMult: 0.9, bulletScale: 1.0, magnetRange: 160, dashMaxCooldown: 90, invulnDuration: 20, lifesteal: 0 },
         special: { reviveSpeedMult: 1.0, healAmountMult: 1.0, bulletRangeMult: 1.0, shieldRegenRate: 0.15 }
       },
       scout: {
@@ -302,7 +302,7 @@
         exclusiveWeaponName: '🔫 雙持衝鋒槍',
         desc: '移動極快、衝刺冷卻短，但血量偏低',
         color: '#22d3ee',
-        baseStats: { maxHp: 85, maxShield: 45, speed: 7.0, dmgMult: 1.0, bulletScale: 1.0, magnetRange: 180, dashMaxCooldown: 45, invulnDuration: 25, lifesteal: 0 },
+        baseStats: { maxHp: 85, maxShield: 45, speed: 4.6, dmgMult: 1.0, bulletScale: 1.0, magnetRange: 180, dashMaxCooldown: 45, invulnDuration: 25, lifesteal: 0 },
         special: { reviveSpeedMult: 1.0, healAmountMult: 1.0, bulletRangeMult: 1.0 }
       },
       flameMage: {
@@ -313,7 +313,7 @@
         exclusiveWeaponName: '🔥 烈焰噴射器',
         desc: '噴射火焰灼燒敵人，持續傷害',
         color: '#f97316',
-        baseStats: { maxHp: 85, maxShield: 45, speed: 5.2, dmgMult: 1.0, bulletScale: 1.0, magnetRange: 150, dashMaxCooldown: 90, invulnDuration: 20, lifesteal: 0 },
+        baseStats: { maxHp: 85, maxShield: 45, speed: 3.5, dmgMult: 1.0, bulletScale: 1.0, magnetRange: 150, dashMaxCooldown: 90, invulnDuration: 20, lifesteal: 0 },
         special: { igniteDuration: 2.0 }
       },
       frostHunter: {
@@ -324,7 +324,7 @@
         exclusiveWeaponName: '❄️ 寒冰弓',
         desc: '冰凍彈藥減速敵人，控場能力強',
         color: '#67e8f9',
-        baseStats: { maxHp: 95, maxShield: 50, speed: 5.5, dmgMult: 1.0, bulletScale: 1.1, magnetRange: 140, dashMaxCooldown: 80, invulnDuration: 20, lifesteal: 0 },
+        baseStats: { maxHp: 95, maxShield: 50, speed: 3.7, dmgMult: 1.0, bulletScale: 1.1, magnetRange: 140, dashMaxCooldown: 80, invulnDuration: 20, lifesteal: 0 },
         special: { slowOnHit: 0.5 }
       },
       paladin: {
@@ -335,7 +335,7 @@
         exclusiveWeaponName: '🔨 神聖戰錘',
         desc: '護盾極高，可為隊友提供護盾光環',
         color: '#fbbf24',
-        baseStats: { maxHp: 130, maxShield: 100, speed: 4.8, dmgMult: 0.85, bulletScale: 1.0, magnetRange: 130, dashMaxCooldown: 110, invulnDuration: 30, lifesteal: 0 },
+        baseStats: { maxHp: 130, maxShield: 100, speed: 3.2, dmgMult: 0.85, bulletScale: 1.0, magnetRange: 130, dashMaxCooldown: 110, invulnDuration: 30, lifesteal: 0 },
         special: { auraShield: 3 }
       },
       necromancer: {
@@ -346,7 +346,7 @@
         exclusiveWeaponName: '💀 亡靈權杖',
         desc: '擊殺敵人有 30% 機率召喚亡靈為你作戰',
         color: '#a78bfa',
-        baseStats: { maxHp: 85, maxShield: 50, speed: 5.3, dmgMult: 1.0, bulletScale: 1.0, magnetRange: 150, dashMaxCooldown: 85, invulnDuration: 20, lifesteal: 0 },
+        baseStats: { maxHp: 85, maxShield: 50, speed: 3.6, dmgMult: 1.0, bulletScale: 1.0, magnetRange: 150, dashMaxCooldown: 85, invulnDuration: 20, lifesteal: 0 },
         special: { summonChance: 0.3 }
       }
     };
@@ -904,14 +904,32 @@
       });
     }
 
+    // 【修改點：單向牆邊界碰撞邏輯 - 外面可進，裡面出不去】
     function applyTopDownPhysicsAndCollision(e) {
       if (!e) return;
       e.vx *= 0.82; e.vy *= 0.82; e.x += e.vx; e.y += e.vy;
       const r = (e.size || 30) / 2;
-      if (e.x - r < MAP_BOUNDS.minX) { e.x = MAP_BOUNDS.minX + r; e.vx = 0; }
-      if (e.x + r > MAP_BOUNDS.maxX) { e.x = MAP_BOUNDS.maxX - r; e.vx = 0; }
-      if (e.y - r < MAP_BOUNDS.minY) { e.y = MAP_BOUNDS.minY + r; e.vy = 0; }
-      if (e.y + r > MAP_BOUNDS.maxY) { e.y = MAP_BOUNDS.maxY + r; e.vy = 0; }
+
+      // 左邊界：中心在內才鉗制
+      if (e.x >= MAP_BOUNDS.minX && e.x - r < MAP_BOUNDS.minX) {
+        e.x = MAP_BOUNDS.minX + r;
+        if (e.vx < 0) e.vx = 0;
+      }
+      // 右邊界
+      if (e.x <= MAP_BOUNDS.maxX && e.x + r > MAP_BOUNDS.maxX) {
+        e.x = MAP_BOUNDS.maxX - r;
+        if (e.vx > 0) e.vx = 0;
+      }
+      // 上邊界
+      if (e.y >= MAP_BOUNDS.minY && e.y - r < MAP_BOUNDS.minY) {
+        e.y = MAP_BOUNDS.minY + r;
+        if (e.vy < 0) e.vy = 0;
+      }
+      // 下邊界
+      if (e.y <= MAP_BOUNDS.maxY && e.y + r > MAP_BOUNDS.maxY) {
+        e.y = MAP_BOUNDS.maxY + r;
+        if (e.vy > 0) e.vy = 0;
+      }
 
       trees.forEach(tree => {
         const dist = Math.hypot(e.x - tree.x, e.y - tree.y);
@@ -1020,10 +1038,11 @@
       });
     }
 
+    // 【修改點：降低衝刺速度】
     function triggerPlayerDash(pid) {
       const p = players[pid];
       if (!p || p.dashCooldown > 0 || p.isDowned || p.isDead) return;
-      p.vx = Math.cos(p.angle) * 18; p.vy = Math.sin(p.angle) * 18;
+      p.vx = Math.cos(p.angle) * 13; p.vy = Math.sin(p.angle) * 13;
       p.dashCooldown = p.dashMaxCooldown || 90; p.invulnerableTime = 30;
       playSound('dash');
       for (let i = 0; i < 10; i++) {
@@ -1118,7 +1137,7 @@
       }
     }
 
-    // 【修改點 1：亡靈召喚資料結構加入 speed、invulnerableTime 與 invulnDuration】
+    // 【修改點：亡靈移動速度降低至 3.0】
     function trySummonMinionOnKill(killer, zombie) {
       if (!killer || !zombie) return;
       const w = WEAPONS[killer.weapon];
@@ -1142,7 +1161,7 @@
             hp: Math.min(killer.hp, killer.maxHp * 0.8),
             maxHp: Math.min(killer.maxHp, killer.maxHp * 0.8),
             damage: Math.round(WEAPONS[killer.weapon].damage * (killer.dmgMult || 1)),
-            speed: 4.5,
+            speed: 3.0,
             angle: 0,
             attackCooldown: 0,
             invulnerableTime: 0,
@@ -1240,6 +1259,7 @@
       createFloatingText(0, -300, `WAVE ${currentWave}`, '#f59e0b', 32);
     }
 
+    // 【修改點：殭屍移動速度降低 30%】
     function spawnZombie() {
       if (zombiesToSpawn <= 0) return;
       zombiesToSpawn--;
@@ -1259,7 +1279,7 @@
         id: Math.random().toString(36).substr(2, 8), type, x, y, vx: 0, vy: 0, size: 28,
         hp: Math.round((40 + currentWave * 15) * diffs.hpMult),
         maxHp: Math.round((40 + currentWave * 15) * diffs.hpMult),
-        speed: (2.2 + Math.random() * 0.8) * diffs.spdMult, color: '#22c55e',
+        speed: (1.4 + Math.random() * 0.5) * diffs.spdMult, color: '#22c55e',
         damage: Math.round((10 + currentWave * 2) * diffs.dmgMult),
         shootCooldown: 0, angle: 0,
         burnStacks: 0, burnTimer: 0, slowTimer: 0, stunTimer: 0
@@ -1473,7 +1493,6 @@
         }
       }
 
-      // 【修改點 2：亡靈移動 AI、接觸攻擊冷卻與無敵幀遞減】
       for (let i = minions.length - 1; i >= 0; i--) {
         const m = minions[i];
         if (m.invulnerableTime > 0) m.invulnerableTime -= 1;
@@ -1807,7 +1826,6 @@
             }
           }
 
-          // 【修改點 3：殭屍攻擊亡靈加入無敵幀判定】
           if (minDist < (z.size / 2) + (nearestTarget.size / 2) + 4) {
             if (targetType === 'player' && nearestTarget.invulnerableTime <= 0) {
               damagePlayer(nearestTarget, z.damage);
@@ -2263,7 +2281,6 @@
 
       Object.values(players).forEach(p => { if (!p.isDead) drawPlayerCharacter(p); });
 
-      // 【修改點 4：亡靈受傷閃爍渲染效果】
       minions.forEach(m => {
         ctx.save();
         ctx.translate(m.x, m.y);
@@ -2507,11 +2524,12 @@
           me.y += me.vy * 0.5;
         }
 
+        // 【修改點：客戶端玩家邊界單向牆碰撞】
         const r = me.size / 2;
-        if (me.x - r < MAP_BOUNDS.minX) { me.x = MAP_BOUNDS.minX + r; me.vx = 0; }
-        if (me.x + r > MAP_BOUNDS.maxX) { me.x = MAP_BOUNDS.maxX - r; me.vx = 0; }
-        if (me.y - r < MAP_BOUNDS.minY) { me.y = MAP_BOUNDS.minY + r; me.vy = 0; }
-        if (me.y + r > MAP_BOUNDS.maxY) { me.y = MAP_BOUNDS.maxY + r; me.vy = 0; }
+        if (me.x >= MAP_BOUNDS.minX && me.x - r < MAP_BOUNDS.minX) { me.x = MAP_BOUNDS.minX + r; if (me.vx < 0) me.vx = 0; }
+        if (me.x <= MAP_BOUNDS.maxX && me.x + r > MAP_BOUNDS.maxX) { me.x = MAP_BOUNDS.maxX - r; if (me.vx > 0) me.vx = 0; }
+        if (me.y >= MAP_BOUNDS.minY && me.y - r < MAP_BOUNDS.minY) { me.y = MAP_BOUNDS.minY + r; if (me.vy < 0) me.vy = 0; }
+        if (me.y <= MAP_BOUNDS.maxY && me.y + r > MAP_BOUNDS.maxY) { me.y = MAP_BOUNDS.maxY + r; if (me.vy > 0) me.vy = 0; }
 
         if (!aimJoystickData.active) {
           me.angle = Math.atan2((mousePos.y + camera.y) - me.y, (mousePos.x + camera.x) - me.x);
