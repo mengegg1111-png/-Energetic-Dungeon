@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>元氣地牢:邊界與亡靈</title>
+  <title>元氣地牢:繽紛世界</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- PeerJS CDN -->
@@ -40,16 +40,6 @@
     .joystick-container {
       touch-action: none;
     }
-    .color-picker-dot.active {
-      outline: 2px solid #38bdf8;
-      outline-offset: 2px;
-    }
-    .class-card.active {
-      border-color: var(--card-color, #38bdf8);
-      background: rgba(30, 41, 59, 0.9);
-      box-shadow: 0 0 15px rgba(56, 189, 248, 0.3);
-    }
-    /* 隱藏滾動條但保持可滾動 */
     .no-scrollbar::-webkit-scrollbar {
       display: none;
     }
@@ -254,27 +244,23 @@
         <input type="text" id="nicknameInput" maxlength="12" placeholder="輸入你的暱稱..." value="勇者" class="w-full bg-slate-900/90 border border-slate-700 rounded-2xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500 font-bold">
       </div>
 
-      <!-- 造型外觀色彩選擇 -->
-      <div class="flex flex-col gap-1.5 text-left">
-        <div class="flex justify-between items-center">
-          <label class="text-xs font-bold text-slate-300">🎨 角色塗裝</label>
-          <span id="selectedColorName" class="text-xs font-bold text-cyan-400">極光藍</span>
-        </div>
-        <div id="colorPickerContainer" class="flex items-center gap-2 overflow-x-auto py-1 no-scrollbar"></div>
+      <!-- 造型外觀色彩選擇（下拉選單） -->
+      <div class="flex flex-col gap-1 text-left">
+        <label class="text-xs font-bold text-slate-300">自訂靈魂皮膚顏色</label>
+        <select id="colorPickerContainer" class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 text-xs focus:outline-none focus:border-cyan-400">
+          <!-- 由 JS 動態填充 -->
+        </select>
       </div>
 
-      <!-- 職業選擇區 -->
+      <!-- 職業選擇區（下拉選單） -->
       <div class="flex flex-col gap-1.5 text-left">
-        <div class="flex justify-between items-center">
-          <label class="text-xs font-bold text-slate-300">🛡️ 選擇職業</label>
-          <span id="selectedClassNameDisplay" class="text-xs font-bold text-amber-400">🎖️ 突擊兵</span>
-        </div>
-        <div id="classPickerContainer" class="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-1 no-scrollbar"></div>
-        <div id="classStatsText" class="text-[11px] text-slate-400 font-mono bg-slate-900/60 p-2 rounded-xl border border-slate-800">
-          ❤️ 生命 110 | 🛡️ 護盾 55 | ⚡ 移速 3.7 | 💥 傷害 110%
-        </div>
-        <div id="classExclusiveWeaponText" class="text-[11px] text-amber-400/90 font-bold bg-amber-950/30 p-1.5 rounded-xl border border-amber-500/20 text-center">
-          專屬武器：🚀 榴彈發射器
+        <label class="text-xs font-bold text-slate-300">選擇英雄職業</label>
+        <select id="classPickerContainer" class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 text-xs focus:outline-none focus:border-emerald-400">
+          <!-- 由 JS 動態填充 -->
+        </select>
+        <div id="classStatsDisplay" class="text-[11px] font-mono text-cyan-300 bg-slate-900/90 px-3 py-1.5 rounded-xl border border-slate-800 text-center flex flex-col gap-0.5">
+          <span id="classStatsText">❤️ 生命 110 | 🛡️ 護盾 55 | ⚡ 移速 3.7 | 💥 傷害 110%</span>
+          <span id="classExclusiveWeaponText" class="text-amber-400 font-bold">專屬武器：🚀 榴彈發射器</span>
         </div>
       </div>
 
@@ -526,6 +512,7 @@
       necroStaff: { name: '亡靈權杖', fireRate: 400, speed: 16, damage: 35, color: '#a78bfa', size: 5, count: 1, spread: 0, recoil: 2, penetrate: true, range: 100, exclusiveTo: 'necromancer', icon: '💀', isNecro: true, summonChance: 0.3 }
     };
 
+    // 擴充至 16 色皮膚陣列
     const SKIN_COLORS = [
       { name: '極光藍', hex: '#38bdf8' },
       { name: '琥珀金', hex: '#f59e0b' },
@@ -534,7 +521,15 @@
       { name: '炫彩紫', hex: '#a855f7' },
       { name: '赤紅怒火', hex: '#ef4444' },
       { name: '深靛騎士', hex: '#6366f1' },
-      { name: '純白聖光', hex: '#f8fafc' }
+      { name: '純白聖光', hex: '#f8fafc' },
+      { name: '熔岩橘', hex: '#f97316' },
+      { name: '冰晶白', hex: '#e0f2fe' },
+      { name: '毒沼綠', hex: '#84cc16' },
+      { name: '暗影灰', hex: '#64748b' },
+      { name: '玫瑰紅', hex: '#f43f5e' },
+      { name: '深海青', hex: '#0ea5e9' },
+      { name: '夜紫藍', hex: '#7c3aed' },
+      { name: '嫩芽綠', hex: '#22c55e' }
     ];
     let selectedSkinColor = SKIN_COLORS[0].hex;
 
@@ -654,7 +649,7 @@
     let camera = { x: 0, y: 0 };
     let screenShakeTime = 0;
     let hasShownExclusiveBanner = false;
-    let isUpgradeModalOpen = false; // 【修改 1：升級彈窗全域開啟標誌】
+    let isUpgradeModalOpen = false; // 全域升級彈窗開啟標誌
     let lastShootTime = 0;
     let isMouseDown = false;
     let flashLightIntensity = 0;
@@ -2461,9 +2456,8 @@
       if (p.hp <= 0) { p.hp = 0; p.isDowned = true; p.reviveProgress = 0; createFloatingText(p.x, p.y - 45, '倒地！需要救援', '#ef4444', 20); }
     }
 
-    // 【修改：showUpgradeModal 防重複開啟與防連點修復】
+    // 【showUpgradeModal 防重複開啟與防連點修復】
     function showUpgradeModal() {
-      // 修改 2：防止重複打開
       if (isUpgradeModalOpen) return;
 
       const modal = document.getElementById('upgradeModal'); 
@@ -2474,7 +2468,6 @@
       const me = players[myPlayerId]; 
       if (!me) return;
 
-      // 防呆機制
       if (!me.classId || !CLASS_EXCLUSIVE_TALENTS[me.classId]) {
         me.classId = selectedClassId;
       }
@@ -2512,7 +2505,6 @@
         btn.className = `w-full glass-panel p-3.5 rounded-2xl ${borderStyle} text-left transition-all active:scale-95 group flex flex-col gap-0.5 bg-slate-900/90`;
         btn.innerHTML = `<div class="text-sm font-bold text-amber-400 group-hover:text-amber-300 flex items-center justify-between"><span>${u.title}</span>${titleBadge}</div><div class="text-xs text-slate-300">${u.desc}</div>`;
 
-        // 修改 4：按鈕點擊時重置標誌與連點防護
         let isClicked = false;
         btn.onclick = () => {
           if (isClicked) return;
@@ -2546,7 +2538,6 @@
         container.appendChild(btn);
       });
 
-      // 修改 3：顯示彈窗並設定標誌位
       modal.style.display = 'flex';
       isUpgradeModalOpen = true;
     }
@@ -3184,7 +3175,6 @@
             serverP.bulletScale = myLocalP.bulletScale;
             serverP.hasClutch = myLocalP.hasClutch;
             serverP.takenExclusiveTalents = myLocalP.takenExclusiveTalents;
-            // 【修改 5：延遲 100ms 打開升級彈窗，避免與其他同步邏輯衝突】
             if (serverP.level > myLocalP.level) {
               myLocalP.level = serverP.level; myLocalP.maxExp = serverP.maxExp; myLocalP.exp = serverP.exp;
               playSound('levelup');
@@ -3206,51 +3196,45 @@
       }
     }
 
+    // 【修改：皮膚顏色下拉式選單初始化】
     function initSkinColorPicker() {
-      const container = document.getElementById('colorPickerContainer');
-      if (!container) return;
-      container.innerHTML = '';
+      const select = document.getElementById('colorPickerContainer');
+      if (!select) return;
+      select.innerHTML = '';
+
       SKIN_COLORS.forEach((colorObj, idx) => {
-        const dot = document.createElement('button');
-        dot.type = 'button';
-        dot.className = `w-6 h-6 rounded-full border-2 border-slate-900 color-picker-dot ${idx === 0 ? 'active' : ''}`;
-        dot.style.backgroundColor = colorObj.hex;
-        dot.title = colorObj.name;
-        dot.onclick = () => {
-          document.querySelectorAll('.color-picker-dot').forEach(d => d.classList.remove('active'));
-          dot.classList.add('active');
-          selectedSkinColor = colorObj.hex;
-          const nameSpan = document.getElementById('selectedColorName');
-          if (nameSpan) { nameSpan.innerText = colorObj.name; nameSpan.style.color = colorObj.hex; }
-        };
-        container.appendChild(dot);
+        const option = document.createElement('option');
+        option.value = colorObj.hex;
+        option.innerText = `● ${colorObj.name}`;
+        option.style.color = colorObj.hex;
+        if (idx === 0) option.selected = true;
+        select.appendChild(option);
       });
+
+      select.onchange = () => {
+        selectedSkinColor = select.value;
+      };
     }
 
+    // 【修改：英雄職業下拉式選單初始化】
     function initClassPicker() {
-      const container = document.getElementById('classPickerContainer');
-      if (!container) return;
-      container.innerHTML = '';
+      const select = document.getElementById('classPickerContainer');
+      if (!select) return;
+      select.innerHTML = '';
+
       Object.values(CLASSES).forEach(cls => {
-        const card = document.createElement('button');
-        card.type = 'button';
-        card.className = `class-card glass-panel p-2 rounded-2xl border flex flex-col justify-between gap-1 text-left ${cls.id === selectedClassId ? 'active' : 'border-slate-800 hover:border-slate-600'}`;
-        card.style.setProperty('--card-color', cls.color);
-        card.innerHTML = `
-          <div class="flex items-center gap-1.5">
-            <span class="text-base">${cls.icon}</span>
-            <span class="text-xs font-black" style="color: ${cls.color}">${cls.name}</span>
-          </div>
-          <div class="text-[10px] text-slate-400 leading-tight line-clamp-2">${cls.desc}</div>
-        `;
-        card.onclick = () => {
-          selectedClassId = cls.id;
-          document.querySelectorAll('.class-card').forEach(c => c.classList.remove('active'));
-          card.classList.add('active');
-          updateClassStatsDisplay();
-        };
-        container.appendChild(card);
+        const option = document.createElement('option');
+        option.value = cls.id;
+        option.innerText = `${cls.icon} ${cls.name} — ${cls.desc}`;
+        if (cls.id === selectedClassId) option.selected = true;
+        select.appendChild(option);
       });
+
+      select.onchange = () => {
+        selectedClassId = select.value;
+        updateClassStatsDisplay();
+      };
+
       updateClassStatsDisplay();
     }
 
@@ -3263,8 +3247,6 @@
       }
       const exclusiveText = document.getElementById('classExclusiveWeaponText');
       if (exclusiveText) exclusiveText.innerText = `專屬武器：${cls.exclusiveWeaponName}`;
-      const clsDisp = document.getElementById('selectedClassNameDisplay');
-      if (clsDisp) { clsDisp.innerText = `${cls.icon} ${cls.name}`; clsDisp.style.color = cls.color; }
     }
 
     function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
@@ -3295,7 +3277,6 @@
       }
     });
 
-    // 手機版放置防禦工事與射擊
     window.addEventListener('touchstart', (e) => {
       if (e.target.closest('#chatContainer') || e.target.closest('#weaponBar') || e.target.closest('#defenseBarContainer') || e.target.closest('#mainMenu') || e.target.closest('#miniMapContainer') || e.target.closest('#moveJoystickContainer') || e.target.closest('#aimJoystickContainer') || e.target.closest('#mobileDashBtn')) return;
 
