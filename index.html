@@ -325,8 +325,8 @@
       </div>
     </div>
 
-    <!-- UPGRADE MODAL -->
-    <div id="upgradeModal" class="hidden absolute inset-0 bg-slate-950/80 backdrop-blur-md flex flex-col justify-center items-center p-4 z-40">
+    <!-- UPGRADE MODAL（【修改 1】：改用 style="display: none;" 避免 classList hidden 被 Tailwind flex 覆蓋） -->
+    <div id="upgradeModal" class="absolute inset-0 bg-slate-950/80 backdrop-blur-md flex flex-col justify-center items-center p-4 z-40" style="display: none;">
       <div class="max-w-md w-full flex flex-col items-center gap-4 text-center">
         <h2 class="text-3xl font-black text-amber-400 tracking-wide animate-bounce"><i class="fa-solid fa-angles-up mr-2"></i>等級提升！</h2>
         <p class="text-xs text-slate-300">選擇一項冒險天賦加成：</p>
@@ -360,7 +360,6 @@
       </div>
     </div>
   </div>
-
   <script>
     // 【職業資料結構】
     const CLASSES = {
@@ -1221,7 +1220,6 @@
         if (!hostConn || !hostConn.open) attemptReconnection();
       }, 3000);
     }
-
     function handleClientDisconnectionInHost(conn) {
       if (!conn || !conn.metadata || !conn.metadata.playerId) return;
       const pId = conn.metadata.playerId;
@@ -2421,11 +2419,23 @@
       if (p.hp <= 0) { p.hp = 0; p.isDowned = true; p.reviveProgress = 0; createFloatingText(p.x, p.y - 45, '倒地！需要救援', '#ef4444', 20); }
     }
 
+    // 【修改 2 & 3】：showUpgradeModal 函式修復、防呆與邏輯套用
     function showUpgradeModal() {
-      const modal = document.getElementById('upgradeModal'); const container = document.getElementById('upgradeOptions');
-      if (!modal || !container) return; container.innerHTML = '';
-      const me = players[myPlayerId]; if (!me) return;
+      const modal = document.getElementById('upgradeModal'); 
+      const container = document.getElementById('upgradeOptions');
+      if (!modal || !container) return; 
+      container.innerHTML = '';
+
+      const me = players[myPlayerId]; 
+      if (!me) return;
+
+      // 修改 3：防呆機制
+      if (!me.classId || !CLASS_EXCLUSIVE_TALENTS[me.classId]) {
+        me.classId = selectedClassId;
+      }
       if (!me.takenExclusiveTalents) me.takenExclusiveTalents = [];
+
+      console.log('升級觸發！職業:', me.classId, '專屬技能池:', CLASS_EXCLUSIVE_TALENTS[me.classId]?.map(t => t.name), '已選:', me.takenExclusiveTalents);
 
       const generalUpgrades = [
         { title: '生命強化', desc: '最大生命值 +25 並立即恢復', action: (p) => { p.maxHp += 25; p.hp += 25; } },
@@ -2456,14 +2466,29 @@
         }
         btn.className = `w-full glass-panel p-3.5 rounded-2xl ${borderStyle} text-left transition-all active:scale-95 group flex flex-col gap-0.5 bg-slate-900/90`;
         btn.innerHTML = `<div class="text-sm font-bold text-amber-400 group-hover:text-amber-300 flex items-center justify-between"><span>${u.title}</span>${titleBadge}</div><div class="text-xs text-slate-300">${u.desc}</div>`;
+
+        // 修改 2：點選升級套用與防錯關閉彈窗 (modal.style.display = 'none')
         btn.onclick = () => {
-          if (u.isExclusive) me.takenExclusiveTalents.push(u.id);
-          u.action(me); modal.classList.add('hidden');
-          if (!isHost && hostConn && hostConn.open) hostConn.send({ type: 'PLAYER_UPGRADE', id: myPlayerId, playerState: me });
+          try {
+            if (u.isExclusive) {
+              if (!me.takenExclusiveTalents) me.takenExclusiveTalents = [];
+              me.takenExclusiveTalents.push(u.id);
+            }
+            u.action(me);
+            modal.style.display = 'none';
+            if (!isHost && hostConn && hostConn.open) {
+              hostConn.send({ type: 'PLAYER_UPGRADE', id: myPlayerId, playerState: me });
+            }
+          } catch (err) {
+            console.error('升級技能套用失敗:', err);
+            modal.style.display = 'none';
+          }
         };
         container.appendChild(btn);
       });
-      modal.classList.remove('hidden');
+
+      // 修改 2：顯示彈窗使用 inline style display = 'flex'
+      modal.style.display = 'flex';
     }
 
     function createFloatingText(x, y, text, color, size = 16) {
