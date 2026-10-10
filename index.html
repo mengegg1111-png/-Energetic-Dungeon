@@ -1858,7 +1858,7 @@
 
         me.vx -= Math.cos(fireAngle) * w.recoil; me.vy -= Math.sin(fireAngle) * w.recoil;
 
-        if (w.key === 'sniperRifle' || w.key === 'laser' || w.key === 'grenade') triggerScreenShake(0.1, 4);
+        if (w.isBeam || w.isGrenade) triggerScreenShake(0.1, 4);
         else triggerScreenShake(0.05, 2);
 
         if (w.isBeam) playSound('laser');
@@ -2161,6 +2161,14 @@
             if (owner && owner.critChance && Math.random() < owner.critChance) actualDamage *= 2;
             if (owner && owner.slowDmgBonus && z.slowTimer > 0) actualDamage *= owner.slowDmgBonus;
 
+            if (b.isFlame) {
+              z.burnTimer = 2.0;
+              z.burnStacks = Math.min(3, (z.burnStacks || 0) + 1);
+            }
+            if (b.isFrost) {
+              z.slowTimer = 1.5;
+            }
+
             z.hp -= actualDamage; playSound('hit'); flashLightIntensity = 60;
             createFloatingText(z.x, z.y - z.size / 2 - 5, `-${actualDamage}`, actualDamage > b.damage ? '#ff2222' : '#ef4444', actualDamage > b.damage ? 20 : 16);
 
@@ -2197,7 +2205,42 @@
 
       // 殭屍索敵與移動 + 攻擊邏輯
       for (let i = zombies.length - 1; i >= 0; i--) {
-        const z = zombies[i]; applyTopDownPhysicsAndCollision(z, false);
+        const z = zombies[i];
+
+        // 狀態計時器遞減
+        if (z.burnTimer > 0) {
+          z.burnTimer -= deltaTime;
+          z.hp -= (z.burnStacks || 1) * 5 * deltaTime;
+          if (Math.random() < 0.3) {
+            particles.push({
+              x: z.x + (Math.random() - 0.5) * z.size,
+              y: z.y - z.size / 2,
+              vx: (Math.random() - 0.5) * 1,
+              vy: -1 - Math.random(),
+              life: 15, maxLife: 15,
+              color: '#f97316', size: 3
+            });
+          }
+          if (z.hp <= 0) {
+            triggerZombieDeathEffects(z.x, z.y, z.type === 'boss', z.color);
+            expGems.push({ x: z.x, y: z.y, value: z.type === 'boss' ? 25 : 2 });
+            zombies.splice(i, 1);
+            continue;
+          }
+          if (z.burnTimer <= 0) z.burnStacks = 0;
+        }
+
+        if (z.stunTimer > 0) {
+          z.stunTimer -= deltaTime;
+          applyTopDownPhysicsAndCollision(z, false);
+          continue;  // 眩暈中不移動
+        }
+
+        if (z.slowTimer > 0) {
+          z.slowTimer -= deltaTime;
+        }
+
+        applyTopDownPhysicsAndCollision(z, false);
         let nearestTarget = null, minDist = Infinity, targetType = null;
 
         playerList.forEach(p => {
@@ -2423,6 +2466,17 @@
       const clsDef = CLASSES[me.classId] || CLASSES.assault;
       const nameDisp = document.getElementById('playerNameDisplay');
       if (nameDisp) nameDisp.innerText = `${clsDef.icon} ${me.name}`;
+
+      const minionTag = document.getElementById('minionCountTag');
+      if (minionTag) {
+        if (me.classId === 'necromancer') {
+          const myMinionCount = minions.filter(m => m.ownerId === myPlayerId).length;
+          minionTag.innerText = `💀 x ${myMinionCount}`;
+          minionTag.classList.remove('hidden');
+        } else {
+          minionTag.classList.add('hidden');
+        }
+      }
 
       const lvlTxt = document.getElementById('levelText'); if (lvlTxt) lvlTxt.innerText = `Lv. ${me.level}`;
       const hpB = document.getElementById('hpBar'); if (hpB) hpB.style.width = `${(me.hp / me.maxHp) * 100}%`;
@@ -2869,7 +2923,7 @@
         if (me.y + r > MAP_BOUNDS.maxY) { me.y = MAP_BOUNDS.maxY - r; if (me.vy > 0) me.vy = 0; }
 
         if (!aimJoystickData.active) {
-          me.angle = Math.atan2((mousePos.y + camera.y) - me.y, (mousePos.x + camera.x) - me.x);
+          me.angle = Math.atan2((mousePos.y + camera.x) - me.y, (mousePos.x + camera.x) - me.x);
         }
 
         if (!isHost && hostConn && hostConn.open) {
