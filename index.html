@@ -1248,7 +1248,9 @@
       if (!config) return false;
 
       if (me.exp < config.cost) {
-        createFloatingText(me.x, me.y - 30, '經驗值不足！', '#ef4444', 16); return false;
+        createFloatingText(me.x, me.y - 30, '經驗值不足！', '#ef4444', 16);
+        showWarningBanner(`⚠️ 經驗值不足！需要 ${config.cost} 點（目前 ${Math.round(me.exp)} 點）`);
+        return false;
       }
 
       const myCurrentDefenses = defenses.filter(d => d.ownerId === myPlayerId && d.type === selectedDefenseType);
@@ -1277,8 +1279,13 @@
         const btn = document.getElementById(`btn${type.charAt(0).toUpperCase() + type.slice(1)}`);
         const countTag = document.getElementById(`${type}CountTag`);
         if (btn) {
-          if (selectedDefenseType === type) btn.classList.add('border-amber-400', 'bg-amber-500/20');
-          else btn.classList.remove('border-amber-400', 'bg-amber-500/20');
+          if (selectedDefenseType === type) {
+            btn.classList.add('border-amber-400', 'bg-amber-500/20', 'scale-105', 'shadow-lg');
+            btn.style.boxShadow = '0 0 15px rgba(251, 191, 36, 0.6)';
+          } else {
+            btn.classList.remove('border-amber-400', 'bg-amber-500/20', 'scale-105', 'shadow-lg');
+            btn.style.boxShadow = '';
+          }
         }
         if (countTag && me) {
           const count = defenses.filter(d => d.ownerId === myPlayerId && d.type === type).length;
@@ -1603,6 +1610,23 @@
       title.innerText = text; banner.classList.remove('hidden');
       setTimeout(() => { banner.style.opacity = '1'; }, 10);
       setTimeout(() => { banner.style.opacity = '0'; setTimeout(() => { banner.classList.add('hidden'); }, 500); }, 2000);
+    }
+
+    function showWarningBanner(text) {
+      const banner = document.getElementById('weaponUnlockBanner');
+      const title = document.getElementById('weaponUnlockTitle');
+      if (!banner || !title) return;
+      title.innerText = text;
+      title.style.color = '#f87171';
+      banner.classList.remove('hidden');
+      setTimeout(() => { banner.style.opacity = '1'; }, 10);
+      setTimeout(() => {
+        banner.style.opacity = '0';
+        setTimeout(() => {
+          banner.classList.add('hidden');
+          title.style.color = '';
+        }, 500);
+      }, 1500);
     }
 
     function updateDayNightAndWeather(deltaTime) {
@@ -2923,7 +2947,7 @@
         if (me.y + r > MAP_BOUNDS.maxY) { me.y = MAP_BOUNDS.maxY - r; if (me.vy > 0) me.vy = 0; }
 
         if (!aimJoystickData.active) {
-          me.angle = Math.atan2((mousePos.y + camera.x) - me.y, (mousePos.x + camera.x) - me.x);
+          me.angle = Math.atan2((mousePos.y + camera.y) - me.y, (mousePos.x + camera.x) - me.x);
         }
 
         if (!isHost && hostConn && hostConn.open) {
@@ -3173,7 +3197,7 @@
     window.addEventListener('mousemove', (e) => { mousePos.x = e.clientX; mousePos.y = e.clientY; });
 
     window.addEventListener('mousedown', (e) => {
-      if (e.target.closest('#chatContainer') || e.target.closest('#weaponBar') || e.target.closest('#defenseBarContainer') || e.target.closest('#mainMenu')) return;
+      if (e.target.closest('#chatContainer') || e.target.closest('#weaponBar') || e.target.closest('#defenseBarContainer') || e.target.closest('#mainMenu') || e.target.closest('#miniMapContainer')) return;
       initAudio();
       if (selectedDefenseType && gameRunning) {
         placeDefenseAt(e.clientX + camera.x, e.clientY + camera.y); return;
@@ -3183,6 +3207,22 @@
         if (w && w.isMelee) triggerMeleeAttack(); else triggerShooting();
       }
     });
+
+    // 手機版放置防禦工事與射擊
+    window.addEventListener('touchstart', (e) => {
+      if (e.target.closest('#chatContainer') || e.target.closest('#weaponBar') || e.target.closest('#defenseBarContainer') || e.target.closest('#mainMenu') || e.target.closest('#miniMapContainer') || e.target.closest('#moveJoystickContainer') || e.target.closest('#aimJoystickContainer') || e.target.closest('#mobileDashBtn')) return;
+
+      const touch = e.changedTouches[0];
+      if (!touch) return;
+
+      initAudio();
+      if (selectedDefenseType && gameRunning) {
+        placeDefenseAt(touch.clientX + camera.x, touch.clientY + camera.y);
+        e.preventDefault();
+        return;
+      }
+    }, { passive: false });
+
     window.addEventListener('mouseup', (e) => { if (e.button === 0) isMouseDown = false; });
 
     window.addEventListener('DOMContentLoaded', () => {
