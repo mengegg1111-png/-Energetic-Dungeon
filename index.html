@@ -32,7 +32,7 @@
   <div id="gameContainer" class="relative w-full h-full overflow-hidden flex items-center justify-center">
     <canvas id="gameCanvas" class="w-full h-full"></canvas>
 
-    <!-- 功能 12：爆擊全螢幕閃光 Overlay -->
+    <!-- 爆擊全螢幕閃光 Overlay -->
     <div id="critFlashOverlay" class="hidden absolute inset-0 z-30 pointer-events-none bg-white/30 transition-opacity duration-100 opacity-0"></div>
 
     <div id="bloodVignette" class="hidden absolute inset-0 z-10 blood-moon-vignette border-8 border-red-600/40"></div>
@@ -58,7 +58,7 @@
       </div>
     </div>
 
-    <!-- 功能 2：Boss 專屬血條 UI -->
+    <!-- Boss 專屬血條 UI -->
     <div id="bossHealthBarContainer" class="hidden absolute top-4 left-1/2 transform -translate-x-1/2 z-30 pointer-events-none transition-all duration-300 opacity-0">
       <div class="w-[320px] sm:w-[500px] glass-panel p-2.5 rounded-2xl border-2 border-amber-400/80 shadow-[0_0_20px_rgba(245,158,11,0.4)] flex flex-col gap-1 text-center bg-slate-950/90">
         <div class="flex justify-between items-center text-xs font-black tracking-wider px-1">
@@ -112,12 +112,12 @@
       </div>
     </div>
 
-    <!-- 功能 1：小地圖 UI -->
+    <!-- 小地圖 UI -->
     <div id="miniMapContainer" class="hidden absolute top-20 right-3 z-20 pointer-events-auto border-2 border-slate-700/80 rounded-2xl overflow-hidden shadow-2xl glass-panel bg-slate-950/80">
       <canvas id="miniMap" width="150" height="150" class="block"></canvas>
     </div>
 
-    <!-- 功能 9：HUD 每日挑戰指示 -->
+    <!-- HUD 每日挑戰指示 -->
     <div id="dailyChallengeHudTag" class="hidden absolute top-20 left-3 z-20 pointer-events-none">
       <div class="glass-panel px-3 py-1.5 rounded-xl border border-amber-500/60 shadow-lg flex items-center gap-2 bg-slate-950/80">
         <span class="text-amber-400 font-bold text-xs flex items-center gap-1 animate-pulse"><i class="fa-solid fa-bolt"></i> 今日挑戰：</span>
@@ -147,7 +147,7 @@
       </form>
     </div>
 
-    <!-- 功能 5：防禦工事快捷列 UI -->
+    <!-- 防禦工事快捷列 UI -->
     <div id="defenseBarContainer" class="hidden absolute bottom-24 sm:bottom-28 left-1/2 transform -translate-x-1/2 z-20 pointer-events-auto">
       <div class="glass-panel p-2 rounded-2xl flex gap-2 border border-slate-700/80 shadow-2xl bg-slate-950/80 items-center">
         <div class="text-[10px] font-black text-amber-400 px-1 flex flex-col items-center border-r border-slate-800 pr-2">
@@ -217,7 +217,7 @@
           <i class="fa-solid fa-triangle-exclamation mr-1"></i> 連線回應延遲，若斷線請重新產生房間碼。
         </div>
 
-        <!-- 功能 9：每日挑戰專區面板 -->
+        <!-- 每日挑戰專區面板 -->
         <div id="dailyChallengeMenuCard" class="glass-panel p-3 rounded-2xl border border-amber-500/50 bg-amber-950/20 text-left flex flex-col gap-1.5">
           <div class="flex justify-between items-center">
             <span class="text-xs font-black text-amber-400 flex items-center gap-1">
@@ -345,7 +345,7 @@
       </div>
     </div>
 
-    <!-- 功能 3：主機斷線全螢幕遮罩 -->
+    <!-- 主機斷線全螢幕遮罩 -->
     <div id="hostDisconnectedModal" class="hidden absolute inset-0 bg-slate-950/95 backdrop-blur-xl flex flex-col justify-center items-center p-4 z-50 text-center">
       <div class="max-w-md w-full glass-panel p-8 rounded-3xl border border-red-500/40 shadow-[0_0_30px_rgba(239,68,68,0.3)] flex flex-col gap-4">
         <div class="text-5xl animate-bounce">⚠️</div>
@@ -507,7 +507,6 @@
     let isSinglePlayer = true;
     let gameRunning = false;
 
-    // 【新增全域變數】
     let reconnectAttempts = 0;
     let reconnectTimer = null;
     let hostPeerIdStore = null;
@@ -1091,7 +1090,6 @@
     }
     window.joinRoomByCode = joinRoomByCode;
 
-    // 功能 1：小地圖繪製
     function renderMiniMap() {
       const miniCanvas = document.getElementById('miniMap');
       if (!miniCanvas) return;
@@ -1156,7 +1154,6 @@
       mctx.restore();
     }
 
-    // 功能 2：Boss 血條 UI
     function updateBossHealthBarUI() {
       const container = document.getElementById('bossHealthBarContainer');
       const nameEl = document.getElementById('bossNameDisplay');
@@ -1183,7 +1180,6 @@
       }
     }
 
-    // 功能 3：斷線處理
     function handleHostDisconnection() {
       gameRunning = false;
       const modal = document.getElementById('hostDisconnectedModal');
@@ -1239,7 +1235,6 @@
       }
     }
 
-    // 功能 5：防禦工事
     function selectDefenseToPlace(type) {
       selectedDefenseType = (selectedDefenseType === type) ? null : type;
       updateDefenseUI();
@@ -1361,7 +1356,6 @@
       });
     }
 
-    // 功能 7：倒地方向箭頭
     function renderDownedTeammateIndicators() {
       const me = players[myPlayerId];
       if (!me) return;
@@ -1395,7 +1389,6 @@
       });
     }
 
-    // 功能 9：每日挑戰
     function initDailyChallengeSystem() {
       const todayStr = new Date().toISOString().slice(0, 10);
       const storageKey = `dailyChallenge_${todayStr}`;
@@ -1459,7 +1452,6 @@
       }
     }
 
-    // 功能 12：擊殺特效與血跡
     function triggerZombieDeathEffects(x, y, isBoss = false) {
       const particleCount = isBoss ? 60 : 18;
       for (let i = 0; i < particleCount; i++) {
@@ -1507,7 +1499,6 @@
       }
     }
 
-    // 地圖與障礙
     function generateMap(mapId, seed) {
       const mapDef = MAPS.find(m => m.id === mapId) || MAPS[0];
       currentMap = mapDef; currentSeed = seed;
@@ -1545,36 +1536,58 @@
 
     function drawDecorItem(offCtx, decorType, tx, ty, rng, worldX, worldY) {
       let radius = 24 + rng() * 16;
-      offCtx.fillStyle = 'rgba(0, 0, 0, 0.35)'; offCtx.beginPath();
-      offCtx.ellipse(tx, ty + radius * 0.3, radius * 0.8, radius * 0.3, 0, 0, Math.PI * 2); offCtx.fill();
+      offCtx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+      offCtx.beginPath();
+      offCtx.ellipse(tx, ty + radius * 0.3, radius * 0.8, radius * 0.3, 0, 0, Math.PI * 2);
+      offCtx.fill();
 
       if (decorType === 'tree') {
         trees.push({ x: worldX, y: worldY, r: radius * 0.55 });
         offCtx.fillStyle = '#451a03'; offCtx.fillRect(tx - radius * 0.2, ty, radius * 0.4, radius * 0.6);
         offCtx.fillStyle = '#15803d'; offCtx.beginPath(); offCtx.arc(tx, ty - radius * 0.2, radius, 0, Math.PI * 2); offCtx.fill();
         offCtx.fillStyle = '#16a34a'; offCtx.beginPath(); offCtx.arc(tx - radius * 0.2, ty - radius * 0.3, radius * 0.75, 0, Math.PI * 2); offCtx.fill();
+        offCtx.fillStyle = '#22c55e'; offCtx.beginPath(); offCtx.arc(tx - radius * 0.3, ty - radius * 0.4, radius * 0.4, 0, Math.PI * 2); offCtx.fill();
       } else if (decorType === 'building') {
-        const bw = 40 + rng() * 40, bh = 40 + rng() * 40; radius = Math.max(bw, bh) * 0.5;
+        const bw = 40 + rng() * 40, bh = 40 + rng() * 40;
+        radius = Math.max(bw, bh) * 0.5;
         trees.push({ x: worldX, y: worldY, r: radius * 0.7 });
         offCtx.fillStyle = '#334155'; offCtx.fillRect(tx - bw/2, ty - bh/2, bw, bh);
         offCtx.fillStyle = '#1e293b'; offCtx.fillRect(tx - bw/2 + 4, ty - bh/2 + 4, bw - 8, bh - 8);
         offCtx.fillStyle = '#475569'; offCtx.fillRect(tx - bw/2 + 8, ty - bh/2 + 8, bw - 16, bh - 16);
       } else if (decorType === 'cactus') {
-        radius = 18 + rng() * 12; trees.push({ x: worldX, y: worldY, r: radius * 0.6 });
+        radius = 18 + rng() * 12;
+        trees.push({ x: worldX, y: worldY, r: radius * 0.6 });
         offCtx.fillStyle = '#15803d'; offCtx.beginPath(); offCtx.arc(tx, ty, radius, 0, Math.PI * 2); offCtx.fill();
         offCtx.fillStyle = '#166534'; offCtx.beginPath(); offCtx.arc(tx - 3, ty - 3, radius * 0.7, 0, Math.PI * 2); offCtx.fill();
+        offCtx.fillStyle = '#fef08a';
+        for (let a = 0; a < Math.PI * 2; a += Math.PI / 3) {
+          offCtx.fillRect(tx + Math.cos(a) * radius, ty + Math.sin(a) * radius, 2, 2);
+        }
       } else if (decorType === 'pine') {
         trees.push({ x: worldX, y: worldY, r: radius * 0.55 });
         offCtx.fillStyle = '#064e3b'; offCtx.beginPath(); offCtx.arc(tx, ty, radius, 0, Math.PI * 2); offCtx.fill();
+        offCtx.fillStyle = '#047857'; offCtx.beginPath(); offCtx.arc(tx - radius*0.2, ty - radius*0.2, radius * 0.7, 0, Math.PI * 2); offCtx.fill();
+        offCtx.fillStyle = '#f8fafc'; offCtx.beginPath(); offCtx.arc(tx - radius*0.1, ty - radius*0.3, radius * 0.35, 0, Math.PI * 2); offCtx.fill();
       } else if (decorType === 'deadTree') {
         trees.push({ x: worldX, y: worldY, r: radius * 0.45 });
         offCtx.fillStyle = '#292524'; offCtx.fillRect(tx - 4, ty - radius, 8, radius * 1.5);
+        offCtx.fillRect(tx - radius * 0.6, ty - radius * 0.4, radius * 1.2, 4);
+        offCtx.fillRect(tx - radius * 0.4, ty - radius * 0.8, radius * 0.8, 3);
       } else if (decorType === 'rock') {
-        radius = 20 + rng() * 20; trees.push({ x: worldX, y: worldY, r: radius * 0.65 });
+        radius = 20 + rng() * 20;
+        trees.push({ x: worldX, y: worldY, r: radius * 0.65 });
         offCtx.fillStyle = '#475569'; offCtx.beginPath(); offCtx.arc(tx, ty, radius, 0, Math.PI * 2); offCtx.fill();
+        offCtx.fillStyle = '#64748b'; offCtx.beginPath(); offCtx.arc(tx - radius*0.2, ty - radius*0.2, radius * 0.7, 0, Math.PI * 2); offCtx.fill();
       } else if (decorType === 'tombstone') {
-        radius = 16 + rng() * 10; trees.push({ x: worldX, y: worldY, r: radius * 0.6 });
-        offCtx.fillStyle = '#64748b'; offCtx.beginPath(); offCtx.roundRect(tx - radius, ty - radius, radius * 2, radius * 2.2, [12, 12, 2, 2]); offCtx.fill();
+        radius = 16 + rng() * 10;
+        trees.push({ x: worldX, y: worldY, r: radius * 0.6 });
+        offCtx.fillStyle = '#64748b';
+        offCtx.beginPath();
+        offCtx.roundRect(tx - radius, ty - radius, radius * 2, radius * 2.2, [12, 12, 2, 2]);
+        offCtx.fill();
+        offCtx.fillStyle = '#334155';
+        offCtx.fillRect(tx - 2, ty - radius + 6, 4, 16);
+        offCtx.fillRect(tx - 6, ty - radius + 10, 12, 4);
       }
     }
 
@@ -2246,7 +2259,8 @@
 
         if (nearestTarget && minDist < (z.size / 2) + (nearestTarget.size / 2) + 4) {
           if (targetType === 'player' && nearestTarget.invulnerableTime <= 0) {
-            damagePlayer(nearestTarget, z.damage); nearestTarget.invulnerableTime = nearestTarget.invulnDuration || 20;
+            damagePlayer(nearestTarget, z.damage);
+            nearestTarget.invulnerableTime = nearestTarget.invulnDuration || 20;
           }
         }
       }
@@ -2368,6 +2382,21 @@
     function createFloatingText(x, y, text, color, size = 16) {
       floatingTexts.push({ x, y, text, color, size, life: 35 });
     }
+
+    function renamePlayer(newName) {
+      if (!newName || !newName.trim()) return;
+      const trimmedName = newName.trim();
+      const me = players[myPlayerId];
+      if (!me) return;
+      me.name = trimmedName;
+      if (!isHost && hostConn && hostConn.open) {
+        hostConn.send({ type: 'PLAYER_RENAME', id: myPlayerId, name: trimmedName });
+      } else if (isHost) {
+        broadcastState();
+        if (myHostRoomCode) broadcastRoomInfo();
+      }
+    }
+    window.renamePlayer = renamePlayer;
 
     function updateHud() {
       const me = players[myPlayerId]; if (!me) return;
@@ -2594,61 +2623,271 @@
     }
 
     function drawPlayerCharacter(p) {
-      ctx.save(); ctx.translate(p.x, p.y);
+      ctx.save();
+      ctx.translate(p.x, p.y);
       if (p.invulnerableTime > 0) ctx.globalAlpha = 0.5;
-      const radius = (p.size || 30) / 2, clsDef = CLASSES[p.classId] || CLASSES.assault;
 
-      ctx.fillStyle = p.color || '#38bdf8'; ctx.beginPath(); ctx.arc(0, 0, radius, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 12px system-ui'; ctx.textAlign = 'center';
+      const angle = p.angle || 0;
+      const radius = (p.size || 30) / 2;
+      const clsDef = CLASSES[p.classId] || CLASSES.assault;
+
+      // 角色腳下陰影
+      ctx.fillStyle = 'rgba(0,0,0,0.35)';
+      ctx.beginPath();
+      ctx.ellipse(0, 0, radius + 4, radius + 4, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 倒地求救狀態
+      if (p.isDowned) {
+        ctx.fillStyle = '#ef4444';
+        ctx.beginPath();
+        ctx.arc(0, 0, radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#ef4444';
+        ctx.font = 'bold 14px system-ui';
+        ctx.textAlign = 'center';
+        ctx.fillText('🆘 倒地求救', 0, -35);
+
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(0, 0, 26, -Math.PI / 2, -Math.PI / 2 + (Math.PI * 2 * (p.reviveProgress / 100)));
+        ctx.stroke();
+
+        ctx.restore();
+        return;
+      }
+
+      // 角色本體 + 槍管 (跟隨面向角度旋轉)
+      ctx.save();
+      ctx.rotate(angle);
+
+      ctx.fillStyle = p.color || '#38bdf8';
+      ctx.shadowColor = p.color || '#38bdf8';
+      ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.arc(0, 0, radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      const weapon = WEAPONS[p.weapon];
+      let gunColor = '#475569';
+      let gunLength = 14;
+      let gunThick = 6;
+
+      if (weapon) {
+        if (weapon.isBeam) { gunColor = weapon.color || '#a855f7'; gunLength = 20; gunThick = 5; }
+        else if (weapon.isGrenade) { gunColor = '#f59e0b'; gunLength = 16; gunThick = 8; }
+        else if (weapon.isAxe) { gunColor = '#ef4444'; gunLength = 10; gunThick = 10; }
+        else if (weapon.isMelee) { gunColor = '#fbbf24'; gunLength = 12; gunThick = 8; }
+        else if (weapon.isFlame) { gunColor = '#f97316'; gunLength = 12; gunThick = 7; }
+        else if (weapon.isFrost) { gunColor = '#67e8f9'; gunLength = 16; gunThick = 5; }
+        else if (weapon.isNecro) { gunColor = '#a78bfa'; gunLength = 18; gunThick = 5; }
+        else if (weapon.isTesla) { gunColor = '#a855f7'; gunLength = 14; gunThick = 6; }
+        else if (weapon.name === '霰彈槍') { gunColor = '#ef4444'; gunLength = 14; gunThick = 8; }
+        else if (weapon.name === '突擊步槍') { gunColor = '#38bdf8'; gunLength = 16; gunThick = 5; }
+      }
+
+      ctx.fillStyle = gunColor;
+      ctx.fillRect(radius - 2, -gunThick / 2, gunLength, gunThick);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(radius - 2 + gunLength - 3, -2, 4, 4);
+
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(2, -5, 6, 10);
+      ctx.fillStyle = p.color || '#38bdf8';
+      ctx.fillRect(4, -3, 3, 6);
+
+      ctx.restore();
+
+      // 玩家名字 (保持正向)
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 12px system-ui';
+      ctx.textAlign = 'center';
       ctx.fillText(`${clsDef.icon} ${p.name}`, 0, -radius - 12);
+
+      // 聊天氣泡
+      if (p.chatBubble && Date.now() - p.chatBubble.time < 4000) {
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 1;
+        ctx.font = '11px system-ui';
+        const textWidth = ctx.measureText(p.chatBubble.text).width;
+        const bWidth = textWidth + 16, bHeight = 20;
+
+        ctx.beginPath();
+        ctx.roundRect(-bWidth / 2, -radius - 38, bWidth, bHeight, 8);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#38bdf8';
+        ctx.textAlign = 'center';
+        ctx.fillText(p.chatBubble.text, 0, -radius - 24);
+      }
+
       ctx.restore();
     }
 
     function drawZombieMonster(z, darkFactor) {
-      ctx.save(); ctx.translate(z.x, z.y);
+      ctx.save();
+      ctx.translate(z.x, z.y);
       const radius = (z.size || 28) / 2;
-      ctx.fillStyle = z.color; ctx.beginPath(); ctx.arc(0, 0, radius, 0, Math.PI * 2); ctx.fill();
-      if (z.hp < z.maxHp) {
-        const barW = radius * 2.8; ctx.fillStyle = 'rgba(15, 23, 42, 0.8)'; ctx.fillRect(-barW / 2, -radius - 12, barW, 4);
-        ctx.fillStyle = '#ef4444'; ctx.fillRect(-barW / 2, -radius - 12, barW * (z.hp / z.maxHp), 4);
+
+      ctx.fillStyle = 'rgba(0,0,0,0.35)';
+      ctx.beginPath();
+      ctx.ellipse(0, 0, radius + 2, radius + 2, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      if (z.slowTimer > 0) {
+        ctx.fillStyle = 'rgba(103, 232, 249, 0.35)';
+        ctx.beginPath();
+        ctx.arc(0, 0, radius + 8, 0, Math.PI * 2);
+        ctx.fill();
       }
+
+      ctx.save();
+      ctx.rotate(z.angle || 0);
+
+      ctx.fillStyle = z.color;
+      ctx.beginPath();
+      ctx.arc(0, 0, radius, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(3, -6, 4, 12);
+
+      if (darkFactor > 0.4 || currentWeather === 'bloodmoon') {
+        ctx.fillStyle = '#ef4444';
+        ctx.shadowColor = '#ef4444';
+        ctx.shadowBlur = 8;
+        ctx.fillRect(4, -5, 3, 3);
+        ctx.fillRect(4, 2, 3, 3);
+        ctx.shadowBlur = 0;
+      }
+
+      if (z.type === 'fast') {
+        ctx.fillStyle = '#ca8a04';
+        ctx.beginPath(); ctx.arc(-2, 0, 4, 0, Math.PI * 2); ctx.fill();
+      } else if (z.type === 'shooter') {
+        ctx.fillStyle = '#0284c7';
+        ctx.beginPath(); ctx.arc(0, 0, 5, 0, Math.PI * 2); ctx.fill();
+      } else if (z.type === 'boss') {
+        ctx.fillStyle = '#f43f5e';
+        ctx.beginPath(); ctx.arc(0, 0, 8, 0, Math.PI * 2); ctx.fill();
+      }
+
+      ctx.restore();
+
+      if (z.stunTimer > 0) {
+        ctx.fillStyle = '#facc15';
+        ctx.font = 'bold 14px system-ui';
+        ctx.textAlign = 'center';
+        ctx.fillText('⭐', 0, -radius - 16);
+      }
+
+      if (z.slowTimer > 0 && z.stunTimer <= 0) {
+        ctx.fillStyle = '#67e8f9';
+        ctx.font = 'bold 12px system-ui';
+        ctx.textAlign = 'center';
+        ctx.fillText('❄️', 0, -radius - 16);
+      }
+
+      if (z.burnTimer > 0) {
+        ctx.fillStyle = '#f97316';
+        ctx.font = 'bold 12px system-ui';
+        ctx.textAlign = 'center';
+        ctx.fillText('🔥', 0, -radius - 16);
+      }
+
+      if (z.hp < z.maxHp) {
+        const barW = radius * 2.8;
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.8)';
+        ctx.fillRect(-barW / 2, -radius - 12, barW, 4);
+        ctx.fillStyle = '#ef4444';
+        ctx.fillRect(-barW / 2, -radius - 12, barW * (z.hp / z.maxHp), 4);
+      }
+
       ctx.restore();
     }
 
     let lastFrameTime = performance.now();
     function gameLoop(nowTime) {
       if (!gameRunning) return;
-      const deltaTime = (nowTime - lastFrameTime) / 1000; lastFrameTime = nowTime;
+      const deltaTime = (nowTime - lastFrameTime) / 1000;
+      lastFrameTime = nowTime;
 
       if (screenShakeTime > 0) screenShakeTime = Math.max(0, screenShakeTime - deltaTime);
-      updateDayNightAndWeather(deltaTime); updateWeatherAudio();
+      updateDayNightAndWeather(deltaTime);
+      updateWeatherAudio();
 
       zombieGrowlTimer += deltaTime;
       if (zombieGrowlTimer >= 5 + Math.random() * 5) {
-        zombieGrowlTimer = 0; if (zombies.length > 0) playSound('zombieGrowl');
+        zombieGrowlTimer = 0;
+        if (zombies.length > 0) playSound('zombieGrowl');
       }
 
       const me = players[myPlayerId];
+
       if (me && !me.isDowned && !me.isDead) {
         let dx = 0, dy = 0;
         if (keys['a'] || keys['arrowleft']) dx -= 1;
         if (keys['d'] || keys['arrowright']) dx += 1;
         if (keys['w'] || keys['arrowup']) dy -= 1;
         if (keys['s'] || keys['arrowdown']) dy += 1;
-        if (moveJoystickData.active) { dx = moveJoystickData.x; dy = moveJoystickData.y; }
+        if (moveJoystickData.active) {
+          dx = moveJoystickData.x;
+          dy = moveJoystickData.y;
+        }
 
         if (dx !== 0 || dy !== 0) {
-          const len = Math.hypot(dx, dy); me.vx = (dx / len) * me.speed; me.vy = (dy / len) * me.speed;
-          me.x += me.vx * 0.5; me.y += me.vy * 0.5;
+          const len = Math.hypot(dx, dy);
+          me.vx = (dx / len) * me.speed;
+          me.vy = (dy / len) * me.speed;
+          me.x += me.vx * 0.5;
+          me.y += me.vy * 0.5;
+        }
+
+        const r = me.size / 2;
+        if (me.x - r < MAP_BOUNDS.minX) { me.x = MAP_BOUNDS.minX + r; if (me.vx < 0) me.vx = 0; }
+        if (me.x + r > MAP_BOUNDS.maxX) { me.x = MAP_BOUNDS.maxX - r; if (me.vx > 0) me.vx = 0; }
+        if (me.y - r < MAP_BOUNDS.minY) { me.y = MAP_BOUNDS.minY + r; if (me.vy < 0) me.vy = 0; }
+        if (me.y + r > MAP_BOUNDS.maxY) { me.y = MAP_BOUNDS.maxY - r; if (me.vy > 0) me.vy = 0; }
+
+        if (!aimJoystickData.active) {
+          me.angle = Math.atan2((mousePos.y + camera.y) - me.y, (mousePos.x + camera.x) - me.x);
         }
 
         if (!isHost && hostConn && hostConn.open) {
-          hostConn.send({ type: 'PLAYER_INPUT', id: myPlayerId, x: me.x, y: me.y, vx: me.vx, vy: me.vy, angle: me.angle, weapon: me.weapon });
+          hostConn.send({
+            type: 'PLAYER_INPUT',
+            id: myPlayerId,
+            x: me.x,
+            y: me.y,
+            vx: me.vx,
+            vy: me.vy,
+            angle: me.angle,
+            weapon: me.weapon
+          });
+        }
+      }
+
+      if (gameRunning && (isMouseDown || aimJoystickData.active) && me && !me.isDowned && !me.isDead) {
+        const w = WEAPONS[me.weapon];
+        if (w && w.isMelee) {
+          triggerMeleeAttack();
+        } else {
+          triggerShooting();
         }
       }
 
       if (isHost) updateWorldHost();
-      render(); renderMiniMap(); updateBossHealthBarUI(); updateDefenseUI();
+      render();
+      renderMiniMap();
+      updateBossHealthBarUI();
+      updateDefenseUI();
+
       requestAnimationFrame(gameLoop);
     }
 
