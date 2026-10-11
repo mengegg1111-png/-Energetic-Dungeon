@@ -48,30 +48,95 @@
       scrollbar-width: none;
     }
 
-    /* 橫屏專用 UI 修正 (修正高縮小與 100vh 問題) */
-    @media (orientation: landscape) and (max-height: 500px) {
+    /* ==========================================
+       手持設備底部 UI 排版優化 (CSS Only)
+       ========================================== */
+
+    /* 1. 豎屏 Portrait：整體往上抬高，避免貼底 */
+    @media (orientation: portrait) {
+      #moveJoystickContainer,
+      #aimJoystickContainer {
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 35px) !important;
+      }
+
+      #bottomControls {
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 110px) !important;
+      }
+
+      #mobileDashBtn {
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 50px) !important;
+        right: 50% !important;
+        transform: translateX(50%) !important;
+      }
+    }
+
+    /* 2. 橫屏 Landscape：重新配置搖桿、武器欄、衝刺鈕與右側垂直防禦欄 */
+    @media (orientation: landscape) {
       body {
         height: 100dvh !important;
       }
 
-      #bottomControls {
-        bottom: calc(env(safe-area-inset-bottom, 0px) + 8px) !important;
-        transform: translateX(-50%) scale(0.85) !important;
-        transform-origin: bottom center !important;
+      /* 搖桿尺寸縮至 100px，並置底 */
+      #moveJoystickContainer {
+        width: 100px !important;
+        height: 100px !important;
+        left: calc(env(safe-area-inset-left, 0px) + 20px) !important;
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 15px) !important;
       }
 
-      #moveJoystickContainer,
       #aimJoystickContainer {
-        bottom: calc(env(safe-area-inset-bottom, 0px) + 10px) !important;
-        width: 5.5rem !important;
-        height: 5.5rem !important;
+        width: 100px !important;
+        height: 100px !important;
+        right: calc(env(safe-area-inset-right, 0px) + 20px) !important;
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 15px) !important;
       }
 
+      /* 衝刺鈕：夾在武器欄與右搖桿之間 */
       #mobileDashBtn {
-        bottom: calc(env(safe-area-inset-bottom, 0px) + 105px) !important;
-        right: 2rem !important;
-        width: 3rem !important;
-        height: 3rem !important;
+        width: 52px !important;
+        height: 52px !important;
+        right: calc(env(safe-area-inset-right, 0px) + 130px) !important;
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 15px) !important;
+        top: auto !important;
+        left: auto !important;
+      }
+
+      /* 解除底部控制容器限制，允許內部元素獨立定位 */
+      #bottomControls {
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        transform: none !important;
+        max-width: 100% !important;
+        pointer-events: none !important;
+        height: 100dvh !important;
+      }
+
+      /* 武器欄：置於底部中間，與搖桿同高 */
+      #weaponBar {
+        pointer-events: auto !important;
+        position: absolute !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 15px) !important;
+        max-width: calc(100vw - 320px) !important;
+      }
+
+      /* 防禦欄：移至右側、垂直排列 */
+      #defenseBarContainer {
+        pointer-events: auto !important;
+        position: absolute !important;
+        right: calc(env(safe-area-inset-right, 0px) + 20px) !important;
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 125px) !important;
+        flex-direction: column !important;
+        align-items: flex-end !important;
+        gap: 6px !important;
+        padding: 8px !important;
+      }
+
+      #defenseBarContainer button {
+        width: 100% !important;
+        justify-content: space-between !important;
       }
     }
   </style>
@@ -540,7 +605,6 @@
       necroStaff: { name: '亡靈權杖', fireRate: 400, speed: 16, damage: 35, color: '#a78bfa', size: 5, count: 1, spread: 0, recoil: 2, penetrate: true, range: 100, exclusiveTo: 'necromancer', icon: '💀', isNecro: true, summonChance: 0.3 }
     };
 
-    // 擴充至 16 色皮膚陣列
     const SKIN_COLORS = [
       { name: '極光藍', hex: '#38bdf8' },
       { name: '琥珀金', hex: '#f59e0b' },
@@ -638,7 +702,7 @@
         { id: 'necromancer_buff', name: '亡靈強化', desc: '召喚亡靈的傷害與血量 +50%', apply: (p) => { p.minionBuffMult = 1.5; } }
       ]
     };
-    // MQTT 連線配置
+
     const MQTT_BROKERS = [
       'wss://broker.hivemq.com:8884/mqtt',
       'wss://broker.emqx.io:8084/mqtt',
@@ -676,7 +740,7 @@
     let camera = { x: 0, y: 0 };
     let screenShakeTime = 0;
     let hasShownExclusiveBanner = false;
-    let isUpgradeModalOpen = false; // 全域升級彈窗開啟標誌
+    let isUpgradeModalOpen = false;
     let lastShootTime = 0;
     let isMouseDown = false;
     let flashLightIntensity = 0;
@@ -960,7 +1024,6 @@
       }, 1000);
     }
 
-    // MQTT 與大廳
     function scheduleRenderLobby() {
       if (renderLobbyScheduled) return;
       renderLobbyScheduled = true;
@@ -2288,11 +2351,9 @@
         });
       }
 
-      // 殭屍索敵與移動 + 攻擊邏輯
       for (let i = zombies.length - 1; i >= 0; i--) {
         const z = zombies[i];
 
-        // 狀態計時器遞減
         if (z.burnTimer > 0) {
           z.burnTimer -= deltaTime;
           z.hp -= (z.burnStacks || 1) * 5 * deltaTime;
@@ -2318,7 +2379,7 @@
         if (z.stunTimer > 0) {
           z.stunTimer -= deltaTime;
           applyTopDownPhysicsAndCollision(z, false);
-          continue;  // 眩暈中不移動
+          continue;
         }
 
         if (z.slowTimer > 0) {
@@ -2400,7 +2461,6 @@
         }
       }
 
-      // 經驗寶石磁吸與拾取升級邏輯
       for (let i = expGems.length - 1; i >= 0; i--) {
         const gem = expGems[i];
         playerList.forEach(p => {
@@ -2482,7 +2542,6 @@
       if (p.hp <= 0) { p.hp = 0; p.isDowned = true; p.reviveProgress = 0; createFloatingText(p.x, p.y - 45, '倒地！需要救援', '#ef4444', 20); }
     }
 
-    // 【showUpgradeModal 防重複開啟與防連點修復】
     function showUpgradeModal() {
       if (isUpgradeModalOpen) return;
 
@@ -2498,8 +2557,6 @@
         me.classId = selectedClassId;
       }
       if (!me.takenExclusiveTalents) me.takenExclusiveTalents = [];
-
-      console.log('升級觸發！職業:', me.classId, '專屬技能池:', CLASS_EXCLUSIVE_TALENTS[me.classId]?.map(t => t.name), '已選:', me.takenExclusiveTalents);
 
       const generalUpgrades = [
         { title: '生命強化', desc: '最大生命值 +25 並立即恢復', action: (p) => { p.maxHp += 25; p.hp += 25; } },
@@ -2538,7 +2595,6 @@
 
           try {
             if (typeof u.action !== 'function') {
-              console.error('升級選項 action 不是函式:', u);
               modal.style.display = 'none';
               isUpgradeModalOpen = false;
               return;
@@ -2556,7 +2612,6 @@
               hostConn.send({ type: 'PLAYER_UPGRADE', id: myPlayerId, playerState: me });
             }
           } catch (err) {
-            console.error('升級技能套用失敗:', err);
             modal.style.display = 'none';
             isUpgradeModalOpen = false;
           }
@@ -3222,7 +3277,6 @@
       }
     }
 
-    // 【修改：皮膚顏色下拉式選單與預覽框初始化】
     function initSkinColorPicker() {
       const select = document.getElementById('colorPickerContainer');
       const preview = document.getElementById('colorPreviewBox');
@@ -3246,7 +3300,6 @@
       };
     }
 
-    // 【修改：英雄職業下拉式選單初始化】
     function initClassPicker() {
       const select = document.getElementById('classPickerContainer');
       if (!select) return;
