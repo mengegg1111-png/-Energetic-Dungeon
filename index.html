@@ -1046,7 +1046,10 @@
         if (dist > maxDist) { dx = (dx / dist) * maxDist; dy = (dy / dist) * maxDist; }
         stick.style.left = `${50 + (dx / maxDist) * 50}%`;
         stick.style.top = `${50 + (dy / maxDist) * 50}%`;
-        callback({ active: true, x: dx / maxDist, y: dy / maxDist });
+        const nx = dx / maxDist;
+        const ny = dy / maxDist;
+        if (!isFinite(nx) || !isFinite(ny)) return;
+        callback({ active: true, x: nx, y: ny });
       }
     }
 
@@ -2046,6 +2049,7 @@
       activePlayers.forEach(p => {
         const screenX = p.x - camera.x, screenY = p.y - camera.y;
         let lightRadius = 200 + flashLightIntensity; if (currentWeather === 'fog') lightRadius *= 0.7;
+        if (!isFinite(screenX) || !isFinite(screenY) || !isFinite(lightRadius)) return;
         const radGrad = maskCtx.createRadialGradient(screenX, screenY, lightRadius * 0.2, screenX, screenY, lightRadius * 1.6);
         radGrad.addColorStop(0, 'rgba(0, 0, 0, 1.0)'); radGrad.addColorStop(0.6, 'rgba(0, 0, 0, 0.85)'); radGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
         maskCtx.fillStyle = radGrad; maskCtx.beginPath(); maskCtx.arc(screenX, screenY, lightRadius * 1.6, 0, Math.PI * 2); maskCtx.fill();
@@ -2903,6 +2907,9 @@
     function render() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       const me = players[myPlayerId];
+      if (me && (!isFinite(me.x) || !isFinite(me.y))) {
+        me.x = 0; me.y = 0; me.vx = 0; me.vy = 0;
+      }
       if (me) {
         camera.x += ((me.x - canvas.width / 2) - camera.x) * 0.1;
         camera.y += ((me.y - canvas.height / 2) - camera.y) * 0.1;
@@ -3295,6 +3302,7 @@
     let lastFrameTime = performance.now();
     function gameLoop(nowTime) {
       if (!gameRunning) return;
+      try {
       const deltaTime = (nowTime - lastFrameTime) / 1000;
       lastFrameTime = nowTime;
 
@@ -3323,10 +3331,14 @@
 
         if (dx !== 0 || dy !== 0) {
           const len = Math.hypot(dx, dy);
-          me.vx = (dx / len) * me.speed;
-          me.vy = (dy / len) * me.speed;
-          me.x += me.vx * 0.5;
-          me.y += me.vy * 0.5;
+          if (isFinite(len) && len > 0) {
+            me.vx = (dx / len) * me.speed;
+            me.vy = (dy / len) * me.speed;
+            if (isFinite(me.vx) && isFinite(me.vy)) {
+              me.x += me.vx * 0.5;
+              me.y += me.vy * 0.5;
+            }
+          }
         }
 
         const r = me.size / 2;
@@ -3367,7 +3379,9 @@
       renderMiniMap();
       updateBossHealthBarUI();
       updateDefenseUI();
-
+      } catch (err) {
+        console.error(err);
+      }
       requestAnimationFrame(gameLoop);
     }
 
