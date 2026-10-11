@@ -2289,7 +2289,7 @@
     function startNextWave() {
       currentWave++;
       const playerCount = Math.max(1, Object.keys(players).length);
-      zombiesToSpawn = (12 + currentWave * 6) * playerCount;
+      zombiesToSpawn = Math.round((12 + currentWave * 6) * (1 + (playerCount - 1) * 0.5));
       updateHud();
       createFloatingText(0, -300, `WAVE ${currentWave}`, '#f59e0b', 32);
       checkDailyChallengeWin();
