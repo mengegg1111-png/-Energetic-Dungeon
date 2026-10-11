@@ -477,6 +477,11 @@
       </div>
 
       <div id="connectionWarn" class="text-[11px] text-amber-400/90 hidden">⚠️ 連線伺服器回應較慢，請稍後再試。</div>
+
+      <!-- 除錯模式切換按鈕 -->
+      <button id="debugModeToggleBtn" type="button" class="w-full bg-slate-800 border border-red-500/40 text-red-400 text-xs py-1.5 rounded-xl hover:bg-slate-700 transition-all active:scale-95">
+        🐞 除錯模式（整場有效）
+      </button>
     </div>
   </div>
 
@@ -552,7 +557,7 @@
 
   <!-- 除錯模式狀態提示 -->
   <div id="debugToast" class="glass-panel px-4 py-2 rounded-2xl border border-amber-500/50 text-amber-300 font-bold text-xs shadow-2xl opacity-0 hidden">
-    <span id="debugToastText">🐞 除錯模式已開啟 (30s)</span>
+    <span id="debugToastText">🐞 除錯模式已開啟（整場有效）</span>
   </div>
 
   <!-- 除錯模式錯誤彈窗 -->
@@ -605,18 +610,52 @@
       }, 2000);
     }
 
+    function updateDebugModeButton() {
+      const button = document.getElementById('debugModeToggleBtn');
+      if (!button) return;
+
+      if (isDebugMode) {
+        button.innerText = '🐞 除錯模式：已開啟 ✅';
+        button.classList.add('bg-red-600', 'text-white');
+        button.style.backgroundColor = '#dc2626';
+        button.style.color = '#ffffff';
+      } else {
+        button.innerText = '🐞 除錯模式（整場有效）';
+        button.classList.remove('bg-red-600', 'text-white');
+        button.style.backgroundColor = '';
+        button.style.color = '';
+      }
+    }
+
     function enableDebugMode() {
+      if (debugTimer) clearTimeout(debugTimer);
+      debugTimer = null;
+
+      const wasAlreadyEnabled = isDebugMode;
       isDebugMode = true;
       weaponSwitchCount = 0;
       defenseSwitchCount = 0;
-      showDebugToast('🐞 除錯模式已開啟 (30s)');
+      updateDebugModeButton();
 
-      if (debugTimer) clearTimeout(debugTimer);
-      debugTimer = setTimeout(() => {
-        isDebugMode = false;
-        showDebugToast('🐞 除錯模式已關閉');
-      }, 30000);
+      if (!wasAlreadyEnabled) {
+        showDebugToast('🐞 除錯模式已開啟（整場有效）');
+      }
     }
+
+    // 主選單除錯模式按鈕：手動切換，直到再次關閉或重整頁面
+    document.getElementById('debugModeToggleBtn').addEventListener('click', () => {
+      if (isDebugMode) {
+        isDebugMode = false;
+        if (debugTimer) clearTimeout(debugTimer);
+        debugTimer = null;
+        weaponSwitchCount = 0;
+        defenseSwitchCount = 0;
+        updateDebugModeButton();
+        showDebugToast('🐞 除錯模式已關閉');
+      } else {
+        enableDebugMode();
+      }
+    });
 
     function checkDebugGesture(type) {
       if (type === 'weapon') {
