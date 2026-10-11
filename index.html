@@ -104,8 +104,8 @@
   @media (orientation: landscape) {
     #moveJoystickContainer {
       position: fixed !important;
-      width: 144px !important;
-      height: 144px !important;
+      width: 100px !important;
+      height: 100px !important;
       left: calc(env(safe-area-inset-left, 0px) + 20px) !important;
       bottom: calc(env(safe-area-inset-bottom, 0px) + 20px) !important;
       z-index: 60 !important;
@@ -113,8 +113,8 @@
 
     #aimJoystickContainer {
       position: fixed !important;
-      width: 144px !important;
-      height: 144px !important;
+      width: 100px !important;
+      height: 100px !important;
       right: calc(env(safe-area-inset-right, 0px) + 20px) !important;
       bottom: calc(env(safe-area-inset-bottom, 0px) + 20px) !important;
       z-index: 60 !important;
@@ -2629,29 +2629,25 @@
           isClicked = true;
 
           try {
-            if (typeof u.action !== 'function') {
-              modal.style.display = 'none';
-              document.body.classList.remove('modal-open');
-              isUpgradeModalOpen = false;
-              return;
-            }
-            if (u.isExclusive) {
-              if (!me.takenExclusiveTalents) me.takenExclusiveTalents = [];
-              if (!me.takenExclusiveTalents.includes(u.id)) {
-                me.takenExclusiveTalents.push(u.id);
+            if (typeof u.action === 'function') {
+              if (u.isExclusive) {
+                if (!me.takenExclusiveTalents) me.takenExclusiveTalents = [];
+                if (!me.takenExclusiveTalents.includes(u.id)) {
+                  me.takenExclusiveTalents.push(u.id);
+                }
               }
+              u.action(me);
             }
-            u.action(me);
+          } catch (err) {
+            console.error(err);
+          } finally {
             modal.style.display = 'none';
             document.body.classList.remove('modal-open');
             isUpgradeModalOpen = false;
+            
             if (!isHost && hostConn && hostConn.open) {
               hostConn.send({ type: 'PLAYER_UPGRADE', id: myPlayerId, playerState: me });
             }
-          } catch (err) {
-            modal.style.display = 'none';
-            document.body.classList.remove('modal-open');
-            isUpgradeModalOpen = false;
           }
         };
         container.appendChild(btn);
@@ -3297,10 +3293,17 @@
             serverP.hasClutch = myLocalP.hasClutch;
             serverP.takenExclusiveTalents = myLocalP.takenExclusiveTalents;
             if (serverP.level > myLocalP.level) {
-              myLocalP.level = serverP.level; myLocalP.maxExp = serverP.maxExp; myLocalP.exp = serverP.exp;
+              myLocalP.level = serverP.level; 
+              myLocalP.maxExp = serverP.maxExp; 
+              myLocalP.exp = serverP.exp;
               playSound('levelup');
-              setTimeout(() => showUpgradeModal(), 100);
-            } else { myLocalP.exp = serverP.exp; myLocalP.maxExp = serverP.maxExp; }
+              if (!isUpgradeModalOpen) {
+                setTimeout(() => showUpgradeModal(), 100);
+              }
+            } else { 
+              myLocalP.exp = serverP.exp; 
+              myLocalP.maxExp = serverP.maxExp; 
+            }
             serverP.level = myLocalP.level; serverP.exp = myLocalP.exp; serverP.maxExp = myLocalP.maxExp;
             players[pid] = serverP;
           } else { players[pid] = data.players[pid]; }
