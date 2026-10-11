@@ -47,6 +47,33 @@
       -ms-overflow-style: none;
       scrollbar-width: none;
     }
+
+    /* 橫屏專用 UI 修正 (修正高縮小與 100vh 問題) */
+    @media (orientation: landscape) and (max-height: 500px) {
+      body {
+        height: 100dvh !important;
+      }
+
+      #bottomControls {
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 8px) !important;
+        transform: translateX(-50%) scale(0.85) !important;
+        transform-origin: bottom center !important;
+      }
+
+      #moveJoystickContainer,
+      #aimJoystickContainer {
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 10px) !important;
+        width: 5.5rem !important;
+        height: 5.5rem !important;
+      }
+
+      #mobileDashBtn {
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 105px) !important;
+        right: 2rem !important;
+        width: 3rem !important;
+        height: 3rem !important;
+      }
+    }
   </style>
 </head>
 <body class="relative w-screen h-screen overflow-hidden text-white">
@@ -3434,4 +3461,3 @@
   </script>
 </body>
 </html>
-    
