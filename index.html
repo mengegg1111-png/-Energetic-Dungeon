@@ -114,7 +114,7 @@
     #aimJoystickContainer {
       position: fixed !important;
       width: 144px !important;
-      height: 145px !important;
+      height: 144px !important;
       right: calc(env(safe-area-inset-right, 0px) + 20px) !important;
       bottom: calc(env(safe-area-inset-bottom, 0px) + 20px) !important;
       z-index: 60 !important;
@@ -124,7 +124,7 @@
       position: fixed !important;
       width: 52px !important;
       height: 52px !important;
-      right: calc(env(safe-area-inset-right, 0px) + 130px) !important;
+      right: calc(env(safe-area-inset-right, 0px) + 180px) !important;
       bottom: calc(env(safe-area-inset-bottom, 0px) + 20px) !important;
       top: auto !important;
       left: auto !important;
@@ -147,7 +147,7 @@
       left: 50% !important;
       transform: translateX(-50%) !important;
       bottom: calc(env(safe-area-inset-bottom, 0px) + 20px) !important;
-      max-width: calc(100vw - 320px) !important;
+      max-width: calc(100vw - 360px) !important;
       z-index: 60 !important;
     }
 
@@ -155,7 +155,7 @@
       pointer-events: auto !important;
       position: fixed !important;
       right: calc(env(safe-area-inset-right, 0px) + 20px) !important;
-      bottom: calc(env(safe-area-inset-bottom, 0px) + 130px) !important;
+      bottom: calc(env(safe-area-inset-bottom, 0px) + 180px) !important;
       flex-direction: column !important;
       align-items: flex-end !important;
       gap: 6px !important;
@@ -167,6 +167,48 @@
       width: 100% !important;
       justify-content: space-between !important;
     }
+  }
+
+  /* 除錯模式 UI 樣式 */
+  #debugToast {
+    position: fixed;
+    bottom: 20%;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9998;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+
+  #errorOverlay {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    user-select: text !important;
+    -webkit-user-select: text !important;
+    touch-action: auto !important;
+  }
+
+  #errorOverlay .error-card {
+    max-width: 90vw;
+    max-height: 70vh;
+    width: 100%;
+    background-color: rgba(15, 23, 42, 0.95);
+    border: 2px solid #ef4444;
+    border-radius: 1.5rem;
+    padding: 1.25rem;
+    box-shadow: 0 25px 50px -12px rgba(239, 68, 68, 0.3);
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    overflow-y: auto;
+    touch-action: auto !important;
   }
 </style>
 </head>
@@ -508,7 +550,121 @@
     </div>
   </div>
 
+  <!-- 除錯模式狀態提示 -->
+  <div id="debugToast" class="glass-panel px-4 py-2 rounded-2xl border border-amber-500/50 text-amber-300 font-bold text-xs shadow-2xl opacity-0 hidden">
+    <span id="debugToastText">🐞 除錯模式已開啟 (30s)</span>
+  </div>
+
+  <!-- 除錯模式錯誤彈窗 -->
+  <div id="errorOverlay" style="display: none;">
+    <div class="error-card">
+      <div class="flex items-center justify-between border-b border-red-500/40 pb-2">
+        <h3 class="text-base font-black text-red-500 flex items-center gap-1.5">
+          <span>⚠️</span> 程式執行異常 (Debug Output)
+        </h3>
+        <button id="closeErrorOverlayBtn" type="button" class="text-slate-400 hover:text-white font-bold text-sm px-2 py-1 rounded-lg bg-slate-800 border border-slate-700">✕ 關閉</button>
+      </div>
+
+      <div class="flex flex-col gap-1 text-xs">
+        <div class="font-bold text-amber-400">訊息：<span id="errorMsgText" class="text-slate-100 font-mono"></span></div>
+        <div class="font-bold text-amber-400">位置：<span id="errorLocText" class="text-cyan-300 font-mono"></span></div>
+      </div>
+
+      <div class="flex flex-col gap-1 text-xs">
+        <div class="font-bold text-slate-300">Stack Trace：</div>
+        <pre id="errorStackText" class="bg-slate-950 p-2.5 rounded-xl border border-slate-800 text-[11px] text-red-300/90 font-mono whitespace-pre-wrap overflow-x-auto max-h-48 leading-relaxed"></pre>
+      </div>
+
+      <div class="flex justify-end pt-1">
+        <button id="copyErrorBtn" type="button" class="bg-red-600 hover:bg-red-500 text-white font-bold px-4 py-2 rounded-xl text-xs active:scale-95 transition-all shadow-md">
+          📋 複製完整錯誤訊息
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script>
+    // ===== 除錯模式相關全域變數與監聽邏輯 =====
+    let isDebugMode = false;
+    let debugTimer = null;
+    let weaponSwitchCount = 0;
+    let defenseSwitchCount = 0;
+
+    function showDebugToast(text) {
+      const toast = document.getElementById('debugToast');
+      const toastText = document.getElementById('debugToastText');
+      if (!toast || !toastText) return;
+
+      toastText.innerText = text;
+      toast.classList.remove('hidden');
+      setTimeout(() => { toast.style.opacity = '1'; }, 10);
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => { toast.classList.add('hidden'); }, 300);
+      }, 2000);
+    }
+
+    function enableDebugMode() {
+      isDebugMode = true;
+      weaponSwitchCount = 0;
+      defenseSwitchCount = 0;
+      showDebugToast('🐞 除錯模式已開啟 (30s)');
+
+      if (debugTimer) clearTimeout(debugTimer);
+      debugTimer = setTimeout(() => {
+        isDebugMode = false;
+        showDebugToast('🐞 除錯模式已關閉');
+      }, 30000);
+    }
+
+    function checkDebugGesture(type) {
+      if (type === 'weapon') {
+        weaponSwitchCount++;
+        defenseSwitchCount = 0;
+      } else if (type === 'defense') {
+        defenseSwitchCount++;
+        if (weaponSwitchCount < 3) {
+          weaponSwitchCount = 0;
+        }
+      }
+
+      if (weaponSwitchCount >= 3 && defenseSwitchCount >= 3) {
+        enableDebugMode();
+      }
+    }
+
+    function showGlobalErrorOverlay(msg, loc, stack) {
+      if (!isDebugMode) return;
+
+      const overlay = document.getElementById('errorOverlay');
+      const msgEl = document.getElementById('errorMsgText');
+      const locEl = document.getElementById('errorLocText');
+      const stackEl = document.getElementById('errorStackText');
+
+      if (!overlay || !msgEl || !locEl || !stackEl) return;
+
+      msgEl.innerText = msg || '未知錯誤';
+      locEl.innerText = loc || '無位置資訊';
+      stackEl.innerText = stack || '無 Stack Trace 資訊';
+
+      overlay.style.display = 'flex';
+    }
+
+    window.addEventListener('error', (e) => {
+      console.error(e);
+      const loc = `${e.filename || 'index.html'}:${e.lineno || 0}:${e.colno || 0}`;
+      const stack = e.error && e.error.stack ? e.error.stack : '無資訊';
+      showGlobalErrorOverlay(e.message, loc, stack);
+    });
+
+    window.addEventListener('unhandledrejection', (e) => {
+      console.error(e);
+      const msg = e.reason && e.reason.message ? e.reason.message : String(e.reason);
+      const stack = e.reason && e.reason.stack ? e.reason.stack : '無資訊';
+      showGlobalErrorOverlay(`Unhandled Rejection: ${msg}`, 'Promise Rejection', stack);
+    });
+
     // 【職業資料結構】
     const CLASSES = {
       medic: {
@@ -1394,6 +1550,7 @@
     }
 
     function selectDefenseToPlace(type) {
+      checkDebugGesture('defense');
       selectedDefenseType = (selectedDefenseType === type) ? null : type;
       updateDefenseUI();
     }
@@ -1898,6 +2055,7 @@
     }
 
     function switchWeapon(weaponKey) {
+      checkDebugGesture('weapon');
       if (dailyChallenge && dailyChallenge.id === 'pistol_only' && weaponKey !== 'pistol') {
         createFloatingText(players[myPlayerId].x, players[myPlayerId].y - 30, '「手槍之夜」無法使用其他武器！', '#ef4444', 16);
         return;
@@ -3426,6 +3584,32 @@
       try { initDraggableChat(); } catch(e) {}
       try { initSkinColorPicker(); } catch(e) {}
       try { initClassPicker(); } catch(e) {}
+
+      // 綁定除錯彈窗的關閉與複製按鈕
+      const closeBtn = document.getElementById('closeErrorOverlayBtn');
+      if (closeBtn) {
+        closeBtn.onclick = () => {
+          const overlay = document.getElementById('errorOverlay');
+          if (overlay) overlay.style.display = 'none';
+        };
+      }
+
+      const copyBtn = document.getElementById('copyErrorBtn');
+      if (copyBtn) {
+        copyBtn.onclick = () => {
+          const msg = document.getElementById('errorMsgText')?.innerText || '';
+          const loc = document.getElementById('errorLocText')?.innerText || '';
+          const stack = document.getElementById('errorStackText')?.innerText || '';
+
+          const fullText = `[Error]\nMessage: ${msg}\nLocation: ${loc}\n\n[Stack Trace]\n${stack}`;
+          navigator.clipboard?.writeText(fullText).then(() => {
+            copyBtn.innerText = '已複製！';
+            setTimeout(() => {
+              copyBtn.innerText = '📋 複製完整錯誤訊息';
+            }, 1500);
+          });
+        };
+      }
 
       try {
         setupJoystick(document.getElementById('moveJoystickContainer'), document.getElementById('moveJoystickStick'), (data) => { moveJoystickData = data; });
