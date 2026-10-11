@@ -49,6 +49,12 @@
     scrollbar-width: none;
   }
 
+  /* 彈窗開啟時隱藏底部 UI */
+  body.modal-open #mobileControls,
+  body.modal-open #bottomControls {
+    display: none !important;
+  }
+
   /* ==========================================
      手機 UI 強制置頂與絕對定位修復
      ========================================== */
@@ -164,7 +170,7 @@
   }
 </style>
 </head>
-<body class="relative w-screen h-screen overflow-hidden text-white">
+<body class="relative w-screen h-screen overflow-hidden text-white modal-open">
 
   <!-- 遊戲主畫布 -->
   <canvas id="gameCanvas" class="w-full h-full absolute inset-0 z-0"></canvas>
@@ -1230,7 +1236,10 @@
       const joinInput = document.getElementById('joinRoomInput');
       if (joinInput) joinInput.value = code;
       const lobbyModal = document.getElementById('lobbyModal');
-      if (lobbyModal) lobbyModal.classList.add('hidden');
+      if (lobbyModal) {
+        lobbyModal.classList.add('hidden');
+        document.body.classList.remove('modal-open');
+      }
       const joinBtn = document.getElementById('joinRoomBtn');
       if (joinBtn) joinBtn.click();
       setTimeout(() => { window._joinInProgress = false; }, 2000);
@@ -1329,6 +1338,7 @@
 
     function handleHostDisconnection() {
       gameRunning = false;
+      document.body.classList.add('modal-open');
       const modal = document.getElementById('hostDisconnectedModal');
       if (modal) modal.classList.remove('hidden');
       reconnectAttempts = 0; attemptReconnection();
@@ -1357,6 +1367,7 @@
             hostConn.send({ type: 'JOIN_PLAYER', id: myPlayerId, name: me ? me.name : '隊友', color: selectedSkinColor, classId: selectedClassId });
             const modal = document.getElementById('hostDisconnectedModal');
             if (modal) modal.classList.add('hidden');
+            document.body.classList.remove('modal-open');
             gameRunning = true; lastFrameTime = performance.now();
             requestAnimationFrame(gameLoop);
           });
@@ -2249,6 +2260,7 @@
       });
 
       if (livingCount === 0 && playerList.length > 0) {
+        document.body.classList.add('modal-open');
         document.getElementById('gameOverModal').classList.remove('hidden');
       }
 
@@ -2619,6 +2631,7 @@
           try {
             if (typeof u.action !== 'function') {
               modal.style.display = 'none';
+              document.body.classList.remove('modal-open');
               isUpgradeModalOpen = false;
               return;
             }
@@ -2630,12 +2643,14 @@
             }
             u.action(me);
             modal.style.display = 'none';
+            document.body.classList.remove('modal-open');
             isUpgradeModalOpen = false;
             if (!isHost && hostConn && hostConn.open) {
               hostConn.send({ type: 'PLAYER_UPGRADE', id: myPlayerId, playerState: me });
             }
           } catch (err) {
             modal.style.display = 'none';
+            document.body.classList.remove('modal-open');
             isUpgradeModalOpen = false;
           }
         };
@@ -2643,6 +2658,7 @@
       });
 
       modal.style.display = 'flex';
+      document.body.classList.add('modal-open');
       isUpgradeModalOpen = true;
     }
 
@@ -3205,6 +3221,7 @@
       }
 
       document.getElementById('mainMenu').classList.add('hidden');
+      document.body.classList.remove('modal-open');
       document.getElementById('hud').classList.remove('hidden');
       document.getElementById('chatContainer').classList.remove('hidden');
       document.getElementById('bottomControls').classList.remove('hidden');
@@ -3400,6 +3417,7 @@
     window.addEventListener('mouseup', (e) => { if (e.button === 0) isMouseDown = false; });
 
     window.addEventListener('DOMContentLoaded', () => {
+      document.body.classList.add('modal-open');
       try { resizeCanvas(); } catch(e) {}
       try { initDailyChallengeSystem(); } catch(e) {}
       try { initDraggableChat(); } catch(e) {}
@@ -3437,6 +3455,7 @@
       const openLobbyBtn = document.getElementById('openLobbyBtn');
       if (openLobbyBtn) openLobbyBtn.onclick = () => {
         initAudio(); initMqttLobby();
+        document.body.classList.add('modal-open');
         document.getElementById('lobbyModal').classList.remove('hidden');
         renderLobby();
       };
@@ -3444,6 +3463,7 @@
       const closeLobbyBtn = document.getElementById('closeLobbyBtn');
       if (closeLobbyBtn) closeLobbyBtn.onclick = () => {
         document.getElementById('lobbyModal').classList.add('hidden');
+        document.body.classList.remove('modal-open');
       };
 
       const startChallengeBtn = document.getElementById('startChallengeBtn');
