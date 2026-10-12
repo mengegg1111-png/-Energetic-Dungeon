@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>元氣地牢:正在修復升級</title>
+  <title>元氣地牢:繽紛世界</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- PeerJS CDN -->
@@ -783,6 +783,18 @@
       pierceShot: { name: '穿透彈幕', icon: '🎯', type: '輸出', desc: '向前射出 5 發穿透子彈', cooldown: 15, slot: 'general' },
       frostWave: { name: '冰凍波', icon: '❄️', type: '控場', desc: '周圍 200 範圍敵人減速 50%，持續 3 秒', cooldown: 15, slot: 'general' },
       knockbackRing: { name: '擊退環', icon: '🌪️', type: '控場', desc: '周圍 150 範圍敵人擊退並暈眩 1 秒', cooldown: 15, slot: 'general' },
+      dashStep: { name: '疾風步', icon: '💨', type: '自己', desc: '3 秒內移速 +50%', cooldown: 15, slot: 'general' },
+      timeRift: { name: '時間裂隙', icon: '⏳', type: '周圍', desc: '半徑 200 敵人減速 70%，持續 2 秒', cooldown: 15, slot: 'general' },
+      magnetStorm: { name: '磁力風暴', icon: '🧲', type: '自己', desc: '立即吸收所有經驗寶石', cooldown: 15, slot: 'general' },
+      fireBomb: { name: '燃燒彈', icon: '🔥', type: '向前', desc: '前方火圈持續 3 秒，每秒 15 傷害', cooldown: 15, slot: 'general' },
+      thornBody: { name: '荊棘護體', icon: '🌵', type: '自己', desc: '5 秒內反傷 30%', cooldown: 15, slot: 'general' },
+      stealth: { name: '隱身術', icon: '👻', type: '自己', desc: '3 秒內敵人不會追你', cooldown: 15, slot: 'general' },
+      multiShot: { name: '多重射擊', icon: '🎯', type: '向前', desc: '向前射出 8 發子彈，每發傷害 20', cooldown: 15, slot: 'general' },
+      healField: { name: '治療領域', icon: '💚', type: '腳下', desc: '圈內每秒回復 5 HP，持續 5 秒', cooldown: 15, slot: 'general' },
+      poisonBomb: { name: '毒霧彈', icon: '☠️', type: '向前', desc: '前方毒圈持續 3 秒，每秒 10 傷害', cooldown: 15, slot: 'general' },
+      thunderStrike: { name: '雷擊', icon: '⚡', type: '周圍', desc: '周圍隨機 3 隻敵人各受 60 傷害', cooldown: 15, slot: 'general' },
+      shieldBlast: { name: '護盾爆破', icon: '💥', type: '自己', desc: '消耗全部護盾，對周圍造成等同護盾值的傷害', cooldown: 15, slot: 'general' },
+      rageBoost: { name: '狂怒', icon: '😡', type: '自己', desc: '3 秒內傷害 ×2，但受傷 ×1.5', cooldown: 15, slot: 'general' },
       medicHealCircle: { name: '治療圈', icon: '💚', type: '腳下', desc: '圈內隊友每秒回復 5 HP，持續 5 秒', cooldown: 30, slot: 'exclusive' },
       assaultBombard: { name: '榴彈轟炸', icon: '💣', type: '向前', desc: '爆炸傷害 80，半徑 120', cooldown: 30, slot: 'exclusive' },
       sniperPierce: { name: '貫穿狙擊', icon: '🎯', type: '向前', desc: '貫穿直線敵人，造成 150 傷害', cooldown: 30, slot: 'exclusive' },
@@ -795,7 +807,7 @@
       necroSummon: { name: '亡靈召喚', icon: '💀', type: '自己', desc: '召喚 3 隻亡靈', cooldown: 30, slot: 'exclusive' }
     };
     const CLASS_EXCLUSIVE_SKILLS = { medic: 'medicHealCircle', assault: 'assaultBombard', sniper: 'sniperPierce', berserker: 'berserkerRage', engineer: 'engineerTurret', scout: 'scoutBlink', flameMage: 'flameStorm', frostHunter: 'frostField', paladin: 'paladinBastion', necromancer: 'necroSummon' };
-    const GENERAL_SKILL_IDS = ['heal', 'shield', 'critBoost', 'pierceShot', 'frostWave', 'knockbackRing'];
+    const GENERAL_SKILL_IDS = ['heal', 'shield', 'critBoost', 'pierceShot', 'frostWave', 'knockbackRing', 'dashStep', 'timeRift', 'magnetStorm', 'fireBomb', 'thornBody', 'stealth', 'multiShot', 'healField', 'poisonBomb', 'thunderStrike', 'shieldBlast', 'rageBoost'];
     let selectedExclusiveSkillId = CLASS_EXCLUSIVE_SKILLS.assault;
     let selectedGeneralSkillId = 'heal';
     let skillAreas = [];
@@ -857,7 +869,7 @@
       dualSMG: { name: '雙持衝鋒槍', fireRate: 100, speed: 18, damage: 8, color: '#22d3ee', size: 3, count: 2, spread: 0.12, recoil: 1.5, penetrate: false, range: 60, exclusiveTo: 'scout', icon: '🔫' },
 
       fireBeam: { name: '烈焰噴射器', fireRate: 80, speed: 10, damage: 4, color: '#f97316', size: 4, count: 2, spread: 0.6, recoil: 0.3, penetrate: true, range: 40, exclusiveTo: 'flameMage', icon: '🔥', isFlame: true, igniteDamage: 5, igniteDuration: 2, maxBurnStacks: 3 },
-      frostBow: { name: '寒冰弓', fireRate: 500, speed: 20, damage: 45, color: '#67e8f9', size: 5, count: 1, spread: 0, recoil: 3, penetrate: false, range: 120, exclusiveTo: 'frostHunter', icon: '❄️', isFrost: true, slowFactor: 0.5, slowDuration: 1.5 },
+      frostBow: { name: '寒冰弓', fireRate: 220, speed: 20, damage: 45, color: '#67e8f9', size: 5, count: 1, spread: 0, recoil: 3, penetrate: false, range: 120, exclusiveTo: 'frostHunter', icon: '❄️', isFrost: true, slowFactor: 0.5, slowDuration: 1.5 },
       holyHammer: { name: '神聖戰錘', fireRate: 700, damage: 80, color: '#fbbf24', exclusiveTo: 'paladin', icon: '🔨', isMelee: true, meleeRange: 70, meleeAngle: Math.PI * 2 / 3, knockback: 30, stunChance: 0.3, stunDuration: 1.0, shieldOnHit: 5 },
       necroStaff: { name: '亡靈權杖', fireRate: 400, speed: 16, damage: 35, color: '#a78bfa', size: 5, count: 1, spread: 0, recoil: 2, penetrate: true, range: 100, exclusiveTo: 'necromancer', icon: '💀', isNecro: true, summonChance: 0.3 }
     };
@@ -2190,6 +2202,75 @@
       else if (skillId === 'pierceShot') { for (let i=0;i<5;i++) bullets.push({ id: Math.random().toString(36).slice(2), ownerId: playerId, x:p.x+Math.cos(a)*22, y:p.y+Math.sin(a)*22, vx:Math.cos(a)*18, vy:Math.sin(a)*18, damage:Math.round(24*(p.dmgMult||1)*(p.skillEffects.critBoost>0?1.5:1)), color:'#fbbf24', size:5, penetrate:true, range:100 }); }
       else if (skillId === 'frostWave') { zombies.forEach(z => { if (Math.hypot(z.x-p.x,z.y-p.y)<=200+z.size/2) z.slowTimer=Math.max(z.slowTimer||0,3); }); addArea('frost',200,0.6); }
       else if (skillId === 'knockbackRing') { zombies.forEach(z => { const dx=z.x-p.x,dy=z.y-p.y,d=Math.hypot(dx,dy); if(d<=150+z.size/2){ const n=Math.max(1,d); z.vx+=(dx/n)*12; z.vy+=(dy/n)*12; z.stunTimer=Math.max(z.stunTimer||0,1); } }); addArea('knockback',150,0.45); }
+      else if (skillId === 'dashStep') p.skillEffects.dashStep = 3;
+      else if (skillId === 'timeRift') {
+        zombies.forEach(z => {
+          if (Math.hypot(z.x - p.x, z.y - p.y) <= 200 + (z.size || 0) / 2) {
+            z.slowTimer = Math.max(z.slowTimer || 0, 2);
+            z.timeRiftSlowTimer = Math.max(z.timeRiftSlowTimer || 0, 2);
+          }
+        });
+        addArea('frost', 200, 0.6);
+      }
+      else if (skillId === 'magnetStorm') {
+        expGems.forEach(gem => { gem.x = p.x; gem.y = p.y; });
+      }
+      else if (skillId === 'fireBomb') {
+        const x = p.x + Math.cos(a) * 100, y = p.y + Math.sin(a) * 100;
+        addArea('fire', 120, 3, { x, y, dps: 15 });
+      }
+      else if (skillId === 'thornBody') p.skillEffects.thorns = 5;
+      else if (skillId === 'stealth') p.skillEffects.stealth = 3;
+      else if (skillId === 'multiShot') {
+        for (let i = 0; i < 8; i++) {
+          const spreadAngle = a + (Math.random() - 0.5) * 0.3;
+          const sx = p.x + Math.cos(spreadAngle) * 22, sy = p.y + Math.sin(spreadAngle) * 22;
+          bullets.push({ id: Math.random().toString(36).slice(2), ownerId: playerId, x: sx, y: sy, startX: sx, startY: sy,
+            vx: Math.cos(spreadAngle) * 18, vy: Math.sin(spreadAngle) * 18,
+            damage: Math.round(20 * (p.dmgMult || 1) * (p.skillEffects.rageBoost > 0 ? 2 : 1)),
+            color: '#fbbf24', size: 5, penetrate: false, range: 100, angle: spreadAngle });
+        }
+      }
+      else if (skillId === 'healField') addArea('heal', 150, 5);
+      else if (skillId === 'poisonBomb') {
+        const x = p.x + Math.cos(a) * 100, y = p.y + Math.sin(a) * 100;
+        addArea('poison', 120, 3, { x, y, dps: 10 });
+      }
+      else if (skillId === 'thunderStrike') {
+        const targets = zombies.filter(z => Math.hypot(z.x - p.x, z.y - p.y) <= 300)
+          .map(z => ({ z, order: Math.random() })).sort((a, b) => a.order - b.order).slice(0, 3).map(v => v.z);
+        targets.forEach(z => {
+          z.hp -= 60;
+          createFloatingText(z.x, z.y - 15, '-60', '#facc15', 18);
+          lightningArcs.push({ points: generateLightningPoints(p.x, p.y, z.x, z.y), life: 0.2, maxLife: 0.2 });
+        });
+        for (let zi = zombies.length - 1; zi >= 0; zi--) {
+          const z = zombies[zi]; if (z.hp > 0) continue;
+          triggerZombieDeathEffects(z.x, z.y, z.type === 'boss', z.color);
+          trySummonMinionOnKill(p, z);
+          expGems.push({ x: z.x, y: z.y, value: z.type === 'boss' ? 25 : 2 });
+          zombies.splice(zi, 1);
+        }
+      }
+      else if (skillId === 'shieldBlast') {
+        const damage = Math.max(0, p.shield || 0);
+        p.shield = 0; p.tempShield = 0;
+        zombies.forEach(z => {
+          if (Math.hypot(z.x - p.x, z.y - p.y) <= 150 + (z.size || 0) / 2) {
+            z.hp -= damage;
+            createFloatingText(z.x, z.y - 15, `-${Math.round(damage)}`, '#f0abfc', 18);
+          }
+        });
+        addArea('explosion', 150, 0.5);
+        for (let zi = zombies.length - 1; zi >= 0; zi--) {
+          const z = zombies[zi]; if (z.hp > 0) continue;
+          triggerZombieDeathEffects(z.x, z.y, z.type === 'boss', z.color);
+          trySummonMinionOnKill(p, z);
+          expGems.push({ x: z.x, y: z.y, value: z.type === 'boss' ? 25 : 2 });
+          zombies.splice(zi, 1);
+        }
+      }
+      else if (skillId === 'rageBoost') p.skillEffects.rageBoost = 3;
       else if (skillId === 'medicHealCircle') addArea('heal',150,5);
       else if (skillId === 'assaultBombard') { const x=p.x+Math.cos(a)*120,y=p.y+Math.sin(a)*120; triggerGrenadeExplosion(x,y,80,120,playerId); addArea('explosion',120,0.5,{x,y}); }
       else if (skillId === 'sniperPierce') { const ex=p.x+Math.cos(a)*700,ey=p.y+Math.sin(a)*700; for(let zi=zombies.length-1;zi>=0;zi--){const z=zombies[zi]; if(distToSegment(z.x,z.y,p.x,p.y,ex,ey)<z.size/2+8) { z.hp-=150*(p.dmgMult||1); createFloatingText(z.x,z.y-20,'-150','#38bdf8',20); if(z.hp<=0){triggerZombieDeathEffects(z.x,z.y,z.type==='boss');trySummonMinionOnKill(p,z);expGems.push({x:z.x,y:z.y,value:z.type==='boss'?25:2});zombies.splice(zi,1);} } } bullets.push({id:Math.random().toString(36).slice(2),ownerId:playerId,x:p.x,y:p.y,startX:p.x,startY:p.y,angle:a,isBeam:true,hasHit:true,beamLength:700,beamWidth:8,damage:0,penetrate:true,life:8,color:'#7dd3fc'}); }
@@ -2294,7 +2375,7 @@
         if (angleDiff > Math.PI) angleDiff = Math.PI * 2 - angleDiff;
 
         if (angleDiff <= halfArc) {
-          let actualDmg = Math.round(weapon.damage * (player.dmgMult || 1));
+          let actualDmg = Math.round(weapon.damage * (player.dmgMult || 1) * ((player.skillEffects?.rageBoost > 0) ? 2 : 1));
           z.hp -= actualDmg; createFloatingText(z.x, z.y - z.size / 2 - 5, `-${actualDmg}`, weapon.color || '#fbbf24', 22);
           z.vx += Math.cos(angleToZombie) * ((weapon.knockback || 30) / 5); z.vy += Math.sin(angleToZombie) * ((weapon.knockback || 30) / 5);
 
@@ -2358,7 +2439,7 @@
         else playSound('shoot');
 
         flashLightIntensity = 80;
-        let finalDmgMult = (me.dmgMult || 1) * ((me.skillEffects?.critBoost > 0) ? 1.5 : 1);
+        let finalDmgMult = (me.dmgMult || 1) * ((me.skillEffects?.critBoost > 0) ? 1.5 : 1) * ((me.skillEffects?.rageBoost > 0) ? 2 : 1);
         if (me.hp / me.maxHp <= 0.3 && me.hasClutch) finalDmgMult *= 2.0;
 
         const clsDef = CLASSES[me.classId] || CLASSES.assault;
@@ -2533,7 +2614,7 @@
       for (let i=skillAreas.length-1;i>=0;i--) {
         const area=skillAreas[i]; area.duration-=deltaTime;
         if(area.type==='heal') Object.values(players).forEach(ally=>{ if(!ally.isDead&&!ally.isDowned&&Math.hypot(ally.x-area.x,ally.y-area.y)<=area.radius) ally.hp=Math.min(ally.maxHp,ally.hp+5*deltaTime); });
-        if(area.type==='fire'||area.type==='freeze') zombies.forEach(z=>{ if(Math.hypot(z.x-area.x,z.y-area.y)<=area.radius+z.size/2){ if(area.type==='fire') z.hp-= (area.dps||15)*deltaTime; else z.stunTimer=Math.max(z.stunTimer||0,0.12); } });
+        if(area.type==='fire'||area.type==='freeze'||area.type==='poison') zombies.forEach(z=>{ if(Math.hypot(z.x-area.x,z.y-area.y)<=area.radius+z.size/2){ if(area.type==='fire'||area.type==='poison') z.hp-= (area.dps||(area.type==='fire'?15:10))*deltaTime; else z.stunTimer=Math.max(z.stunTimer||0,0.12); } });
         for(let zi=zombies.length-1;zi>=0;zi--){ const z=zombies[zi]; if(z.hp<=0){triggerZombieDeathEffects(z.x,z.y,z.type==='boss'); const owner=players[area.ownerId]; if(owner)trySummonMinionOnKill(owner,z); expGems.push({x:z.x,y:z.y,value:z.type==='boss'?25:2}); zombies.splice(zi,1);} }
         if(area.duration<=0) skillAreas.splice(i,1);
       }
@@ -2738,15 +2819,14 @@
           continue;
         }
 
-        if (z.slowTimer > 0) {
-          z.slowTimer -= deltaTime;
-        }
+        if (z.slowTimer > 0) z.slowTimer = Math.max(0, z.slowTimer - deltaTime);
+        if (z.timeRiftSlowTimer > 0) z.timeRiftSlowTimer = Math.max(0, z.timeRiftSlowTimer - deltaTime);
 
         applyTopDownPhysicsAndCollision(z, false);
         let nearestTarget = null, minDist = Infinity, targetType = null;
 
         playerList.forEach(p => {
-          if (p.isDowned || p.isDead) return;
+          if (p.isDowned || p.isDead || p.skillEffects?.stealth > 0) return;
           const d = Math.hypot(p.x - z.x, p.y - z.y);
           if (d < minDist) { minDist = d; nearestTarget = p; targetType = 'player'; }
         });
@@ -2758,7 +2838,7 @@
 
         if (nearestTarget) {
           z.angle = Math.atan2(nearestTarget.y - z.y, nearestTarget.x - z.x);
-          const speedMult = (z.slowTimer > 0) ? 0.5 : 1.0;
+          const speedMult = (z.timeRiftSlowTimer > 0) ? 0.3 : ((z.slowTimer > 0) ? 0.5 : 1.0);
           z.vx += Math.cos(z.angle) * 0.4 * speedMult;
           z.vy += Math.sin(z.angle) * 0.4 * speedMult;
         }
@@ -2779,7 +2859,7 @@
 
         if (nearestTarget && minDist < (z.size / 2) + (nearestTarget.size / 2) + 4) {
           if (targetType === 'player' && nearestTarget.invulnerableTime <= 0) {
-            damagePlayer(nearestTarget, z.damage);
+            damagePlayer(nearestTarget, z.damage, z);
             nearestTarget.invulnerableTime = nearestTarget.invulnDuration || 20;
           } else if (targetType === 'minion' && nearestTarget.invulnerableTime <= 0) {
             nearestTarget.hp -= z.damage;
@@ -2884,7 +2964,13 @@
       updateHud();
     }
 
-    function damagePlayer(p, damage) {
+    function damagePlayer(p, damage, attacker = null) {
+      if (p.skillEffects?.rageBoost > 0) damage *= 1.5;
+      if (p.skillEffects?.thorns > 0 && attacker && attacker.hp > 0) {
+        const reflected = damage * 0.3;
+        attacker.hp -= reflected;
+        createFloatingText(attacker.x, attacker.y - 15, `-${Math.round(reflected)}`, '#86efac', 16);
+      }
       if (p.skillEffects && p.skillEffects.bastion > 0) { zombies.forEach(z => { if (Math.hypot(z.x-p.x,z.y-p.y) < 100) z.hp -= damage * 0.5; }); }
       triggerScreenShake(0.15, 6);
       if (p.shield > 0) {
@@ -3076,7 +3162,7 @@
         }
       });
 
-      skillAreas.forEach(a => { ctx.save(); ctx.globalAlpha=Math.max(0.15,Math.min(0.45,a.duration/(a.maxDuration||1))); ctx.fillStyle=a.type==='fire'?'#f97316':a.type==='freeze'?'#67e8f9':a.type==='heal'?'#4ade80':a.type==='frost'?'#38bdf8':'#fbbf24'; ctx.strokeStyle=ctx.fillStyle; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(a.x,a.y,a.radius,0,Math.PI*2); ctx.fill(); ctx.stroke(); ctx.restore(); });
+      skillAreas.forEach(a => { ctx.save(); ctx.globalAlpha=Math.max(0.15,Math.min(0.45,a.duration/(a.maxDuration||1))); ctx.fillStyle=a.type==='fire'?'#f97316':a.type==='poison'?'#a3e635':a.type==='freeze'?'#67e8f9':a.type==='heal'?'#4ade80':a.type==='frost'?'#38bdf8':'#fbbf24'; ctx.strokeStyle=ctx.fillStyle; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(a.x,a.y,a.radius,0,Math.PI*2); ctx.fill(); ctx.stroke(); ctx.restore(); });
       skillTurrets.forEach(t=>{ctx.save();ctx.fillStyle='#c084fc';ctx.strokeStyle='#e9d5ff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(t.x,t.y,15,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#fff';ctx.font='16px system-ui';ctx.textAlign='center';ctx.fillText('🔧',t.x,t.y+5);ctx.restore();});
       renderDefenses();
 
@@ -3455,7 +3541,7 @@
         if (dx !== 0 || dy !== 0) {
           const len = Math.hypot(dx, dy);
           if (isFinite(len) && len > 0) {
-            const moveSpeed = me.speed * ((me.skillEffects?.rage > 0) ? 1.3 : 1);
+            const moveSpeed = me.speed * ((me.skillEffects?.rage > 0) ? 1.3 : 1) * ((me.skillEffects?.dashStep > 0) ? 1.5 : 1);
             me.vx = (dx / len) * moveSpeed;
             me.vy = (dy / len) * moveSpeed;
             if (isFinite(me.vx) && isFinite(me.vy)) {
