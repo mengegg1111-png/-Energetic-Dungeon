@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>元氣地牢:技能與連線</title>
+  <title>元氣地牢:繽紛世界</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- PeerJS CDN -->
@@ -449,6 +449,9 @@
 
       <!-- 遊戲模式按鈕 -->
       <div class="flex flex-col gap-2 pt-1">
+        <button id="tutorialBtn" type="button" class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold py-2 rounded-2xl text-xs shadow-lg active:scale-95 transition-all">
+          📖 新手教學
+        </button>
         <button id="singlePlayerBtn" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black py-2.5 rounded-2xl text-sm shadow-xl active:scale-95 transition-all">
           🎮 單人快速開始
         </button>
@@ -606,6 +609,31 @@
         <button id="copyErrorBtn" type="button" class="bg-red-600 hover:bg-red-500 text-white font-bold px-4 py-2 rounded-xl text-xs active:scale-95 transition-all shadow-md">
           📋 複製完整錯誤訊息
         </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 手動波次按鈕與新手教學遮罩 -->
+  <button id="nextWaveBtn" type="button"
+    class="absolute left-1/2 z-30 hidden bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black py-3 px-8 rounded-2xl text-base shadow-2xl border-2 border-emerald-400/60 active:scale-95 transition-all"
+    style="top: 50%; transform: translate(-50%, -50%);">
+    🌊 開始下一波
+  </button>
+  <div id="waitingNextWaveText" class="absolute left-1/2 z-30 hidden glass-panel px-4 py-2 rounded-2xl border border-slate-600 text-slate-300 font-bold text-sm shadow-2xl" style="top: 50%; transform: translate(-50%, -50%);">
+    ⏳ 等待房主開始下一波...
+  </div>
+
+  <div id="tutorialOverlay" class="absolute inset-0 z-40 pointer-events-none hidden">
+    <div id="tutorialHighlight" class="absolute border-4 border-amber-400 rounded-2xl transition-all duration-300" style="box-shadow: 0 0 20px rgba(251,191,36,0.8), inset 0 0 20px rgba(251,191,36,0.3);"></div>
+    <div id="tutorialCard" class="absolute glass-panel p-4 rounded-2xl border border-amber-500/60 shadow-2xl max-w-sm pointer-events-auto">
+      <div class="flex flex-col gap-2">
+        <div class="text-amber-400 font-black text-sm" id="tutorialStepText">步驟 1 / 6</div>
+        <div class="text-slate-100 font-bold text-base" id="tutorialTitleText">移動搖桿</div>
+        <div class="text-slate-300 text-xs leading-relaxed" id="tutorialDescText">拖曳左下角的搖桿來控制角色移動。</div>
+        <div class="flex gap-2 mt-2">
+          <button id="tutorialSkipBtn" type="button" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2 rounded-xl text-xs border border-slate-700">跳過教學</button>
+          <button id="tutorialNextBtn" type="button" class="flex-1 bg-gradient-to-r from-amber-600 to-orange-600 text-white font-bold py-2 rounded-xl text-xs">下一步</button>
+        </div>
       </div>
     </div>
   </div>
@@ -1047,6 +1075,20 @@
     let currentWave = 1;
     let zombiesToSpawn = 0;
     let lastSpawnTime = 0;
+
+    let isTutorialMode = false;
+    let currentTutorialStep = 0;
+    let showNextWaveButton = false;
+    let hasStartedWave = false;
+
+    const TUTORIAL_STEPS = [
+      { title: '移動搖桿', desc: '拖曳左下角的搖桿來控制角色移動。', target: '#moveJoystickContainer' },
+      { title: '瞄準射擊', desc: '拖曳右下角的搖桿來瞄準，角色會自動射擊。', target: '#aimJoystickContainer' },
+      { title: '經驗條', desc: '擊殺殭屍會掉落經驗寶石，撿起來就能累積經驗。', target: '#expBar' },
+      { title: '升級天賦', desc: '經驗集滿會升級，可以選擇一項天賦強化自己。', target: '#hud' },
+      { title: '武器欄', desc: '底部中間是武器欄，點擊按鈕切換武器。', target: '#weaponBar' },
+      { title: '技能按鈕', desc: '武器欄左邊有兩個技能按鈕，按下去會施放技能。', target: '#weaponBar' }
+    ];
 
     let keys = {};
     let mousePos = { x: 0, y: 0 };
@@ -2617,7 +2659,9 @@
     }
 
     function startNextWave() {
-      currentWave++;
+      showNextWaveButton = false;
+      if (hasStartedWave) currentWave++;
+      else hasStartedWave = true;
       const playerCount = Math.max(1, Object.keys(players).length);
       zombiesToSpawn = Math.round((12 + currentWave * 6) * (1 + (playerCount - 1) * 0.5));
       updateHud();
@@ -2749,8 +2793,9 @@
 
       if (zombiesToSpawn > 0 && now - lastSpawnTime > spawnDelay) {
         lastSpawnTime = now; spawnZombie();
-      } else if (zombiesToSpawn <= 0 && zombies.length === 0) {
-        startNextWave();
+      } else if (zombiesToSpawn <= 0 && zombies.length === 0 && !isTutorialMode) {
+        // 波次結束後等待玩家手動開始，不自動進入下一波。
+        if (!showNextWaveButton) showNextWaveButton = true;
       }
 
       updateDefensesHost(deltaTime);
@@ -3160,6 +3205,7 @@
     }
 
     function damagePlayer(p, damage, attacker = null) {
+      if (isTutorialMode) damage = Math.round(damage * 0.2);
       if (p.skillEffects?.rageBoost > 0) damage *= 1.5;
       if (p.skillEffects?.thorns > 0 && attacker && attacker.hp > 0) {
         const reflected = damage * 0.3;
@@ -3703,6 +3749,58 @@
       ctx.restore();
     }
 
+    function updateNextWaveButton() {
+      const btn = document.getElementById('nextWaveBtn');
+      const waitText = document.getElementById('waitingNextWaveText');
+      if (btn) {
+        const shouldShow = showNextWaveButton && isHost && !isTutorialMode;
+        if (shouldShow) btn.classList.remove('hidden');
+        else btn.classList.add('hidden');
+      }
+      if (waitText) {
+        const shouldShow = showNextWaveButton && !isHost && !isTutorialMode;
+        if (shouldShow) waitText.classList.remove('hidden');
+        else waitText.classList.add('hidden');
+      }
+    }
+
+    function showTutorialStep(index) {
+      const step = TUTORIAL_STEPS[index];
+      if (!step) return;
+      const target = document.querySelector(step.target);
+      const highlight = document.getElementById('tutorialHighlight');
+      const card = document.getElementById('tutorialCard');
+      if (target && highlight && card) {
+        const rect = target.getBoundingClientRect();
+        const pad = 8;
+        highlight.style.left = (rect.left - pad) + 'px';
+        highlight.style.top = (rect.top - pad) + 'px';
+        highlight.style.width = (rect.width + pad * 2) + 'px';
+        highlight.style.height = (rect.height + pad * 2) + 'px';
+        highlight.style.display = 'block';
+        const cardTop = (rect.top < window.innerHeight / 2)
+          ? (rect.bottom + 20) + 'px'
+          : Math.max(20, rect.top - 220) + 'px';
+        card.style.top = cardTop;
+        card.style.left = '50%';
+        card.style.transform = 'translateX(-50%)';
+      }
+      document.getElementById('tutorialStepText').innerText = `步驟 ${index + 1} / ${TUTORIAL_STEPS.length}`;
+      document.getElementById('tutorialTitleText').innerText = step.title;
+      document.getElementById('tutorialDescText').innerText = step.desc;
+      document.getElementById('tutorialNextBtn').innerText = index === TUTORIAL_STEPS.length - 1 ? '完成教學' : '下一步';
+    }
+
+    function endTutorial() {
+      const overlay = document.getElementById('tutorialOverlay');
+      if (overlay) overlay.classList.add('hidden');
+      isTutorialMode = false;
+      zombiesToSpawn = 0;
+      zombies.length = 0;
+      showNextWaveButton = false;
+      updateNextWaveButton();
+    }
+
     let lastFrameTime = performance.now();
     function gameLoop(nowTime) {
       if (!gameRunning) return;
@@ -3783,7 +3881,7 @@
       render();
       renderMiniMap();
       updateBossHealthBarUI();
-      updateDefenseUI(); updateSkillCooldownUI();
+      updateDefenseUI(); updateSkillCooldownUI(); updateNextWaveButton();
       } catch (err) {
         console.error(err);
       }
@@ -3793,7 +3891,7 @@
     function broadcastState() {
       const state = {
         type: 'STATE_UPDATE', players, zombies, bullets, enemyBullets, expGems, drops, minions, defenses, skillAreas, skillTurrets,
-        currentWave, dayNightTime, currentWeather, mapId: currentMap.id, seed: currentSeed
+        currentWave, dayNightTime, currentWeather, mapId: currentMap.id, seed: currentSeed, showNextWaveButton
       };
       for (let i = connections.length - 1; i >= 0; i--) {
         const conn = connections[i];
@@ -3831,6 +3929,8 @@
 
     function startGame(singlePlayerMode = true) {
       isSinglePlayer = singlePlayerMode;
+      hasStartedWave = false;
+      showNextWaveButton = false;
       const nickInput = document.getElementById('nicknameInput');
       let nick = (nickInput && nickInput.value) ? nickInput.value.trim() : '勇者';
 
@@ -3979,6 +4079,7 @@
           broadcastState(); if (myHostRoomCode) broadcastRoomInfo();
         }
       } else if (data.type === 'STATE_UPDATE' && !isHost) {
+        showNextWaveButton = !!data.showNextWaveButton;
         if (data.mapId && data.seed && (data.mapId !== currentMap.id || data.seed !== currentSeed)) {
           generateMap(data.mapId, data.seed);
         }
@@ -4263,6 +4364,47 @@
 
       const startChallengeBtn = document.getElementById('startChallengeBtn');
       if (startChallengeBtn) startChallengeBtn.onclick = () => { initAudio(); startDailyChallengeGame(); };
+
+      const tutorialBtn = document.getElementById('tutorialBtn');
+      if (tutorialBtn) tutorialBtn.addEventListener('pointerup', () => {
+        isTutorialMode = true;
+        currentTutorialStep = 0;
+        isHost = true;
+        stopHostingBroadcast();
+        startGame(true);
+        setTimeout(() => {
+          zombiesToSpawn = 5;
+          lastSpawnTime = 0;
+        }, 100);
+        setTimeout(() => {
+          const overlay = document.getElementById('tutorialOverlay');
+          if (overlay) overlay.classList.remove('hidden');
+          showTutorialStep(0);
+        }, 500);
+      });
+
+      const tutorialNextBtn = document.getElementById('tutorialNextBtn');
+      if (tutorialNextBtn) tutorialNextBtn.addEventListener('pointerup', () => {
+        currentTutorialStep++;
+        if (currentTutorialStep < TUTORIAL_STEPS.length) showTutorialStep(currentTutorialStep);
+        else endTutorial();
+      });
+
+      const tutorialSkipBtn = document.getElementById('tutorialSkipBtn');
+      if (tutorialSkipBtn) tutorialSkipBtn.addEventListener('pointerup', endTutorial);
+
+      window.addEventListener('resize', () => {
+        const overlay = document.getElementById('tutorialOverlay');
+        if (isTutorialMode && overlay && !overlay.classList.contains('hidden')) showTutorialStep(currentTutorialStep);
+      });
+
+      const nextWaveBtn = document.getElementById('nextWaveBtn');
+      if (nextWaveBtn) nextWaveBtn.addEventListener('pointerup', () => {
+        if (!isHost || isTutorialMode || !showNextWaveButton) return;
+        showNextWaveButton = false;
+        updateNextWaveButton();
+        startNextWave();
+      });
 
       const spBtn = document.getElementById('singlePlayerBtn');
       if (spBtn) spBtn.onclick = () => {
