@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>��除�啁糼:蝜賜�銝𣇉�</title>
+  <title>元氣地牢:技能與縮放</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- PeerJS CDN -->
@@ -49,14 +49,14 @@
     scrollbar-width: none;
   }
 
-  /* 敶���见���黸�誩��� UI */
+  /* 彈窗開啟時隱藏底部 UI */
   body.modal-open #mobileControls,
   body.modal-open #bottomControls {
     display: none !important;
   }
 
   /* ==========================================
-     �𧢲� UI 撘瑕�蝵桅����撠滚�雿滢耨敺�
+     手機 UI 強制置頂與絕對定位修復
      ========================================== */
 
   #mobileControls {
@@ -67,7 +67,7 @@
     pointer-events: none !important;
   }
 
-  /* 1. 鞊𤾸� Portrait */
+  /* 1. 豎屏 Portrait */
   @media (orientation: portrait) {
     #moveJoystickContainer {
       position: fixed !important;
@@ -100,7 +100,7 @@
     }
   }
 
-  /* 2. 璈怠� Landscape */
+  /* 2. 橫屏 Landscape */
   @media (orientation: landscape) {
     #moveJoystickContainer {
       position: fixed !important;
@@ -169,7 +169,7 @@
     }
   }
 
-  /* �日𥲤璅∪� UI 璅�� */
+  /* 除錯模式 UI 樣式 */
   #debugToast {
     position: fixed;
     bottom: 20%;
@@ -214,49 +214,49 @@
 </head>
 <body class="relative w-screen h-screen overflow-hidden text-white modal-open">
 
-  <!-- �𦠜�銝餌𧞄撣� -->
+  <!-- 遊戲主畫布 -->
   <canvas id="gameCanvas" class="w-full h-full absolute inset-0 z-0"></canvas>
 
-  <!-- ����Ｗ�����桃蔗 -->
+  <!-- 爆擊螢幕閃爍遮罩 -->
   <div id="critFlashOverlay" class="absolute inset-0 bg-red-500/20 pointer-events-none z-10 transition-opacity duration-100 opacity-0 hidden"></div>
 
-  <!-- �啣����璈怠� -->
+  <!-- 地圖切換橫幅 -->
   <div id="mapBanner" class="absolute top-12 left-1/2 -translate-x-1/2 pointer-events-none z-20 transition-all duration-500 opacity-0 hidden">
     <div class="glass-panel px-6 py-2 rounded-2xl border border-amber-500/30 text-amber-400 font-bold text-lg shadow-2xl tracking-wider flex items-center gap-2">
-      <span id="mapBannerTitle">�㚰儭� �脣�暺烐ㄝ��</span>
+      <span id="mapBannerTitle">🗺️ 進入黑森林</span>
     </div>
   </div>
 
-  <!-- 憭拇除霈𦠜凒璈怠� -->
+  <!-- 天氣變更橫幅 -->
   <div id="weatherBanner" class="absolute top-24 left-1/2 -translate-x-1/2 pointer-events-none z-20 transition-all duration-500 opacity-0 hidden">
     <div class="glass-panel px-5 py-1.5 rounded-xl border border-cyan-500/30 text-cyan-300 font-bold text-sm shadow-xl flex items-center gap-2">
-      <span id="weatherBannerTitle">�爀儭� 憭拇除霈𦠜凒</span>
+      <span id="weatherBannerTitle">🌧️ 天氣變更</span>
     </div>
   </div>
 
-  <!-- 甇血膥閫��璈怠� -->
+  <!-- 武器解鎖橫幅 -->
   <div id="weaponUnlockBanner" class="absolute top-36 left-1/2 -translate-x-1/2 pointer-events-none z-20 transition-all duration-500 opacity-0 hidden">
     <div class="glass-panel px-6 py-2 rounded-2xl border border-emerald-500/40 text-emerald-400 font-black text-base shadow-2xl flex items-center gap-2">
-      <span id="weaponUnlockTitle">�僟 撠�惇甇血膥閫��</span>
+      <span id="weaponUnlockTitle">🔫 專屬武器解鎖</span>
     </div>
   </div>
 
-  <!-- HUD �祇�憿舐內�� -->
+  <!-- HUD 抬頭顯示器 -->
   <div id="hud" class="absolute top-4 left-4 z-20 flex flex-col gap-2.5 pointer-events-none hidden max-w-[280px] sm:max-w-xs">
-    <!-- �拙振鞈���∠� -->
+    <!-- 玩家資訊卡片 -->
     <div class="glass-panel p-3 rounded-2xl border border-slate-700/60 shadow-xl flex flex-col gap-2 pointer-events-auto">
       <div class="flex items-center justify-between gap-2">
         <div class="flex items-center gap-2 overflow-hidden">
-          <span id="playerNameDisplay" class="font-black text-sm text-slate-100 truncate">����</span>
+          <span id="playerNameDisplay" class="font-black text-sm text-slate-100 truncate">勇者</span>
           <span id="levelText" class="text-xs font-bold text-amber-400 bg-amber-950/60 border border-amber-500/40 px-2 py-0.5 rounded-full shrink-0">Lv.1</span>
         </div>
-        <span id="minionCountTag" class="text-xs font-bold text-purple-400 bg-purple-950/60 border border-purple-500/40 px-2 py-0.5 rounded-full shrink-0 hidden">�� x 0</span>
+        <span id="minionCountTag" class="text-xs font-bold text-purple-400 bg-purple-950/60 border border-purple-500/40 px-2 py-0.5 rounded-full shrink-0 hidden">💀 x 0</span>
       </div>
 
-      <!-- �笔𦶢璇� -->
+      <!-- 生命條 -->
       <div class="flex flex-col gap-1">
         <div class="flex justify-between text-[11px] font-bold text-slate-300">
-          <span>�歹� �笔𦶢��</span>
+          <span>❤️ 生命值</span>
           <span id="hpText">100 / 100</span>
         </div>
         <div class="w-full h-3.5 bg-slate-900/90 rounded-full overflow-hidden p-0.5 border border-slate-700">
@@ -264,10 +264,10 @@
         </div>
       </div>
 
-      <!-- 霅瑞㦛璇� -->
+      <!-- 護盾條 -->
       <div class="flex flex-col gap-1">
         <div class="flex justify-between text-[11px] font-bold text-slate-300">
-          <span>�椘儭� 霅瑞㦛��</span>
+          <span>🛡️ 護盾值</span>
           <span id="shieldText">50 / 50</span>
         </div>
         <div class="w-full h-2.5 bg-slate-900/90 rounded-full overflow-hidden p-0.5 border border-slate-700">
@@ -275,7 +275,7 @@
         </div>
       </div>
 
-      <!-- 蝬㯄�璇� -->
+      <!-- 經驗條 -->
       <div class="flex flex-col gap-1">
         <div class="w-full h-1.5 bg-slate-900/90 rounded-full overflow-hidden border border-slate-800">
           <div id="expBar" class="h-full bg-gradient-to-r from-amber-400 to-yellow-300 rounded-full transition-all duration-150" style="width: 0%"></div>
@@ -283,29 +283,29 @@
       </div>
     </div>
 
-    <!-- 瘜Ｘ活��𧑐�𤥁�閮� -->
+    <!-- 波次與地圖資訊 -->
     <div class="flex items-center gap-2">
       <div class="glass-panel px-3 py-1.5 rounded-xl border border-amber-500/30 text-amber-400 font-black text-xs shadow-lg flex items-center gap-1.5">
-        <span class="animate-pulse">��</span>
+        <span class="animate-pulse">🌊</span>
         <span id="waveText">WAVE 1</span>
       </div>
       <div class="glass-panel px-3 py-1.5 rounded-xl border border-slate-700 text-slate-300 font-bold text-xs shadow-lg flex items-center gap-1.5">
-        <span id="hudMapNameText">�㚰儭� 暺烐ㄝ��</span>
+        <span id="hudMapNameText">🗺️ 黑森林</span>
       </div>
     </div>
 
-    <!-- 瘥𤩺𠯫�烐� HUD 璅嗵惜 -->
+    <!-- 每日挑戰 HUD 標籤 -->
     <div id="dailyChallengeHudTag" class="glass-panel px-3 py-1 rounded-xl border border-purple-500/40 text-purple-300 font-bold text-[11px] shadow-lg flex items-center gap-1.5 hidden">
-      <span>�� 瘥𤩺𠯫�烐�嚗�</span>
-      <span id="hudChallengeName" class="text-amber-300">�𧢲�銋见�</span>
+      <span>🏆 每日挑戰：</span>
+      <span id="hudChallengeName" class="text-amber-300">手槍之夜</span>
     </div>
   </div>
 
-  <!-- BOSS �笔𦶢璇嘥捆�� -->
+  <!-- BOSS 生命條容器 -->
   <div id="bossHealthBarContainer" class="absolute top-4 left-1/2 -translate-x-1/2 z-20 pointer-events-none transition-all duration-300 opacity-0 hidden w-11/12 max-w-md">
     <div class="glass-panel p-2.5 rounded-2xl border border-red-500/50 shadow-2xl flex flex-col gap-1">
       <div class="flex justify-between items-center text-xs font-black">
-        <span id="bossNameDisplay" class="text-red-400 tracking-wider">�𤣳 �𣂼�銋讠�</span>
+        <span id="bossNameDisplay" class="text-red-400 tracking-wider">🔥 腐化之王</span>
         <span id="bossHpTextDisplay" class="text-slate-200">1000 / 1000</span>
       </div>
       <div class="w-full h-3 bg-slate-950 rounded-full overflow-hidden border border-red-900/60 p-0.5">
@@ -314,289 +314,289 @@
     </div>
   </div>
 
-  <!-- 撠誩𧑐�硋捆�� -->
+  <!-- 小地圖容器 -->
   <div id="miniMapContainer" class="absolute top-4 right-4 z-20 pointer-events-auto hidden">
     <div class="glass-panel p-1.5 rounded-2xl border border-slate-700/70 shadow-xl relative overflow-hidden">
       <canvas id="miniMap" width="110" height="110" class="rounded-xl block bg-slate-950/80"></canvas>
     </div>
   </div>
 
-  <!-- 摨閖�敹急㭘�滢�甈��甇血膥�����俈蝳血極鈭页� -->
+  <!-- 底部快捷操作欄（武器切換與防禦工事） -->
   <div id="bottomControls" class="absolute left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 pointer-events-auto hidden w-full px-4 max-w-lg" style="bottom: calc(env(safe-area-inset-bottom, 0px) + 90px);">
-    <!-- 甇血膥�梢枤�� -->
+    <!-- 武器熱鍵列 -->
     <div id="weaponBar" class="flex items-center gap-1.5 glass-panel p-1.5 rounded-2xl border border-slate-700/80 shadow-2xl overflow-x-auto max-w-full no-scrollbar"></div>
 
-    <!-- �脩戌撌乩��曄蔭甈� -->
+    <!-- 防禦工事放置欄 -->
     <div id="defenseBarContainer" class="flex items-center gap-2 glass-panel px-3 py-1.5 rounded-2xl border border-slate-700/80 shadow-xl hidden">
-      <span class="text-[11px] font-bold text-slate-400 shrink-0">撌乩� (Q):</span>
+      <span class="text-[11px] font-bold text-slate-400 shrink-0">工事 (Q):</span>
       <button id="btnBarricade" onclick="selectDefenseToPlace('barricade')" class="px-2.5 py-1 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all flex items-center gap-1 active:scale-95">
-        <span>�𣑐 頝舫�</span>
+        <span>📦 路障</span>
         <span class="text-[10px] text-amber-400 font-mono">(15EX)</span>
         <span id="barricadeCountTag" class="text-[10px] bg-slate-900 px-1 rounded text-slate-400">0/2</span>
       </button>
       <button id="btnTurret" onclick="selectDefenseToPlace('turret')" class="px-2.5 py-1 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all flex items-center gap-1 active:scale-95">
-        <span>�僟 �脣�</span>
+        <span>🔫 砲塔</span>
         <span class="text-[10px] text-amber-400 font-mono">(40EX)</span>
         <span id="turretCountTag" class="text-[10px] bg-slate-900 px-1 rounded text-slate-400">0/2</span>
       </button>
       <button id="btnCampfire" onclick="selectDefenseToPlace('campfire')" class="px-2.5 py-1 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all flex items-center gap-1 active:scale-95">
-        <span>�𤣳 �毺�</span>
+        <span>🔥 營火</span>
         <span class="text-[10px] text-amber-400 font-mono">(25EX)</span>
         <span id="campfireCountTag" class="text-[10px] bg-slate-900 px-1 rounded text-slate-400">0/2</span>
       </button>
     </div>
   </div>
 
-  <!-- �𧢲��蹱�獢燃I Overlay -->
+  <!-- 手機雙搖桿UI Overlay -->
   <div id="mobileControls" class="absolute inset-0 z-10 pointer-events-none md:hidden">
-    <!-- 撌行�獢選�蝘餃� -->
+    <!-- 左搖桿：移動 -->
     <div id="moveJoystickContainer" class="joystick-container absolute bottom-8 left-8 w-28 h-28 rounded-full bg-slate-900/40 border border-white/20 pointer-events-auto flex items-center justify-center" style="bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);">
       <div id="moveJoystickStick" class="w-12 h-12 rounded-full bg-cyan-500/60 border border-cyan-300/80 shadow-lg absolute transition-transform duration-75" style="left: 50%; top: 50%; transform: translate(-50%, -50%);"></div>
     </div>
 
-    <!-- �單�獢選��������� -->
+    <!-- 右搖桿：瞄準與射擊 -->
     <div id="aimJoystickContainer" class="joystick-container absolute bottom-8 right-8 w-28 h-28 rounded-full bg-slate-900/40 border border-white/20 pointer-events-auto flex items-center justify-center" style="bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);">
       <div id="aimJoystickStick" class="w-12 h-12 rounded-full bg-amber-500/60 border border-amber-300/80 shadow-lg absolute transition-transform duration-75" style="left: 50%; top: 50%; transform: translate(-50%, -50%);"></div>
     </div>
 
-    <!-- �𧢲�銵嘥��厰� -->
+    <!-- 手機衝刺按鈕 -->
     <button id="mobileDashBtn" class="absolute bottom-40 right-10 w-14 h-14 rounded-full bg-purple-600/70 border border-purple-300 text-white font-black text-xs pointer-events-auto active:scale-90 transition-transform shadow-xl flex items-center justify-center" style="bottom: calc(env(safe-area-inset-bottom, 0px) + 160px);">
-      �倮 銵嘥�
+      💨 衝刺
     </button>
   </div>
 
-  <!-- �舀��唾�憭拙恕閬𣇉� -->
+  <!-- 可拖曳聊天室視窗 -->
   <div id="chatContainer" class="absolute bottom-20 left-4 z-30 w-64 glass-panel rounded-2xl border border-slate-700/70 shadow-2xl overflow-hidden hidden flex flex-col">
-    <!-- �𠰴予璅䠷�嚗�虾�𡝗𠗊����� -->
+    <!-- 聊天標頭（可拖曳區域） -->
     <div id="chatHeader" class="bg-slate-800/80 px-3 py-1.5 flex justify-between items-center cursor-move border-b border-slate-700">
-      <span class="text-xs font-bold text-slate-300 flex items-center gap-1">�俥 撠誯��駁�</span>
-      <button id="toggleChatBtn" class="text-xs text-slate-400 hover:text-white px-1">��</button>
+      <span class="text-xs font-bold text-slate-300 flex items-center gap-1">💬 小隊頻道</span>
+      <button id="toggleChatBtn" class="text-xs text-slate-400 hover:text-white px-1">➖</button>
     </div>
 
-    <!-- 閮𦠜��批捆�� -->
+    <!-- 訊息內容區 -->
     <div id="chatMessages" class="h-32 p-2 overflow-y-auto flex flex-col gap-1 text-xs no-scrollbar"></div>
 
-    <!-- �鞱身敹急㭘�𡃏店�厰��� -->
+    <!-- 預設快捷喊話按鈕區 -->
     <div class="px-2 py-1 bg-slate-900/50 flex gap-1 overflow-x-auto no-scrollbar border-t border-slate-800">
-      <button onclick="sendPresetChat('�� ��閬���湛�')" class="px-2 py-0.5 rounded bg-red-950/60 border border-red-500/40 text-[10px] text-red-300 whitespace-nowrap active:scale-95">�� 瘙��</button>
-      <button onclick="sendPresetChat('�� 撟孵�憟踝�')" class="px-2 py-0.5 rounded bg-emerald-950/60 border border-emerald-500/40 text-[10px] text-emerald-300 whitespace-nowrap active:scale-95">�� 霈�</button>
-      <button onclick="sendPresetChat('�� 敹急伃��嚗�')" class="px-2 py-0.5 rounded bg-amber-950/60 border border-amber-500/40 text-[10px] text-amber-300 whitespace-nowrap active:scale-95">�� �日��</button>
-      <button onclick="sendPresetChat('�𤣳 ����券�莎�')" class="px-2 py-0.5 rounded bg-blue-950/60 border border-blue-500/40 text-[10px] text-blue-300 whitespace-nowrap active:scale-95">�𤣳 ���</button>
+      <button onclick="sendPresetChat('🆘 需要救援！')" class="px-2 py-0.5 rounded bg-red-950/60 border border-red-500/40 text-[10px] text-red-300 whitespace-nowrap active:scale-95">🆘 求救</button>
+      <button onclick="sendPresetChat('👍 幹得好！')" class="px-2 py-0.5 rounded bg-emerald-950/60 border border-emerald-500/40 text-[10px] text-emerald-300 whitespace-nowrap active:scale-95">👍 讚</button>
+      <button onclick="sendPresetChat('🏃 快撤退！')" class="px-2 py-0.5 rounded bg-amber-950/60 border border-amber-500/40 text-[10px] text-amber-300 whitespace-nowrap active:scale-95">🏃 撤退</button>
+      <button onclick="sendPresetChat('🔥 集合推進！')" class="px-2 py-0.5 rounded bg-blue-950/60 border border-blue-500/40 text-[10px] text-blue-300 whitespace-nowrap active:scale-95">🔥 集合</button>
     </div>
 
-    <!-- ���頛詨�銵典鱓 -->
+    <!-- 文字輸入表單 -->
     <form id="chatForm" class="p-1.5 flex gap-1 border-t border-slate-700/60 bg-slate-900/80">
-      <input type="text" id="chatInput" placeholder="頛詨�閮𦠜�..." class="w-full bg-slate-950 border border-slate-700 rounded-xl px-2 py-1 text-xs text-white focus:outline-none focus:border-cyan-500">
-      <button type="submit" class="bg-cyan-600 hover:bg-cyan-500 text-white font-bold px-2.5 py-1 rounded-xl text-xs shrink-0 active:scale-95 transition-all">�潮��</button>
+      <input type="text" id="chatInput" placeholder="輸入訊息..." class="w-full bg-slate-950 border border-slate-700 rounded-xl px-2 py-1 text-xs text-white focus:outline-none focus:border-cyan-500">
+      <button type="submit" class="bg-cyan-600 hover:bg-cyan-500 text-white font-bold px-2.5 py-1 rounded-xl text-xs shrink-0 active:scale-95 transition-all">發送</button>
     </form>
   </div>
 
-  <!-- 銝駁��� Modal -->
+  <!-- 主選單 Modal -->
   <div id="mainMenu" class="absolute inset-0 bg-slate-950/90 backdrop-blur-md flex flex-col items-center p-3 sm:p-4 z-30 overflow-y-auto custom-scrollbar" style="padding-top: max(16px, env(safe-area-inset-top)); padding-bottom: max(16px, env(safe-area-inset-bottom));">
     <div class="max-w-xl w-full glass-panel p-5 sm:p-6 rounded-3xl shadow-2xl flex flex-col gap-3.5 border border-slate-700/60 text-center my-auto">
       <div class="flex flex-col items-center gap-1">
         <h1 class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-amber-400 to-emerald-400 tracking-wider">
-          2D 畾剖��硋���
+          2D 殭屍倖存者
         </h1>
-        <p class="text-xs text-slate-400 font-medium">憭帋犖����急𠯫�笔� 繚 �瑟平撠�惇憭抵釵��予�嗵頂蝯�</p>
+        <p class="text-xs text-slate-400 font-medium">多人連線末日生存 · 職業專屬天賦與天候系統</p>
       </div>
 
-      <!-- �梁迂頛詨� -->
+      <!-- 暱稱輸入 -->
       <div class="flex flex-col gap-1 text-left">
-        <label class="text-xs font-bold text-slate-300">�緤 �拙振�梁迂</label>
-        <input type="text" id="nicknameInput" maxlength="12" placeholder="頛詨�雿删��梁迂..." value="����" class="w-full bg-slate-900/90 border border-slate-700 rounded-2xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500 font-bold">
+        <label class="text-xs font-bold text-slate-300">🎮 玩家暱稱</label>
+        <input type="text" id="nicknameInput" maxlength="12" placeholder="輸入你的暱稱..." value="勇者" class="w-full bg-slate-900/90 border border-slate-700 rounded-2xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500 font-bold">
       </div>
 
-      <!-- �惩�憭𤥁��脣蔗�豢�嚗���厰��� + 憿讛𠧧�鞱汗嚗� -->
+      <!-- 造型外觀色彩選擇（下拉選單 + 顏色預覽） -->
       <div class="flex flex-col gap-1 text-left">
-        <label class="text-xs font-bold text-slate-300">�芾�����株�憿讛𠧧</label>
+        <label class="text-xs font-bold text-slate-300">自訂靈魂皮膚顏色</label>
         <div class="flex items-center gap-2">
           <select id="colorPickerContainer" class="flex-1 bg-slate-900/90 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 text-xs focus:outline-none focus:border-cyan-400"></select>
           <div id="colorPreviewBox" class="w-10 h-10 rounded-xl border-2 border-slate-600 shadow-inner shrink-0" style="background-color: #38bdf8;"></div>
         </div>
       </div>
 
-      <!-- �瑟平�豢���嚗���厰��殷� -->
+      <!-- 職業選擇區（下拉選單） -->
       <div class="flex flex-col gap-1.5 text-left">
-        <label class="text-xs font-bold text-slate-300">�豢��梢��瑟平</label>
+        <label class="text-xs font-bold text-slate-300">選擇英雄職業</label>
         <select id="classPickerContainer" class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 text-xs focus:outline-none focus:border-emerald-400">
-          <!-- �� JS �閙�憛怠� -->
+          <!-- 由 JS 動態填充 -->
         </select>
         <div id="classStatsDisplay" class="text-[11px] font-mono text-cyan-300 bg-slate-900/90 px-3 py-1.5 rounded-xl border border-slate-800 text-center flex flex-col gap-0.5">
-          <span id="classStatsText">�歹� �笔𦶢 110 | �椘儭� 霅瑞㦛 55 | �� 蝘駁�� 3.7 | �𤨎 �瑕拿 110%</span>
-          <span id="classExclusiveWeaponText" class="text-amber-400 font-bold">撠�惇甇血膥嚗𡄻�� 璁游��澆���</span>
+          <span id="classStatsText">❤️ 生命 110 | 🛡️ 護盾 55 | ⚡ 移速 3.7 | 💥 傷害 110%</span>
+          <span id="classExclusiveWeaponText" class="text-amber-400 font-bold">專屬武器：🚀 榴彈發射器</span>
         </div>
       </div>
 
       <div class="flex flex-col gap-1.5 text-left">
-        <label class="text-xs font-bold text-slate-300">�豢�撠�惇����</label>
+        <label class="text-xs font-bold text-slate-300">選擇專屬技能</label>
         <select id="exclusiveSkillPicker" class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 text-xs focus:outline-none focus:border-amber-400"></select>
-        <label class="text-xs font-bold text-slate-300 mt-1">�豢��𡁶鍂����</label>
+        <label class="text-xs font-bold text-slate-300 mt-1">選擇通用技能</label>
         <select id="generalSkillPicker" class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 text-xs focus:outline-none focus:border-cyan-400"></select>
       </div>
 
-      <!-- 瘥𤩺𠯫�烐�隞餃��Ｘ踎 -->
+      <!-- 每日挑戰任務面板 -->
       <div id="dailyChallengePanel" class="glass-panel p-3 rounded-2xl border border-purple-500/30 bg-purple-950/20 text-left flex flex-col gap-1">
         <div class="flex justify-between items-center">
-          <span id="challengeTitle" class="text-xs font-black text-purple-300">�𤨎 隞𦠜𠯫�烐�嚗𡁏�瑽滢�憭�</span>
-          <span id="challengeStatusBadge" class="text-[10px] px-2 py-0.5 rounded-full border border-amber-500/50 text-amber-300 bg-amber-900/40 font-bold">�芸���</span>
+          <span id="challengeTitle" class="text-xs font-black text-purple-300">💥 今日挑戰：手槍之夜</span>
+          <span id="challengeStatusBadge" class="text-[10px] px-2 py-0.5 rounded-full border border-amber-500/50 text-amber-300 bg-amber-900/40 font-bold">未完成</span>
         </div>
-        <p id="challengeDesc" class="text-[11px] text-slate-300 leading-tight">�芾�雿輻鍂蝬枏��𧢲�嚗��隞𡝗郎�函�瘜閗圾�𤥁����嚗剹��</p>
+        <p id="challengeDesc" class="text-[11px] text-slate-300 leading-tight">只能使用經典手槍（其他武器無法解鎖與切換）。</p>
         <button id="startChallengeBtn" class="mt-1 w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold py-1.5 rounded-xl text-xs shadow-lg active:scale-95 transition-all">
-          �� �见��烐�璅∪�
+          🏆 開始挑戰模式
         </button>
       </div>
 
-      <!-- �𦠜�璅∪��厰� -->
+      <!-- 遊戲模式按鈕 -->
       <div class="flex flex-col gap-2 pt-1">
         <button id="singlePlayerBtn" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black py-2.5 rounded-2xl text-sm shadow-xl active:scale-95 transition-all">
-          �緤 �桐犖敹恍�罸�憪�
+          🎮 單人快速開始
         </button>
         <div class="grid grid-cols-2 gap-2">
           <button id="openLobbyBtn" class="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-2 rounded-2xl text-xs shadow-lg active:scale-95 transition-all">
-            �� �𦠜�憭批輒 / �𡑒”
+            🌐 遊戲大廳 / 列表
           </button>
           <button id="createRoomBtn" class="w-full bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold py-2 rounded-2xl text-xs shadow-lg active:scale-95 transition-all">
-            �� �萄遣�輸� (�蹂蜓)
+            👑 創建房間 (房主)
           </button>
         </div>
       </div>
 
-      <!-- ����輸�蝣澆�����萄遣敺屸＊蝷綽� -->
+      <!-- 連線房間碼區域（創建後顯示） -->
       <div id="roomInfo" class="hidden flex flex-col gap-2 p-3 bg-slate-900/80 rounded-2xl border border-slate-700">
         <div class="flex items-center justify-between">
-          <span class="text-xs text-slate-400">�輸��剔Ⅳ嚗�</span>
+          <span class="text-xs text-slate-400">房間短碼：</span>
           <span id="myPeerIdText" class="text-base font-black text-amber-400 font-mono tracking-widest">------</span>
-          <button id="copyIdBtn" class="bg-slate-800 hover:bg-slate-700 text-xs px-2.5 py-1 rounded-xl border border-slate-600">銴�ˊ</button>
+          <button id="copyIdBtn" class="bg-slate-800 hover:bg-slate-700 text-xs px-2.5 py-1 rounded-xl border border-slate-600">複製</button>
         </div>
-        <div id="connectedPlayersText" class="text-xs text-emerald-400 font-bold">蝑匧��𠰴��惩�銝�...</div>
+        <div id="connectedPlayersText" class="text-xs text-emerald-400 font-bold">等待隊友加入中...</div>
         <button id="startHostGameBtn" class="w-full bg-gradient-to-r from-red-600 to-rose-600 text-white font-black py-2 rounded-xl text-xs shadow-lg active:scale-95 transition-all">
-          �䈑� �见�撠誯��𦠜�
+          ⚔️ 開始小隊遊戲
         </button>
       </div>
 
-      <!-- �惩��輸�頛詨����� -->
+      <!-- 加入房間輸入區域 -->
       <div id="joinRoomPanel" class="flex gap-2">
-        <input type="text" id="joinRoomInput" placeholder="頛詨� 6 雿齿��梶Ⅳ..." class="w-full bg-slate-900 border border-slate-700 rounded-2xl px-3 py-2 text-xs text-white uppercase font-mono tracking-wider focus:outline-none focus:border-cyan-500">
+        <input type="text" id="joinRoomInput" placeholder="輸入 6 位房間碼..." class="w-full bg-slate-900 border border-slate-700 rounded-2xl px-3 py-2 text-xs text-white uppercase font-mono tracking-wider focus:outline-none focus:border-cyan-500">
         <button id="joinRoomBtn" class="bg-cyan-600 hover:bg-cyan-500 text-white font-bold px-4 py-2 rounded-2xl text-xs shrink-0 active:scale-95 transition-all shadow-md">
-          �惩�
+          加入
         </button>
       </div>
 
-      <div id="connectionWarn" class="text-[11px] text-amber-400/90 hidden">�𩤃� ���隡箸��典��㕑��ｇ�隢讠�敺��閰艾��</div>
+      <div id="connectionWarn" class="text-[11px] text-amber-400/90 hidden">⚠️ 連線伺服器回應較慢，請稍後再試。</div>
 
-      <!-- �日𥲤璅∪�����厰� -->
+      <!-- 除錯模式切換按鈕 -->
       <button id="debugModeToggleBtn" type="button" class="w-full bg-slate-800 border border-red-500/40 text-red-400 text-xs py-1.5 rounded-xl hover:bg-slate-700 transition-all active:scale-95">
-        �� �日𥲤璅∪�嚗�㟲�湔����
+        🐞 除錯模式（整場有效）
       </button>
     </div>
   </div>
 
-  <!-- MQTT �𦠜�憭批輒�輸��𡑒” Modal -->
+  <!-- MQTT 遊戲大廳房間列表 Modal -->
   <div id="lobbyModal" class="absolute inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 hidden">
     <div class="glass-panel p-6 rounded-3xl border border-slate-700 shadow-2xl max-w-lg w-full flex flex-col gap-4 max-h-[85vh]">
       <div class="flex justify-between items-center border-b border-slate-800 pb-3">
         <div class="flex items-center gap-2">
-          <span class="text-xl">��</span>
-          <h2 class="text-lg font-black text-white">蝺帋�憭批輒�輸�</h2>
+          <span class="text-xl">🌐</span>
+          <h2 class="text-lg font-black text-white">線上大廳房間</h2>
         </div>
-        <button id="closeLobbyBtn" class="text-slate-400 hover:text-white text-sm px-2">��</button>
+        <button id="closeLobbyBtn" class="text-slate-400 hover:text-white text-sm px-2">✕</button>
       </div>
 
       <div id="lobbyStatus" class="text-xs text-amber-400 bg-amber-950/40 p-2 rounded-xl border border-amber-500/30 text-center hidden">
-        ���憭批輒隡箸��其葉...
+        連線大廳伺服器中...
       </div>
 
-      <div id="lobbyRoomCountText" class="text-xs text-slate-400 font-bold">撌脫𪄳�� 0 �钅��暹���</div>
+      <div id="lobbyRoomCountText" class="text-xs text-slate-400 font-bold">已找到 0 個開放房間</div>
 
-      <!-- �輸��∠��𡑒”摰孵膥 -->
+      <!-- 房間卡片列表容器 -->
       <div id="lobbyRoomList" class="flex flex-col gap-2 overflow-y-auto pr-1 no-scrollbar min-h-[200px] max-h-[360px]">
         <div class="flex flex-col items-center justify-center h-48 text-slate-500 gap-2">
-          <span class="text-3xl">��儭�</span>
-          <span class="text-xs">�桀�瘝埝��祇��輸�嚗諹岫�𡑒䌊撌勗肟撱箔��见嫃嚗�</span>
+          <span class="text-3xl">🏚️</span>
+          <span class="text-xs">目前沒有公開房間，試著自己創建一個吧！</span>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ���憭抵釵�豢� Modal -->
+  <!-- 升級天賦選擇 Modal -->
   <div id="upgradeModal" class="absolute inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden items-center justify-center p-4">
     <div class="glass-panel p-6 rounded-3xl border border-amber-500/40 shadow-2xl max-w-sm w-full flex flex-col gap-4 text-center">
       <div class="flex flex-col items-center gap-1">
-        <span class="text-2xl animate-bounce">��</span>
-        <h2 class="text-xl font-black text-amber-400">蝑厩��𣂼�嚗�������予鞈�</h2>
+        <span class="text-2xl animate-bounce">🎉</span>
+        <h2 class="text-xl font-black text-amber-400">等級提升！選擇一項天賦</h2>
       </div>
       <div id="upgradeOptions" class="flex flex-col gap-2.5"></div>
     </div>
   </div>
 
-  <!-- 銝餅��瑞��漤�� Modal -->
+  <!-- 主機斷線重連 Modal -->
   <div id="hostDisconnectedModal" class="absolute inset-0 z-50 bg-slate-950/90 backdrop-blur-lg flex items-center justify-center p-4 hidden">
     <div class="glass-panel p-6 rounded-3xl border border-red-500/40 shadow-2xl max-w-sm w-full flex flex-col gap-4 text-center">
-      <span class="text-3xl">�𩤃�</span>
-      <h2 class="text-lg font-black text-red-400">��蜓璈罸���銝剜𪃾</h2>
-      <p id="reconnectStatusText" class="text-xs text-slate-300">甇�銁�𡑒岫�齿鰵��� (1/5)...</p>
+      <span class="text-3xl">⚠️</span>
+      <h2 class="text-lg font-black text-red-400">與主機連線中斷</h2>
+      <p id="reconnectStatusText" class="text-xs text-slate-300">正在嘗試重新連線 (1/5)...</p>
       <div class="w-full h-2 bg-slate-900 rounded-full overflow-hidden border border-slate-700">
         <div id="reconnectProgressBar" class="h-full bg-amber-500 transition-all duration-300" style="width: 20%"></div>
       </div>
       <button onclick="location.reload()" class="bg-slate-800 hover:bg-slate-700 text-white font-bold py-2 rounded-xl text-xs border border-slate-600 mt-2">
-        餈𥪜�銝駁���
+        返回主選單
       </button>
     </div>
   </div>
 
-  <!-- �𦠜�蝯鞉��冽� Modal -->
+  <!-- 遊戲結束全滅 Modal -->
   <div id="gameOverModal" class="absolute inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 hidden">
     <div class="glass-panel p-6 rounded-3xl border border-red-500/50 shadow-2xl max-w-sm w-full flex flex-col gap-4 text-center">
-      <span class="text-4xl">��</span>
-      <h2 class="text-2xl font-black text-red-500 tracking-wider">撠誯��冽�嚗�</h2>
-      <p class="text-xs text-slate-300">�券��𠰴��鍦𧑐嚗𣬚�摮䀹��啁��麄��</p>
+      <span class="text-4xl">💀</span>
+      <h2 class="text-2xl font-black text-red-500 tracking-wider">小隊全滅！</h2>
+      <p class="text-xs text-slate-300">全體隊友倒地，生存挑戰結束。</p>
       <div class="flex gap-2">
         <button id="restartBtn" class="w-full bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold py-2.5 rounded-2xl text-xs shadow-lg active:scale-95 transition-all">
-          �� �齿鰵�见�
+          🔄 重新開始
         </button>
         <button id="returnToMenuBtn" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold py-2.5 rounded-2xl text-xs border border-slate-700 active:scale-95 transition-all">
-          �� 銝駁���
+          🏠 主選單
         </button>
       </div>
     </div>
   </div>
 
-  <!-- �日𥲤璅∪����𧢲�蝷� -->
+  <!-- 除錯模式狀態提示 -->
   <div id="debugToast" class="glass-panel px-4 py-2 rounded-2xl border border-amber-500/50 text-amber-300 font-bold text-xs shadow-2xl opacity-0 hidden">
-    <span id="debugToastText">�� �日𥲤璅∪�撌脤�����游聦�㗇�嚗�</span>
+    <span id="debugToastText">🐞 除錯模式已開啟（整場有效）</span>
   </div>
 
-  <!-- �日𥲤璅∪��航炊敶�� -->
+  <!-- 除錯模式錯誤彈窗 -->
   <div id="errorOverlay" style="display: none;">
     <div class="error-card">
       <div class="flex items-center justify-between border-b border-red-500/40 pb-2">
         <h3 class="text-base font-black text-red-500 flex items-center gap-1.5">
-          <span>�𩤃�</span> 蝔见��瑁��啣虜 (Debug Output)
+          <span>⚠️</span> 程式執行異常 (Debug Output)
         </h3>
-        <button id="closeErrorOverlayBtn" type="button" class="text-slate-400 hover:text-white font-bold text-sm px-2 py-1 rounded-lg bg-slate-800 border border-slate-700">�� �𣈯�</button>
+        <button id="closeErrorOverlayBtn" type="button" class="text-slate-400 hover:text-white font-bold text-sm px-2 py-1 rounded-lg bg-slate-800 border border-slate-700">✕ 關閉</button>
       </div>
 
       <div class="flex flex-col gap-1 text-xs">
-        <div class="font-bold text-amber-400">閮𦠜�嚗�<span id="errorMsgText" class="text-slate-100 font-mono"></span></div>
-        <div class="font-bold text-amber-400">雿滨蔭嚗�<span id="errorLocText" class="text-cyan-300 font-mono"></span></div>
+        <div class="font-bold text-amber-400">訊息：<span id="errorMsgText" class="text-slate-100 font-mono"></span></div>
+        <div class="font-bold text-amber-400">位置：<span id="errorLocText" class="text-cyan-300 font-mono"></span></div>
       </div>
 
       <div class="flex flex-col gap-1 text-xs">
-        <div class="font-bold text-slate-300">Stack Trace嚗�</div>
+        <div class="font-bold text-slate-300">Stack Trace：</div>
         <pre id="errorStackText" class="bg-slate-950 p-2.5 rounded-xl border border-slate-800 text-[11px] text-red-300/90 font-mono whitespace-pre-wrap overflow-x-auto max-h-48 leading-relaxed"></pre>
       </div>
 
       <div class="flex justify-end pt-1">
         <button id="copyErrorBtn" type="button" class="bg-red-600 hover:bg-red-500 text-white font-bold px-4 py-2 rounded-xl text-xs active:scale-95 transition-all shadow-md">
-          �� 銴�ˊ摰峕㟲�航炊閮𦠜�
+          📋 複製完整錯誤訊息
         </button>
       </div>
     </div>
   </div>
 
   <script>
-    // ===== �日𥲤璅∪��賊��典�霈𦠜彍��𧙗�賡�頛� =====
+    // ===== 除錯模式相關全域變數與監聽邏輯 =====
     let isDebugMode = false;
     let debugTimer = null;
     let weaponSwitchCount = 0;
@@ -622,12 +622,12 @@
       if (!button) return;
 
       if (isDebugMode) {
-        button.innerText = '�� �日𥲤璅∪�嚗𡁜歇�见� ��';
+        button.innerText = '🐞 除錯模式：已開啟 ✅';
         button.classList.add('bg-red-600', 'text-white');
         button.style.backgroundColor = '#dc2626';
         button.style.color = '#ffffff';
       } else {
-        button.innerText = '�� �日𥲤璅∪�嚗�㟲�湔����';
+        button.innerText = '🐞 除錯模式（整場有效）';
         button.classList.remove('bg-red-600', 'text-white');
         button.style.backgroundColor = '';
         button.style.color = '';
@@ -645,11 +645,11 @@
       updateDebugModeButton();
 
       if (!wasAlreadyEnabled) {
-        showDebugToast('�� �日𥲤璅∪�撌脤�����游聦�㗇�嚗�');
+        showDebugToast('🐞 除錯模式已開啟（整場有效）');
       }
     }
 
-    // 銝駁��桅膄�舀芋撘𤩺��𤏪��见����嚗𣬚凒�啣�甈⊿��㗇��齿㟲��𢒰
+    // 主選單除錯模式按鈕：手動切換，直到再次關閉或重整頁面
     document.getElementById('debugModeToggleBtn').addEventListener('click', () => {
       if (isDebugMode) {
         isDebugMode = false;
@@ -658,7 +658,7 @@
         weaponSwitchCount = 0;
         defenseSwitchCount = 0;
         updateDebugModeButton();
-        showDebugToast('�� �日𥲤璅∪�撌脤���');
+        showDebugToast('🐞 除錯模式已關閉');
       } else {
         enableDebugMode();
       }
@@ -690,9 +690,9 @@
 
       if (!overlay || !msgEl || !locEl || !stackEl) return;
 
-      msgEl.innerText = msg || '�芰䰻�航炊';
-      locEl.innerText = loc || '�∩�蝵株�閮�';
-      stackEl.innerText = stack || '�� Stack Trace 鞈��';
+      msgEl.innerText = msg || '未知錯誤';
+      locEl.innerText = loc || '無位置資訊';
+      stackEl.innerText = stack || '無 Stack Trace 資訊';
 
       overlay.style.display = 'flex';
     }
@@ -700,98 +700,98 @@
     window.addEventListener('error', (e) => {
       console.error(e);
       const loc = `${e.filename || 'index.html'}:${e.lineno || 0}:${e.colno || 0}`;
-      const stack = e.error && e.error.stack ? e.error.stack : '�∟�閮�';
+      const stack = e.error && e.error.stack ? e.error.stack : '無資訊';
       showGlobalErrorOverlay(e.message, loc, stack);
     });
 
     window.addEventListener('unhandledrejection', (e) => {
       console.error(e);
       const msg = e.reason && e.reason.message ? e.reason.message : String(e.reason);
-      const stack = e.reason && e.reason.stack ? e.reason.stack : '�∟�閮�';
+      const stack = e.reason && e.reason.stack ? e.reason.stack : '無資訊';
       showGlobalErrorOverlay(`Unhandled Rejection: ${msg}`, 'Promise Rejection', stack);
     });
 
-    // �鞱�璆剛��嗵�瑽卝��
+    // 【職業資料結構】
     const CLASSES = {
       medic: {
-        id: 'medic', name: '�怎���', icon: '��', exclusiveWeaponKey: 'healBeam', exclusiveWeaponName: '�� 瘝餌��㗇�',
-        desc: '敺拇暑�𠰴��笔漲敹恬�瘝餌��誯�嚗䔶�銵��讛�雿�', color: '#4ade80',
+        id: 'medic', name: '醫療兵', icon: '💉', exclusiveWeaponKey: 'healBeam', exclusiveWeaponName: '💉 治療光束',
+        desc: '復活隊友速度快，治療量高，但血量較低', color: '#4ade80',
         baseStats: { maxHp: 80, maxShield: 40, speed: 3.5, dmgMult: 1.0, bulletScale: 1.0, magnetRange: 140, dashMaxCooldown: 90, invulnDuration: 20, lifesteal: 0 },
         special: { reviveSpeedMult: 2.0, healAmountMult: 1.5, bulletRangeMult: 1.0 }
       },
       assault: {
-        id: 'assault', name: '蝒����', icon: '��儭�', exclusiveWeaponKey: 'grenade', exclusiveWeaponName: '�� 璁游��澆���',
-        desc: '��﹛�𧢲�憯恬��瑕拿����閙�批���', color: '#f59e0b',
+        id: 'assault', name: '突擊兵', icon: '🎖️', exclusiveWeaponKey: 'grenade', exclusiveWeaponName: '🚀 榴彈發射器',
+        desc: '均衡型戰士，傷害與機動性兼備', color: '#f59e0b',
         baseStats: { maxHp: 110, maxShield: 55, speed: 3.7, dmgMult: 1.1, bulletScale: 1.0, magnetRange: 140, dashMaxCooldown: 90, invulnDuration: 20, lifesteal: 0 },
         special: { reviveSpeedMult: 1.0, healAmountMult: 1.0, bulletRangeMult: 1.0 }
       },
       sniper: {
-        id: 'sniper', name: '�蹱���', icon: '�㴓', exclusiveWeaponKey: 'sniperRifle', exclusiveWeaponName: '�㴓 �滚��蹱�瑽�',
-        desc: '�㰘��ａ��瑕拿嚗䔶�擃磰釭頛�摹', color: '#38bdf8',
+        id: 'sniper', name: '狙擊手', icon: '🎯', exclusiveWeaponKey: 'sniperRifle', exclusiveWeaponName: '🎯 重型狙擊槍',
+        desc: '遠距離高傷害，但體質較弱', color: '#38bdf8',
         baseStats: { maxHp: 80, maxShield: 40, speed: 3.4, dmgMult: 1.3, bulletScale: 1.0, magnetRange: 140, dashMaxCooldown: 90, invulnDuration: 20, lifesteal: 0 },
         special: { reviveSpeedMult: 1.0, healAmountMult: 1.0, bulletRangeMult: 1.5 }
       },
       berserker: {
-        id: 'berserker', name: '���憯�', icon: '��', exclusiveWeaponKey: 'throwingAxe', exclusiveWeaponName: '�� �閙搻�唳鑘',
-        desc: '餈𤏸��Ｗ�摰喟蕃�㵪�蝘餃�餈����雿��蝔讠�', color: '#ef4444',
+        id: 'berserker', name: '狂戰士', icon: '🪓', exclusiveWeaponKey: 'throwingAxe', exclusiveWeaponName: '🪓 投擲戰斧',
+        desc: '近距離傷害翻倍，移動迅速，但射程短', color: '#ef4444',
         baseStats: { maxHp: 120, maxShield: 45, speed: 4.3, dmgMult: 1.0, bulletScale: 1.2, magnetRange: 140, dashMaxCooldown: 70, invulnDuration: 25, lifesteal: 0 },
         special: { reviveSpeedMult: 1.0, healAmountMult: 1.0, bulletRangeMult: 0.7, closeRangeDoubleDmg: true }
       },
       engineer: {
-        id: 'engineer', name: '撌亦�撣�', icon: '�圲', exclusiveWeaponKey: 'teslaGun', exclusiveWeaponName: '�� �餅�瑽�',
-        desc: '霅瑞㦛銝𢠃�擃塩���敺拙翰嚗䔶��餅��𤤿�撘�', color: '#a855f7',
+        id: 'engineer', name: '工程師', icon: '🔧', exclusiveWeaponKey: 'teslaGun', exclusiveWeaponName: '⚡ 電擊槍',
+        desc: '護盾上限高、回復快，但攻擊力稍弱', color: '#a855f7',
         baseStats: { maxHp: 90, maxShield: 80, speed: 3.5, dmgMult: 0.9, bulletScale: 1.0, magnetRange: 160, dashMaxCooldown: 90, invulnDuration: 20, lifesteal: 0 },
         special: { reviveSpeedMult: 1.0, healAmountMult: 1.0, bulletRangeMult: 1.0, shieldRegenRate: 0.15 }
       },
       scout: {
-        id: 'scout', name: '�萄���', icon: '�倮', exclusiveWeaponKey: 'dualSMG', exclusiveWeaponName: '�僟 �蹱�銵嗪�瑽�',
-        desc: '蝘餃�璆萄翰����箏��餌�嚗䔶�銵��誩�雿�', color: '#22d3ee',
+        id: 'scout', name: '偵察兵', icon: '💨', exclusiveWeaponKey: 'dualSMG', exclusiveWeaponName: '🔫 雙持衝鋒槍',
+        desc: '移動極快、衝刺冷卻短，但血量偏低', color: '#22d3ee',
         baseStats: { maxHp: 85, maxShield: 45, speed: 4.6, dmgMult: 1.0, bulletScale: 1.0, magnetRange: 180, dashMaxCooldown: 45, invulnDuration: 25, lifesteal: 0 },
         special: { reviveSpeedMult: 1.0, healAmountMult: 1.0, bulletRangeMult: 1.0 }
       },
       flameMage: {
-        id: 'flameMage', name: '蝮梁���', icon: '�𤣳', exclusiveWeaponKey: 'fireBeam', exclusiveWeaponName: '�𤣳 ����游���',
-        desc: '�游��怎��潛��萎犖嚗峕�蝥��摰�', color: '#f97316',
+        id: 'flameMage', name: '縱火犯', icon: '🔥', exclusiveWeaponKey: 'fireBeam', exclusiveWeaponName: '🔥 烈焰噴射器',
+        desc: '噴射火焰灼燒敵人，持續傷害', color: '#f97316',
         baseStats: { maxHp: 85, maxShield: 45, speed: 3.5, dmgMult: 1.0, bulletScale: 1.0, magnetRange: 150, dashMaxCooldown: 90, invulnDuration: 20, lifesteal: 0 },
         special: { igniteDuration: 2.0 }
       },
       frostHunter: {
-        id: 'frostHunter', name: '�圈��萎犖', icon: '���', exclusiveWeaponKey: 'frostBow', exclusiveWeaponName: '��� 撖鍦�撘�',
-        desc: '�啣�敶�𠯫皜偦��訽鈭綽��批聦�賢�撘�', color: '#67e8f9',
+        id: 'frostHunter', name: '冰霜獵人', icon: '❄️', exclusiveWeaponKey: 'frostBow', exclusiveWeaponName: '❄️ 寒冰弓',
+        desc: '冰凍彈藥減速敵人，控場能力強', color: '#67e8f9',
         baseStats: { maxHp: 95, maxShield: 50, speed: 3.7, dmgMult: 1.1, bulletScale: 1.1, magnetRange: 140, dashMaxCooldown: 80, invulnDuration: 20, lifesteal: 0 },
         special: { slowOnHit: 0.5 }
       },
       paladin: {
-        id: 'paladin', name: '�㚚�憯�', icon: '�椘儭�', exclusiveWeaponKey: 'holyHammer', exclusiveWeaponName: '�鍂 蟡噼��圈�',
-        desc: '霅瑞㦛璆菟�嚗�虾�粹��𧢲�靘𥡝風�曉���', color: '#fbbf24',
+        id: 'paladin', name: '聖騎士', icon: '🛡️', exclusiveWeaponKey: 'holyHammer', exclusiveWeaponName: '🔨 神聖戰錘',
+        desc: '護盾極高，可為隊友提供護盾光環', color: '#fbbf24',
         baseStats: { maxHp: 130, maxShield: 100, speed: 3.2, dmgMult: 0.85, bulletScale: 1.0, magnetRange: 130, dashMaxCooldown: 110, invulnDuration: 30, lifesteal: 0 },
         special: { auraShield: 3 }
       },
       necromancer: {
-        id: 'necromancer', name: '鈭⊿�銵枏ㄚ', icon: '��', exclusiveWeaponKey: 'necroStaff', exclusiveWeaponName: '�� 鈭⊿�甈𦠜�',
-        desc: '�𦠜捏�萎犖�� 30% 璈毺��砍�鈭⊿��箔�雿𨀣�', color: '#a78bfa',
+        id: 'necromancer', name: '亡靈術士', icon: '💀', exclusiveWeaponKey: 'necroStaff', exclusiveWeaponName: '💀 亡靈權杖',
+        desc: '擊殺敵人有 30% 機率召喚亡靈為你作戰', color: '#a78bfa',
         baseStats: { maxHp: 85, maxShield: 50, speed: 3.6, dmgMult: 1.0, bulletScale: 1.0, magnetRange: 150, dashMaxCooldown: 85, invulnDuration: 20, lifesteal: 0 },
         special: { summonChance: 0.3 }
       }
     };
 
     const SKILLS = {
-      heal: { name: '瘝餌�銵�', icon: '��', type: '�笔�', desc: '�𧼮儔 40 HP', cooldown: 15, slot: 'general' },
-      shield: { name: '霅瑞㦛銵�', icon: '�椘儭�', type: '�笔�', desc: '�脣� 50 霅瑞㦛嚗峕�蝥� 10 蝘�', cooldown: 15, slot: 'general' },
-      critBoost: { name: '�湔���䔄', icon: '�𤨎', type: '頛詨枂', desc: '5 蝘鍦��瑕拿 �1.5', cooldown: 15, slot: 'general' },
-      pierceShot: { name: '蝛輸�誩�撟�', icon: '�㴓', type: '頛詨枂', desc: '�穃�撠�枂 5 �潛忽�誩�敶�', cooldown: 15, slot: 'general' },
-      frostWave: { name: '�啣�瘜�', icon: '���', type: '�批聦', desc: '�典� 200 蝭���萎犖皜偦�� 50%嚗峕�蝥� 3 蝘�', cooldown: 15, slot: 'general' },
-      knockbackRing: { name: '�𢠃����', icon: '�㻛儭�', type: '�批聦', desc: '�典� 150 蝭���萎犖�𢠃��銝行��� 1 蝘�', cooldown: 15, slot: 'general' },
-      medicHealCircle: { name: '瘝餌���', icon: '��', type: '�喃�', desc: '����𠰴�瘥讐��𧼮儔 5 HP嚗峕�蝥� 5 蝘�', cooldown: 30, slot: 'exclusive' },
-      assaultBombard: { name: '璁游�頧毺�', icon: '�侢', type: '�穃�', desc: '����瑕拿 80嚗��敺� 120', cooldown: 30, slot: 'exclusive' },
-      sniperPierce: { name: '鞎怎忽�蹱�', icon: '�㴓', type: '�穃�', desc: '鞎怎忽�渡��萎犖嚗屸�䭾� 150 �瑕拿', cooldown: 30, slot: 'exclusive' },
-      berserkerRage: { name: '��𠂔', icon: '��', type: '�芸楛', desc: '5 蝘鍦��駁�� +50%��宏�� +30%', cooldown: 30, slot: 'exclusive' },
-      engineerTurret: { name: '�冽��脣�', icon: '�圲', type: '�喃�', desc: '�芸�撠���脣�嚗峕�蝥� 10 蝘�', cooldown: 30, slot: 'exclusive' },
-      scoutBlink: { name: '�砍蔣', icon: '�倮', type: '�穃�', desc: '�穃�雿滨宏 250 頝嗪𣪧', cooldown: 30, slot: 'exclusive' },
-      flameStorm: { name: '�怎�憸冽𠂔', icon: '�𤣳', type: '�喃�', desc: '�𠰴� 180 ��� 5 蝘𡜐�瘥讐� 15 �瑕拿', cooldown: 30, slot: 'exclusive' },
-      frostField: { name: '�圈��睃�', icon: '���', type: '�喃�', desc: '�𠰴� 200 �啣��萎犖 3 蝘�', cooldown: 30, slot: 'exclusive' },
-      paladinBastion: { name: '蟡噼�憯��', icon: '��', type: '�芸楛', desc: '�⊥訽 3 蝘雴蒂�滚� 50%', cooldown: 30, slot: 'exclusive' },
-      necroSummon: { name: '鈭⊿��砍�', icon: '��', type: '�芸楛', desc: '�砍� 3 �颱滿��', cooldown: 30, slot: 'exclusive' }
+      heal: { name: '治療術', icon: '💚', type: '生存', desc: '回復 40 HP', cooldown: 15, slot: 'general' },
+      shield: { name: '護盾術', icon: '🛡️', type: '生存', desc: '獲得 50 護盾，持續 10 秒', cooldown: 15, slot: 'general' },
+      critBoost: { name: '暴擊爆發', icon: '💥', type: '輸出', desc: '5 秒內傷害 ×1.5', cooldown: 15, slot: 'general' },
+      pierceShot: { name: '穿透彈幕', icon: '🎯', type: '輸出', desc: '向前射出 5 發穿透子彈', cooldown: 15, slot: 'general' },
+      frostWave: { name: '冰凍波', icon: '❄️', type: '控場', desc: '周圍 200 範圍敵人減速 50%，持續 3 秒', cooldown: 15, slot: 'general' },
+      knockbackRing: { name: '擊退環', icon: '🌪️', type: '控場', desc: '周圍 150 範圍敵人擊退並暈眩 1 秒', cooldown: 15, slot: 'general' },
+      medicHealCircle: { name: '治療圈', icon: '💚', type: '腳下', desc: '圈內隊友每秒回復 5 HP，持續 5 秒', cooldown: 30, slot: 'exclusive' },
+      assaultBombard: { name: '榴彈轟炸', icon: '💣', type: '向前', desc: '爆炸傷害 80，半徑 120', cooldown: 30, slot: 'exclusive' },
+      sniperPierce: { name: '貫穿狙擊', icon: '🎯', type: '向前', desc: '貫穿直線敵人，造成 150 傷害', cooldown: 30, slot: 'exclusive' },
+      berserkerRage: { name: '狂暴', icon: '🪓', type: '自己', desc: '5 秒內攻速 +50%、移速 +30%', cooldown: 30, slot: 'exclusive' },
+      engineerTurret: { name: '臨時砲塔', icon: '🔧', type: '腳下', desc: '自動射擊砲塔，持續 10 秒', cooldown: 30, slot: 'exclusive' },
+      scoutBlink: { name: '瞬影', icon: '💨', type: '向前', desc: '向前位移 250 距離', cooldown: 30, slot: 'exclusive' },
+      flameStorm: { name: '火焰風暴', icon: '🔥', type: '腳下', desc: '半徑 180 燃燒 5 秒，每秒 15 傷害', cooldown: 30, slot: 'exclusive' },
+      frostField: { name: '冰霜領域', icon: '❄️', type: '腳下', desc: '半徑 200 冰凍敵人 3 秒', cooldown: 30, slot: 'exclusive' },
+      paladinBastion: { name: '神聖壁壘', icon: '✨', type: '自己', desc: '無敵 3 秒並反傷 50%', cooldown: 30, slot: 'exclusive' },
+      necroSummon: { name: '亡靈召喚', icon: '💀', type: '自己', desc: '召喚 3 隻亡靈', cooldown: 30, slot: 'exclusive' }
     };
     const CLASS_EXCLUSIVE_SKILLS = { medic: 'medicHealCircle', assault: 'assaultBombard', sniper: 'sniperPierce', berserker: 'berserkerRage', engineer: 'engineerTurret', scout: 'scoutBlink', flameMage: 'flameStorm', frostHunter: 'frostField', paladin: 'paladinBastion', necromancer: 'necroSummon' };
     const GENERAL_SKILL_IDS = ['heal', 'shield', 'critBoost', 'pierceShot', 'frostWave', 'knockbackRing'];
@@ -803,13 +803,13 @@
     let selectedClassId = 'assault';
 
     const MAPS = [
-      { id: 'forest', name: '暺烐ㄝ��', floorColor: '#142e12', accentColor: '#15803d', decorType: 'tree', obstacleDensity: 130, envParticle: 'leaf' },
-      { id: 'city', name: '撱Ｘ��賢�', floorColor: '#1e293b', accentColor: '#475569', decorType: 'building', obstacleDensity: 80, envParticle: 'paper' },
-      { id: 'desert', name: '瘝蹱��箄楚', floorColor: '#78350f', accentColor: '#d97706', decorType: 'cactus', obstacleDensity: 40, envParticle: 'sand' },
-      { id: 'snow', name: '�芸𧑐�鍦�', floorColor: '#e2e8f0', accentColor: '#94a3b8', decorType: 'pine', obstacleDensity: 90, envParticle: 'snow' },
-      { id: 'swamp', name: '�𣂼�瘝潭黎', floorColor: '#1c2e1a', accentColor: '#365314', decorType: 'deadTree', obstacleDensity: 100, envParticle: 'bubble' },
-      { id: 'cave', name: '撟賣�瘣䂿庖', floorColor: '#0a0a0a', accentColor: '#334155', decorType: 'rock', obstacleDensity: 150, envParticle: 'dust' },
-      { id: 'graveyard', name: '鈭∟�����', floorColor: '#1a1420', accentColor: '#4c1d95', decorType: 'tombstone', obstacleDensity: 110, envParticle: 'ghost' }
+      { id: 'forest', name: '黑森林', floorColor: '#142e12', accentColor: '#15803d', decorType: 'tree', obstacleDensity: 130, envParticle: 'leaf' },
+      { id: 'city', name: '廢棄都市', floorColor: '#1e293b', accentColor: '#475569', decorType: 'building', obstacleDensity: 80, envParticle: 'paper' },
+      { id: 'desert', name: '沙漠遺跡', floorColor: '#78350f', accentColor: '#d97706', decorType: 'cactus', obstacleDensity: 40, envParticle: 'sand' },
+      { id: 'snow', name: '雪地荒原', floorColor: '#e2e8f0', accentColor: '#94a3b8', decorType: 'pine', obstacleDensity: 90, envParticle: 'snow' },
+      { id: 'swamp', name: '腐化沼澤', floorColor: '#1c2e1a', accentColor: '#365314', decorType: 'deadTree', obstacleDensity: 100, envParticle: 'bubble' },
+      { id: 'cave', name: '幽暗洞穴', floorColor: '#0a0a0a', accentColor: '#334155', decorType: 'rock', obstacleDensity: 150, envParticle: 'dust' },
+      { id: 'graveyard', name: '亡者墓地', floorColor: '#1a1420', accentColor: '#4c1d95', decorType: 'tombstone', obstacleDensity: 110, envParticle: 'ghost' }
     ];
 
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -843,41 +843,41 @@
     const ctx = canvas.getContext('2d');
 
     const WEAPONS = {
-      pistol: { name: '蝬枏��𧢲�', fireRate: 220, speed: 16, damage: 22, color: '#f59e0b', size: 4, count: 1, spread: 0, recoil: 2, penetrate: false, range: 75, icon: '�僟' },
-      shotgun: { name: '�啣�瑽�', fireRate: 600, speed: 14, damage: 16, color: '#ef4444', size: 3.5, count: 5, spread: 0.25, recoil: 6, penetrate: false, range: 75, icon: '�𤨎' },
-      rifle: { name: '蝒��甇交�', fireRate: 110, speed: 18, damage: 14, color: '#38bdf8', size: 3, count: 1, spread: 0.08, recoil: 1.5, penetrate: false, range: 75, icon: '�僟' },
-      laser: { name: '瘥�皛�𡺨撠�', fireRate: 6000, speed: 30, damage: 280, color: '#a855f7', size: 8, count: 1, spread: 0, recoil: 8, penetrate: true, range: 300, icon: '��', isBeam: true, beamLength: 400, beamWidth: 6 },
+      pistol: { name: '經典手槍', fireRate: 220, speed: 16, damage: 22, color: '#f59e0b', size: 4, count: 1, spread: 0, recoil: 2, penetrate: false, range: 75, icon: '🔫' },
+      shotgun: { name: '霰彈槍', fireRate: 600, speed: 14, damage: 16, color: '#ef4444', size: 3.5, count: 5, spread: 0.25, recoil: 6, penetrate: false, range: 75, icon: '💥' },
+      rifle: { name: '突擊步槍', fireRate: 110, speed: 18, damage: 14, color: '#38bdf8', size: 3, count: 1, spread: 0.08, recoil: 1.5, penetrate: false, range: 75, icon: '🔫' },
+      laser: { name: '毀滅雷射', fireRate: 6000, speed: 30, damage: 280, color: '#a855f7', size: 8, count: 1, spread: 0, recoil: 8, penetrate: true, range: 300, icon: '⚡', isBeam: true, beamLength: 400, beamWidth: 6 },
 
-      healBeam: { name: '瘝餌��㗇�', fireRate: 400, speed: 30, damage: 12, color: '#4ade80', size: 6, count: 1, spread: 0, recoil: 1, penetrate: true, range: 100, exclusiveTo: 'medic', icon: '��', isBeam: true, beamLength: 300, beamWidth: 6 },
-      grenade: { name: '璁游��澆���', fireRate: 900, speed: 8, damage: 60, color: '#f59e0b', size: 8, count: 1, spread: 0, recoil: 5, penetrate: false, range: 120, exclusiveTo: 'assault', icon: '��', isGrenade: true, splashDamage: 40, splashRadius: 80 },
-      sniperRifle: { name: '�滚��蹱�瑽�', fireRate: 1000, speed: 35, damage: 120, color: '#38bdf8', size: 4, count: 1, spread: 0, recoil: 10, penetrate: false, range: 500, exclusiveTo: 'sniper', icon: '�㴓', isBeam: true, beamLength: 500, beamWidth: 3 },
-      throwingAxe: { name: '�閙搻�唳鑘', fireRate: 600, speed: 10, damage: 50, color: '#ef4444', size: 20, count: 1, spread: 0, recoil: 3, penetrate: true, range: 80, exclusiveTo: 'berserker', icon: '��', isAxe: true },
-      teslaGun: { name: '�餅�瑽�', fireRate: 700, speed: 18, damage: 25, color: '#a855f7', size: 5, count: 1, spread: 0, recoil: 2, penetrate: false, range: 80, exclusiveTo: 'engineer', icon: '��', isTesla: true },
-      dualSMG: { name: '�蹱�銵嗪�瑽�', fireRate: 100, speed: 18, damage: 8, color: '#22d3ee', size: 3, count: 2, spread: 0.12, recoil: 1.5, penetrate: false, range: 60, exclusiveTo: 'scout', icon: '�僟' },
+      healBeam: { name: '治療光束', fireRate: 400, speed: 30, damage: 12, color: '#4ade80', size: 6, count: 1, spread: 0, recoil: 1, penetrate: true, range: 100, exclusiveTo: 'medic', icon: '💉', isBeam: true, beamLength: 300, beamWidth: 6 },
+      grenade: { name: '榴彈發射器', fireRate: 900, speed: 8, damage: 60, color: '#f59e0b', size: 8, count: 1, spread: 0, recoil: 5, penetrate: false, range: 120, exclusiveTo: 'assault', icon: '🚀', isGrenade: true, splashDamage: 40, splashRadius: 80 },
+      sniperRifle: { name: '重型狙擊槍', fireRate: 1000, speed: 35, damage: 120, color: '#38bdf8', size: 4, count: 1, spread: 0, recoil: 10, penetrate: false, range: 500, exclusiveTo: 'sniper', icon: '🎯', isBeam: true, beamLength: 500, beamWidth: 3 },
+      throwingAxe: { name: '投擲戰斧', fireRate: 600, speed: 10, damage: 50, color: '#ef4444', size: 20, count: 1, spread: 0, recoil: 3, penetrate: true, range: 80, exclusiveTo: 'berserker', icon: '🪓', isAxe: true },
+      teslaGun: { name: '電擊槍', fireRate: 700, speed: 18, damage: 25, color: '#a855f7', size: 5, count: 1, spread: 0, recoil: 2, penetrate: false, range: 80, exclusiveTo: 'engineer', icon: '⚡', isTesla: true },
+      dualSMG: { name: '雙持衝鋒槍', fireRate: 100, speed: 18, damage: 8, color: '#22d3ee', size: 3, count: 2, spread: 0.12, recoil: 1.5, penetrate: false, range: 60, exclusiveTo: 'scout', icon: '🔫' },
 
-      fireBeam: { name: '����游���', fireRate: 80, speed: 10, damage: 4, color: '#f97316', size: 4, count: 2, spread: 0.6, recoil: 0.3, penetrate: true, range: 40, exclusiveTo: 'flameMage', icon: '�𤣳', isFlame: true, igniteDamage: 5, igniteDuration: 2, maxBurnStacks: 3 },
-      frostBow: { name: '撖鍦�撘�', fireRate: 500, speed: 20, damage: 45, color: '#67e8f9', size: 5, count: 1, spread: 0, recoil: 3, penetrate: false, range: 120, exclusiveTo: 'frostHunter', icon: '���', isFrost: true, slowFactor: 0.5, slowDuration: 1.5 },
-      holyHammer: { name: '蟡噼��圈�', fireRate: 700, damage: 80, color: '#fbbf24', exclusiveTo: 'paladin', icon: '�鍂', isMelee: true, meleeRange: 70, meleeAngle: Math.PI * 2 / 3, knockback: 30, stunChance: 0.3, stunDuration: 1.0, shieldOnHit: 5 },
-      necroStaff: { name: '鈭⊿�甈𦠜�', fireRate: 400, speed: 16, damage: 35, color: '#a78bfa', size: 5, count: 1, spread: 0, recoil: 2, penetrate: true, range: 100, exclusiveTo: 'necromancer', icon: '��', isNecro: true, summonChance: 0.3 }
+      fireBeam: { name: '烈焰噴射器', fireRate: 80, speed: 10, damage: 4, color: '#f97316', size: 4, count: 2, spread: 0.6, recoil: 0.3, penetrate: true, range: 40, exclusiveTo: 'flameMage', icon: '🔥', isFlame: true, igniteDamage: 5, igniteDuration: 2, maxBurnStacks: 3 },
+      frostBow: { name: '寒冰弓', fireRate: 500, speed: 20, damage: 45, color: '#67e8f9', size: 5, count: 1, spread: 0, recoil: 3, penetrate: false, range: 120, exclusiveTo: 'frostHunter', icon: '❄️', isFrost: true, slowFactor: 0.5, slowDuration: 1.5 },
+      holyHammer: { name: '神聖戰錘', fireRate: 700, damage: 80, color: '#fbbf24', exclusiveTo: 'paladin', icon: '🔨', isMelee: true, meleeRange: 70, meleeAngle: Math.PI * 2 / 3, knockback: 30, stunChance: 0.3, stunDuration: 1.0, shieldOnHit: 5 },
+      necroStaff: { name: '亡靈權杖', fireRate: 400, speed: 16, damage: 35, color: '#a78bfa', size: 5, count: 1, spread: 0, recoil: 2, penetrate: true, range: 100, exclusiveTo: 'necromancer', icon: '💀', isNecro: true, summonChance: 0.3 }
     };
 
     const SKIN_COLORS = [
-      { name: '璆萄���', hex: '#38bdf8' },
-      { name: '�亦���', hex: '#f59e0b' },
-      { name: '蝧∠�蝬�', hex: '#10b981' },
-      { name: '�栞葤蝎�', hex: '#ec4899' },
-      { name: '�怠蔗蝝�', hex: '#a855f7' },
-      { name: '韏斤��垍�', hex: '#ef4444' },
-      { name: '瘛梢�擉𤾸ㄚ', hex: '#6366f1' },
-      { name: '蝝𠉛蒾�硋�', hex: '#f8fafc' },
-      { name: '�𥪜痔璈�', hex: '#f97316' },
-      { name: '�唳榊��', hex: '#e0f2fe' },
-      { name: '瘥埝票蝬�', hex: '#84cc16' },
-      { name: '�堒蔣��', hex: '#64748b' },
-      { name: '�怎麯蝝�', hex: '#f43f5e' },
-      { name: '瘛望絲��', hex: '#0ea5e9' },
-      { name: '憭𦦵換��', hex: '#7c3aed' },
-      { name: '憳抵𡂝蝬�', hex: '#22c55e' }
+      { name: '極光藍', hex: '#38bdf8' },
+      { name: '琥珀金', hex: '#f59e0b' },
+      { name: '翡翠綠', hex: '#10b981' },
+      { name: '霓虹粉', hex: '#ec4899' },
+      { name: '炫彩紫', hex: '#a855f7' },
+      { name: '赤紅怒火', hex: '#ef4444' },
+      { name: '深靛騎士', hex: '#6366f1' },
+      { name: '純白聖光', hex: '#f8fafc' },
+      { name: '熔岩橘', hex: '#f97316' },
+      { name: '冰晶白', hex: '#e0f2fe' },
+      { name: '毒沼綠', hex: '#84cc16' },
+      { name: '暗影灰', hex: '#64748b' },
+      { name: '玫瑰紅', hex: '#f43f5e' },
+      { name: '深海青', hex: '#0ea5e9' },
+      { name: '夜紫藍', hex: '#7c3aed' },
+      { name: '嫩芽綠', hex: '#22c55e' }
     ];
     let selectedSkinColor = SKIN_COLORS[0].hex;
 
@@ -901,61 +901,61 @@
     let screenShakeMagnitude = 0;
 
     const DEFENSE_CONFIG = {
-      barricade: { name: '頝舫�', cost: 15, maxHp: 50, duration: 30, icon: '�𣑐', maxCount: 2 },
-      turret: { name: '璈��憛�', cost: 40, maxHp: 50, duration: 20, icon: '�僟', maxCount: 2, range: 300, fireRate: 0.5, damage: 10 },
-      campfire: { name: '�毺�', cost: 25, maxHp: 50, duration: 40, icon: '�𤣳', maxCount: 2, healRadius: 100, healAmount: 2 }
+      barricade: { name: '路障', cost: 15, maxHp: 50, duration: 30, icon: '📦', maxCount: 2 },
+      turret: { name: '機槍塔', cost: 40, maxHp: 50, duration: 20, icon: '🔫', maxCount: 2, range: 300, fireRate: 0.5, damage: 10 },
+      campfire: { name: '營火', cost: 25, maxHp: 50, duration: 40, icon: '🔥', maxCount: 2, healRadius: 100, healAmount: 2 }
     };
 
     const DAILY_CHALLENGES = [
-      { id: 'pistol_only', name: '�𧢲�銋见�', desc: '�芾�雿輻鍂蝬枏��𧢲�嚗��隞𡝗郎�函�瘜閗圾�𤥁����嚗剹��', apply: (p) => { p.unlockedWeapons = ['pistol']; p.weapon = 'pistol'; } },
-      { id: 'fast_zombies', name: '畾剖���蔭', desc: '畾剖�����笔漲��彍�誩之撟������', apply: () => {} },
-      { id: 'eternal_bloodmoon', name: '銵���偶��', desc: '�典聦�閙䲰瘞訾�銵�����页�擳𠉛�璆萄漲��𠂔��', apply: () => { currentWeather = 'bloodmoon'; } },
-      { id: 'no_shield', name: '�㕑��啣ㄚ', desc: '���厩焵摰嗉風�曆��鞾��� 0嚗𣬚凒�Ｚ��誩暒璈麄��', apply: (p) => { p.maxShield = 0; p.shield = 0; } },
-      { id: 'endless_night', name: '�∠椘暺穃�', desc: '銝𣇉�鋡急偶銋��憭𦦵�蝵抬�閬㚚��烾���', apply: () => { dayNightTime = DAY_NIGHT_CYCLE_DURATION * 0.7; } },
-      { id: 'giant_zombies', name: '撌其犖�滩𠪊', desc: '���㗇悌撅漤��贝��笔𦶢�� �1.5��', apply: () => {} },
-      { id: 'speed_zombies', name: '�暸◢銋见蔣', desc: '���㗇悌撅滨宏�閖�笔漲 �1.5��', apply: () => {} }
+      { id: 'pistol_only', name: '手槍之夜', desc: '只能使用經典手槍（其他武器無法解鎖與切換）。', apply: (p) => { p.unlockedWeapons = ['pistol']; p.weapon = 'pistol'; } },
+      { id: 'fast_zombies', name: '殭屍狂潮', desc: '殭屍生成速度與數量大幅提升。', apply: () => {} },
+      { id: 'eternal_bloodmoon', name: '血月永恆', desc: '全場處於永久血月狀態，魔物極度狂暴。', apply: () => { currentWeather = 'bloodmoon'; } },
+      { id: 'no_shield', name: '光輝戰士', desc: '所有玩家護盾上限降為 0，直面肉搏危機。', apply: (p) => { p.maxShield = 0; p.shield = 0; } },
+      { id: 'endless_night', name: '無盡黑夜', desc: '世界被永久黑夜籠罩，視野受限。', apply: () => { dayNightTime = DAY_NIGHT_CYCLE_DURATION * 0.7; } },
+      { id: 'giant_zombies', name: '巨人降臨', desc: '所有殭屍體型與生命值 ×1.5。', apply: () => {} },
+      { id: 'speed_zombies', name: '疾風之影', desc: '所有殭屍移動速度 ×1.5。', apply: () => {} }
     ];
 
     const CLASS_EXCLUSIVE_TALENTS = {
       medic: [
-        { id: 'medic_aura', name: '瘝餌��厩兛', desc: '瘥讐��箏�敺� 100 �抒��𠰴��𧼮儔 1 HP', apply: (p) => { p.hasHealAura = true; } },
-        { id: 'medic_fast_revive', name: '敹恍�����', desc: '敺拇暑�𠰴��笔漲�� +50%', apply: (p) => { p.reviveSpeedBonus = (p.reviveSpeedBonus || 0) + 0.5; } }
+        { id: 'medic_aura', name: '治療光環', desc: '每秒為半徑 100 內的隊友回復 1 HP', apply: (p) => { p.hasHealAura = true; } },
+        { id: 'medic_fast_revive', name: '快速救援', desc: '復活隊友速度再 +50%', apply: (p) => { p.reviveSpeedBonus = (p.reviveSpeedBonus || 0) + 0.5; } }
       ],
       assault: [
-        { id: 'assault_grenade_master', name: '璁游�憭批葦', desc: '璁游�����𠰴� +30%', apply: (p) => { p.grenadeRadiusMult = 1.3; } },
-        { id: 'assault_tactical_dash', name: '�啗�銵嘥�', desc: '銵嘥�敺� 2 蝘鍦��瑕拿 +30%', apply: (p) => { p.hasDashBuff = true; } }
+        { id: 'assault_grenade_master', name: '榴彈大師', desc: '榴彈爆炸半徑 +30%', apply: (p) => { p.grenadeRadiusMult = 1.3; } },
+        { id: 'assault_tactical_dash', name: '戰術衝刺', desc: '衝刺後 2 秒內傷害 +30%', apply: (p) => { p.hasDashBuff = true; } }
       ],
       sniper: [
-        { id: 'sniper_crit', name: '�游𦶢銝���', desc: '20% 璈毺��䭾� 2 �滨��𠰴�摰�', apply: (p) => { p.critChance = 0.2; } },
-        { id: 'sniper_pierce', name: '蝛輸�誩撥��', desc: '摮𣂼��舫�憭𣇉忽�� 2 �𧢲訽鈭�', apply: (p) => { p.penetrate = true; p.extraPenetrate = (p.extraPenetrate || 0) + 2; } }
+        { id: 'sniper_crit', name: '致命一擊', desc: '20% 機率造成 2 倍爆擊傷害', apply: (p) => { p.critChance = 0.2; } },
+        { id: 'sniper_pierce', name: '穿透強化', desc: '子彈可額外穿透 2 個敵人', apply: (p) => { p.penetrate = true; p.extraPenetrate = (p.extraPenetrate || 0) + 2; } }
       ],
       berserker: [
-        { id: 'berserker_bloodlust', name: '�𡏭�', desc: '�𦠜捏�萎犖���敺� 5 HP', apply: (p) => { p.killHeal = 5; } },
-        { id: 'berserker_frenzy', name: '��𠂔', desc: '銵��譍��� 50% ��𤫇�� +50%', apply: (p) => { p.hasFrenzy = true; } }
+        { id: 'berserker_bloodlust', name: '嗜血', desc: '擊殺敵人時回復 5 HP', apply: (p) => { p.killHeal = 5; } },
+        { id: 'berserker_frenzy', name: '狂暴', desc: '血量低於 50% 時攻速 +50%', apply: (p) => { p.hasFrenzy = true; } }
       ],
       engineer: [
-        { id: 'engineer_tesla_chain', name: '���撘瑕�', desc: '�餅�瑽漤����喳�甈⊥彍 +2', apply: (p) => { p.extraTeslaChains = 2; } },
-        { id: 'engineer_shield_master', name: '霅瑞㦛憭批葦', desc: '霅瑞㦛�𧼮儔�笔漲�𣂼� 2 ��', apply: (p) => { p.shieldRegenMult = 2.0; } }
+        { id: 'engineer_tesla_chain', name: '連鎖強化', desc: '電擊槍連鎖傳導次數 +2', apply: (p) => { p.extraTeslaChains = 2; } },
+        { id: 'engineer_shield_master', name: '護盾大師', desc: '護盾回復速度提升 2 倍', apply: (p) => { p.shieldRegenMult = 2.0; } }
       ],
       scout: [
-        { id: 'scout_decoy', name: '敶勗�頨�', desc: '銵嘥����銝贝��菜�敶曹蒂�脰��餅�', apply: (p) => { p.hasShadowDash = true; } },
-        { id: 'scout_rapid_fire', name: '�暸◢���', desc: '銵嗪�瑽滩�撠��撠��� +30%', apply: (p) => { p.fireRateMult = 0.7; } }
+        { id: 'scout_decoy', name: '影分身', desc: '衝刺時留下誘敵殘影並進行攻擊', apply: (p) => { p.hasShadowDash = true; } },
+        { id: 'scout_rapid_fire', name: '疾風連擊', desc: '衝鋒槍與射擊射速 +30%', apply: (p) => { p.fireRateMult = 0.7; } }
       ],
       flameMage: [
-        { id: 'flame_hellfire', name: '�啁���', desc: '����瑕拿 �2嚗峕�蝥峕��� +1 蝘�', apply: (p) => { p.hellfire = true; } },
-        { id: 'flame_spread', name: '�怎��湔袇', desc: '�怎��游�蝭����之撠� +50%', apply: (p) => { p.bulletScale = (p.bulletScale || 1) * 1.5; } }
+        { id: 'flame_hellfire', name: '地獄火', desc: '燃燒傷害 ×2，持續時間 +1 秒', apply: (p) => { p.hellfire = true; } },
+        { id: 'flame_spread', name: '火焰擴散', desc: '火焰噴射範圍與大小 +50%', apply: (p) => { p.bulletScale = (p.bulletScale || 1) * 1.5; } }
       ],
       frostHunter: [
-        { id: 'frost_domain', name: '�啣��睃�', desc: '皜偦�蠘��啣�敶梢𣳽蝭���游之 200px', apply: (p) => { p.frostRadiusBonus = 200; } },
-        { id: 'frost_sorrow', name: '�靝�����', desc: '撠滩��潭��毺��讠��萎犖�瑕拿 +50%', apply: (p) => { p.slowDmgBonus = 1.5; } }
+        { id: 'frost_domain', name: '冰凍領域', desc: '減速與冰凍影響範圍擴大 200px', apply: (p) => { p.frostRadiusBonus = 200; } },
+        { id: 'frost_sorrow', name: '霜之哀傷', desc: '對處於減速狀態的敵人傷害 +50%', apply: (p) => { p.slowDmgBonus = 1.5; } }
       ],
       paladin: [
-        { id: 'paladin_thorns', name: '�滚�霅瑞㦛', desc: '霅瑞㦛�豢𤣰�瑕拿���撠齿𤫇�𡃏���䭾� 30% �滚�', apply: (p) => { p.thornsShield = 0.3; } },
-        { id: 'paladin_judgment', name: '蟡噼�撖拙ế', desc: '餈烐��拇�璈毺� +20%嚗𣬚𢅺����� +0.5 蝘�', apply: (p) => { p.stunBonus = 0.2; } }
+        { id: 'paladin_thorns', name: '反傷護盾', desc: '護盾吸收傷害時，對攻擊者造成 30% 反傷', apply: (p) => { p.thornsShield = 0.3; } },
+        { id: 'paladin_judgment', name: '神聖審判', desc: '近戰眩暈機率 +20%，眩暈時間 +0.5 秒', apply: (p) => { p.stunBonus = 0.2; } }
       ],
       necromancer: [
-        { id: 'necromancer_army', name: '鈭⊿�頠滚�', desc: '鈭⊿��砍�銝𢠃� +3 ��', apply: (p) => { p.maxMinionsBonus = 3; } },
-        { id: 'necromancer_buff', name: '鈭⊿�撘瑕�', desc: '�砍�鈭⊿����摰唾�銵��� +50%', apply: (p) => { p.minionBuffMult = 1.5; } }
+        { id: 'necromancer_army', name: '亡靈軍團', desc: '亡靈召喚上限 +3 個', apply: (p) => { p.maxMinionsBonus = 3; } },
+        { id: 'necromancer_buff', name: '亡靈強化', desc: '召喚亡靈的傷害與血量 +50%', apply: (p) => { p.minionBuffMult = 1.5; } }
       ]
     };
 
@@ -1317,7 +1317,7 @@
         mqttClient.on('error', () => { tryNextBroker(); });
         mqttClient.on('close', () => {
           if (statusBox) {
-            statusBox.innerText = '�𩤃� 憭批輒���銝剜𪃾嚗峕迤�刻䌊�閖���...';
+            statusBox.innerText = '⚠️ 大廳連線中斷，正在自動重連...';
             statusBox.classList.remove('hidden');
           }
         });
@@ -1339,7 +1339,7 @@
       currentBrokerIndex = (currentBrokerIndex + 1) % MQTT_BROKERS.length;
       const statusBox = document.getElementById('lobbyStatus');
       if (statusBox) {
-        statusBox.innerText = `�𩤃� ���憭批輒隡箸��� (${currentBrokerIndex + 1}/${MQTT_BROKERS.length})...`;
+        statusBox.innerText = `⚠️ 切換大廳伺服器 (${currentBrokerIndex + 1}/${MQTT_BROKERS.length})...`;
         statusBox.classList.remove('hidden');
       }
       setTimeout(() => { initMqttLobby(); }, 1000);
@@ -1348,10 +1348,10 @@
     function broadcastRoomInfo() {
       if (!myHostRoomCode || !mqttClient || !mqttClient.connected) return;
       const nickInput = document.getElementById('nicknameInput');
-      const nick = (nickInput && nickInput.value) ? nickInput.value.trim() : '�蹂蜓';
+      const nick = (nickInput && nickInput.value) ? nickInput.value.trim() : '房主';
       const info = {
         roomCode: myHostRoomCode, hostName: nick, playerCount: Object.keys(players).length,
-        maxPlayers: 8, mapName: currentMap ? currentMap.name : '暺烐ㄝ��', wave: currentWave,
+        maxPlayers: 8, mapName: currentMap ? currentMap.name : '黑森林', wave: currentWave,
         isPlaying: gameRunning, timestamp: Date.now()
       };
       try { mqttClient.publish(MQTT_TOPIC, JSON.stringify(info)); } catch(e) {}
@@ -1386,11 +1386,11 @@
           return a.roomCode.localeCompare(b.roomCode);
         });
 
-      if (countText) countText.innerText = `撌脫𪄳�� ${validRooms.length} �钅��暹��𨦨;
+      if (countText) countText.innerText = `已找到 ${validRooms.length} 個開放房間`;
 
       if (validRooms.length === 0) {
         if (container.dataset.emptyState !== 'true') {
-          container.innerHTML = `<div class="flex flex-col items-center justify-center h-48 text-slate-500 gap-2"><span class="text-3xl">��儭�</span><span class="text-xs">�桀�瘝埝��祇��輸�嚗諹岫�𡑒䌊撌勗肟撱箔��见嫃嚗�</span></div>`;
+          container.innerHTML = `<div class="flex flex-col items-center justify-center h-48 text-slate-500 gap-2"><span class="text-3xl">🏚️</span><span class="text-xs">目前沒有公開房間，試著自己創建一個吧！</span></div>`;
           container.dataset.emptyState = 'true';
         }
         return;
@@ -1407,7 +1407,7 @@
 
       validRooms.forEach((r, index) => {
         let card = container.querySelector(`[data-room-code="${r.roomCode}"]`);
-        const statusTagHtml = r.isPlaying ? '<span class="text-[10px] px-2 py-0.5 rounded-full border border-amber-500/50 text-amber-400 bg-amber-950/40">�䈑� �𦠜�銝�</span>' : '<span class="text-[10px] px-2 py-0.5 rounded-full border border-emerald-500/50 text-emerald-400 bg-emerald-950/40">�叚 蝑匧�銝�</span>';
+        const statusTagHtml = r.isPlaying ? '<span class="text-[10px] px-2 py-0.5 rounded-full border border-amber-500/50 text-amber-400 bg-amber-950/40">⚔️ 遊戲中</span>' : '<span class="text-[10px] px-2 py-0.5 rounded-full border border-emerald-500/50 text-emerald-400 bg-emerald-950/40">🟢 等待中</span>';
 
         if (!card) {
           card = document.createElement('div');
@@ -1419,14 +1419,14 @@
                 <span class="text-base font-black text-amber-400 font-mono tracking-widest" data-field="roomCode">${r.roomCode}</span>
                 <span data-field="statusTag">${statusTagHtml}</span>
               </div>
-              <div class="text-xs text-slate-300 font-bold" data-field="hostName">�� ${r.hostName} �����</div>
+              <div class="text-xs text-slate-300 font-bold" data-field="hostName">👑 ${r.hostName} 的小隊</div>
               <div class="text-[11px] text-slate-400 flex items-center gap-3">
-                <span data-field="mapName">�㚰儭� ${r.mapName}</span>
-                <span data-field="wave">�� 瘜Ｘ活 ${r.wave}</span>
-                <span data-field="playerCount">�𡤻 ${r.playerCount} / ${r.maxPlayers} 鈭�</span>
+                <span data-field="mapName">🗺️ ${r.mapName}</span>
+                <span data-field="wave">🌊 波次 ${r.wave}</span>
+                <span data-field="playerCount">👥 ${r.playerCount} / ${r.maxPlayers} 人</span>
               </div>
             </div>
-            <button data-action="join" class="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold px-4 py-2 rounded-xl text-xs active:scale-95 transition-all shadow-md">�惩�</button>
+            <button data-action="join" class="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold px-4 py-2 rounded-xl text-xs active:scale-95 transition-all shadow-md">加入</button>
           `;
           card.querySelector('[data-action="join"]').onclick = () => joinRoomByCode(r.roomCode);
           if (index === 0) container.prepend(card);
@@ -1439,13 +1439,13 @@
           const statusTagEl = card.querySelector('[data-field="statusTag"]');
           if (statusTagEl) statusTagEl.innerHTML = statusTagHtml;
           const hostEl = card.querySelector('[data-field="hostName"]');
-          if (hostEl) hostEl.innerText = `�� ${r.hostName} ����𢲩;
+          if (hostEl) hostEl.innerText = `👑 ${r.hostName} 的小隊`;
           const mapEl = card.querySelector('[data-field="mapName"]');
-          if (mapEl) mapEl.innerText = `�㚰儭� ${r.mapName}`;
+          if (mapEl) mapEl.innerText = `🗺️ ${r.mapName}`;
           const waveEl = card.querySelector('[data-field="wave"]');
-          if (waveEl) waveEl.innerText = `�� 瘜Ｘ活 ${r.wave}`;
+          if (waveEl) waveEl.innerText = `🌊 波次 ${r.wave}`;
           const playerEl = card.querySelector('[data-field="playerCount"]');
-          if (playerEl) playerEl.innerText = `�𡤻 ${r.playerCount} / ${r.maxPlayers} 鈭槁;
+          if (playerEl) playerEl.innerText = `👥 ${r.playerCount} / ${r.maxPlayers} 人`;
 
           const currentIndex = Array.from(container.children).indexOf(card);
           if (currentIndex !== index) {
@@ -1557,7 +1557,7 @@
       if (topBoss) {
         container.classList.remove('hidden');
         setTimeout(() => { container.style.opacity = '1'; }, 10);
-        nameEl.innerText = topBoss.customName || '�𣂼�銋讠�';
+        nameEl.innerText = topBoss.customName || '腐化之王';
         textEl.innerText = `${Math.max(0, Math.round(topBoss.hp))} / ${topBoss.maxHp}`;
         fillEl.style.width = `${Math.max(0, Math.min(100, (topBoss.hp / topBoss.maxHp) * 100))}%`;
       } else {
@@ -1579,13 +1579,13 @@
       const progressBar = document.getElementById('reconnectProgressBar');
 
       if (reconnectAttempts >= 5) {
-        if (statusText) statusText.innerText = '�� �漤��仃�梹�銝餅�撌脤𣪧�𧢲�蝬脰楝�琿���';
+        if (statusText) statusText.innerText = '❌ 重連失敗，主機已離開或網路斷開。';
         if (progressBar) progressBar.style.width = '100%';
         return;
       }
 
       reconnectAttempts++;
-      if (statusText) statusText.innerText = `�𩤃� ��蜓璈罸���銝剜𪃾嚗峕迤�典�閰阡��圈��� (${reconnectAttempts}/5)...`;
+      if (statusText) statusText.innerText = `⚠️ 與主機連線中斷，正在嘗試重新連線 (${reconnectAttempts}/5)...`;
       if (progressBar) progressBar.style.width = `${(reconnectAttempts / 5) * 100}%`;
 
       if (peer && hostPeerIdStore) {
@@ -1594,7 +1594,7 @@
           newConn.on('open', () => {
             hostConn = newConn;
             const me = players[myPlayerId];
-            hostConn.send({ type: 'JOIN_PLAYER', id: myPlayerId, name: me ? me.name : '�𠰴�', color: selectedSkinColor, classId: selectedClassId, exclusiveSkillId: selectedExclusiveSkillId || CLASS_EXCLUSIVE_SKILLS[selectedClassId], generalSkillId: selectedGeneralSkillId });
+            hostConn.send({ type: 'JOIN_PLAYER', id: myPlayerId, name: me ? me.name : '隊友', color: selectedSkinColor, classId: selectedClassId, exclusiveSkillId: selectedExclusiveSkillId || CLASS_EXCLUSIVE_SKILLS[selectedClassId], generalSkillId: selectedGeneralSkillId });
             const modal = document.getElementById('hostDisconnectedModal');
             if (modal) modal.classList.add('hidden');
             document.body.classList.remove('modal-open');
@@ -1615,9 +1615,9 @@
       if (!conn || !conn.metadata || !conn.metadata.playerId) return;
       const pId = conn.metadata.playerId;
       if (players[pId]) {
-        // �亙�銝��拙振撌脤�誯��圈����硺�嚗䔶�靽萘��羓��芷膄閮���具��
+        // 若同一玩家已透過新連線回來，不保留舊的刪除計時器。
         if (disconnectTimeoutTimers[pId]) clearTimeout(disconnectTimeoutTimers[pId]);
-        createFloatingText(players[pId].x, players[pId].y - 30, '�𩤃� �𠰴��瑞� (靽萘� 30s)', '#f59e0b', 16);
+        createFloatingText(players[pId].x, players[pId].y - 30, '⚠️ 隊友斷線 (保留 30s)', '#f59e0b', 16);
         disconnectTimeoutTimers[pId] = setTimeout(() => {
           delete disconnectTimeoutTimers[pId];
           const hasLiveConnection = connections.some(c => c && c.open && c.metadata && c.metadata.playerId === pId);
@@ -1644,14 +1644,14 @@
       if (!config) return false;
 
       if (me.exp < config.cost) {
-        createFloatingText(me.x, me.y - 30, '蝬㯄��潔�頞喉�', '#ef4444', 16);
-        showWarningBanner(`�𩤃� 蝬㯄��潔�頞喉���閬� ${config.cost} 暺痹��桀� ${Math.round(me.exp)} 暺痹�`);
+        createFloatingText(me.x, me.y - 30, '經驗值不足！', '#ef4444', 16);
+        showWarningBanner(`⚠️ 經驗值不足！需要 ${config.cost} 點（目前 ${Math.round(me.exp)} 點）`);
         return false;
       }
 
       const myCurrentDefenses = defenses.filter(d => d.ownerId === myPlayerId && d.type === selectedDefenseType);
       if (myCurrentDefenses.length >= config.maxCount) {
-        createFloatingText(me.x, me.y - 30, `甇文極鈭𧢲�憭𡁜������ ${config.maxCount} �页�`, '#f59e0b', 16); return false;
+        createFloatingText(me.x, me.y - 30, `此工事最多同時存在 ${config.maxCount} 個！`, '#f59e0b', 16); return false;
       }
 
       me.exp -= config.cost;
@@ -1665,7 +1665,7 @@
       else if (hostConn && hostConn.open) hostConn.send({ type: 'PLACE_DEFENSE', defense: newDefense });
 
       playSound('placeDefense');
-      createFloatingText(worldX, worldY - 20, `�曄蔭 ${config.name}`, '#4ade80', 16);
+      createFloatingText(worldX, worldY - 20, `放置 ${config.name}`, '#4ade80', 16);
       selectedDefenseType = null; updateDefenseUI(); return true;
     }
 
@@ -1771,7 +1771,7 @@
 
           if (isInScreen) {
             ctx.save(); ctx.fillStyle = '#ef4444'; ctx.font = 'bold 20px system-ui';
-            ctx.textAlign = 'center'; ctx.fillText('��', screenX, screenY - (p.size / 2) - 35); ctx.restore();
+            ctx.textAlign = 'center'; ctx.fillText('🆘', screenX, screenY - (p.size / 2) - 35); ctx.restore();
           } else {
             const dx = p.x - me.x, dy = p.y - me.y;
             const dist = Math.round(Math.hypot(dx, dy)); const angle = Math.atan2(dy, dx);
@@ -1785,7 +1785,7 @@
             ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(-10, -8); ctx.lineTo(-4, 0); ctx.lineTo(-10, 8); ctx.closePath(); ctx.fill(); ctx.restore();
 
             ctx.fillStyle = '#ffffff'; ctx.font = 'black 11px system-ui'; ctx.textAlign = 'center'; ctx.shadowColor = '#000000'; ctx.shadowBlur = 4;
-            ctx.fillText(`${dist}m`, 0, 18); ctx.fillText('��', 0, -12); ctx.restore();
+            ctx.fillText(`${dist}m`, 0, 18); ctx.fillText('🆘', 0, -12); ctx.restore();
           }
         }
       });
@@ -1812,16 +1812,16 @@
       const descEl = document.getElementById('challengeDesc');
       const badgeEl = document.getElementById('challengeStatusBadge');
 
-      if (titleEl) titleEl.innerText = `�𤨎 ${challengeObj.name}`;
+      if (titleEl) titleEl.innerText = `💥 ${challengeObj.name}`;
       if (descEl) descEl.innerText = challengeObj.desc;
 
       const isCompleted = localStorage.getItem(completedKey) === 'true';
       if (badgeEl) {
         if (isCompleted) {
-          badgeEl.innerText = '撌脣��� ��';
+          badgeEl.innerText = '已完成 🎉';
           badgeEl.className = 'text-[10px] px-2 py-0.5 rounded-full border border-emerald-500/50 text-emerald-300 bg-emerald-900/40 font-bold';
         } else {
-          badgeEl.innerText = '�芸���';
+          badgeEl.innerText = '未完成';
           badgeEl.className = 'text-[10px] px-2 py-0.5 rounded-full border border-amber-500/50 text-amber-300 bg-amber-900/40 font-bold';
         }
       }
@@ -1844,11 +1844,11 @@
       if (currentWave >= 10) {
         const todayStr = new Date().toISOString().slice(0, 10);
         localStorage.setItem(`dailyChallengeCompleted_${todayStr}`, 'true');
-        createFloatingText(0, -200, '�� 隞𦠜𠯫�烐��𡁻�嚗��撠勗歇�娍�嚗�', '#f59e0b', 28);
+        createFloatingText(0, -200, '🎉 今日挑戰通關！成就已達成！', '#f59e0b', 28);
         playSound('levelup');
         const badgeEl = document.getElementById('challengeStatusBadge');
         if (badgeEl) {
-          badgeEl.innerText = '撌脣��� ��';
+          badgeEl.innerText = '已完成 🎉';
           badgeEl.className = 'text-[10px] px-2 py-0.5 rounded-full border border-emerald-500/50 text-emerald-300 bg-emerald-900/40 font-bold';
         }
       }
@@ -1908,9 +1908,9 @@
         drawDecorItem(offCtx, mapDef.decorType, tx, ty, rng, worldX, worldY);
       }
 
-      showMapBanner(`�㚰儭� ${mapDef.name}`);
+      showMapBanner(`🗺️ ${mapDef.name}`);
       const hudMapName = document.getElementById('hudMapNameText');
-      if (hudMapName) hudMapName.innerText = `�㚰儭� ${mapDef.name}`;
+      if (hudMapName) hudMapName.innerText = `🗺️ ${mapDef.name}`;
       initEnvironmentParticles(mapDef.envParticle, rng);
     }
 
@@ -2033,15 +2033,15 @@
       weatherTimer += deltaTime * 1000;
       if (currentWeather === 'bloodmoon') {
         bloodMoonTimer += deltaTime * 1000;
-        if (bloodMoonTimer >= 60000) { currentWeather = 'clear'; weatherTimer = 0; showWeatherBanner('�� 銵������鳴�擳𠉛��Ｗ儔甇�虜'); }
+        if (bloodMoonTimer >= 60000) { currentWeather = 'clear'; weatherTimer = 0; showWeatherBanner('🌕 血月退去，魔物恢復正常'); }
       } else if (weatherTimer >= (WEATHER_CHANGE_INTERVAL.min + Math.random() * (WEATHER_CHANGE_INTERVAL.max - WEATHER_CHANGE_INTERVAL.min))) {
         weatherTimer = 0; const isNightTime = (dayNightTime / DAY_NIGHT_CYCLE_DURATION) > 0.5;
         if (isNightTime && Math.random() < 0.10) {
-          currentWeather = 'bloodmoon'; bloodMoonTimer = 0; showWeatherBanner('�弩 銵����镼莎�擳𠉛���𠂔�吔�'); triggerScreenShake(0.8, 10);
+          currentWeather = 'bloodmoon'; bloodMoonTimer = 0; showWeatherBanner('🩸 血月來襲！魔物狂暴化！'); triggerScreenShake(0.8, 10);
         } else {
           const list = ['clear', 'rain', 'fog']; const nextW = list[Math.floor(Math.random() * list.length)];
-          currentWeather = nextW; const names = { clear: '��儭� �游予', rain: '�爀儭� 銝钅𢂚', fog: '�𤨓儭� 韏琿𧊅' };
-          showWeatherBanner(`憭拇除霈𦠜凒�綽�${names[nextW]}`);
+          currentWeather = nextW; const names = { clear: '☀️ 晴天', rain: '🌧️ 下雨', fog: '🌫️ 起霧' };
+          showWeatherBanner(`天氣變更為：${names[nextW]}`);
         }
       }
     }
@@ -2147,7 +2147,7 @@
         const skill = SKILLS[item.id]; if (!skill) return;
         const btn = document.createElement('button'); btn.type = 'button'; btn.dataset.skillSlot = item.slot;
         btn.className = 'relative overflow-hidden px-2.5 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1 border border-slate-600 bg-slate-800/90 text-slate-200 shrink-0';
-        btn.title = `${skill.name}嚗�${skill.desc}`;
+        btn.title = `${skill.name}：${skill.desc}`;
         btn.innerHTML = `<span class="opacity-60">[${item.key}]</span> ${skill.icon} ${skill.name}<span class="skill-cooldown-mask absolute inset-0 bg-slate-950/70 pointer-events-none" style="transform:scaleY(0);transform-origin:bottom"></span><span class="skill-cooldown-text absolute inset-0 flex items-center justify-center text-white text-[10px] pointer-events-none"></span>`;
         btn.addEventListener('pointerup', () => useSkill(item.slot));
         bar.insertBefore(btn, bar.firstChild);
@@ -2205,7 +2205,7 @@
     function switchWeapon(weaponKey) {
       checkDebugGesture('weapon');
       if (dailyChallenge && dailyChallenge.id === 'pistol_only' && weaponKey !== 'pistol') {
-        createFloatingText(players[myPlayerId].x, players[myPlayerId].y - 30, '�峕�瑽滢�憭栶�滨�瘜蓥蝙�典�隞𡝗郎�剁�', '#ef4444', 16);
+        createFloatingText(players[myPlayerId].x, players[myPlayerId].y - 30, '「手槍之夜」無法使用其他武器！', '#ef4444', 16);
         return;
       }
 
@@ -2214,7 +2214,7 @@
         p.weapon = weaponKey; renderWeaponHotbar();
         const clsDef = CLASSES[p.classId] || CLASSES.assault;
         if (weaponKey === clsDef.exclusiveWeaponKey && !hasShownExclusiveBanner) {
-          hasShownExclusiveBanner = true; showWeaponUnlockBanner(`撠�惇甇血膥閫��嚗�${clsDef.exclusiveWeaponName}`);
+          hasShownExclusiveBanner = true; showWeaponUnlockBanner(`專屬武器解鎖：${clsDef.exclusiveWeaponName}`);
         }
         if (!isHost && hostConn && hostConn.open) hostConn.send({ type: 'WEAPON_CHANGE', id: myPlayerId, weapon: weaponKey });
       }
@@ -2571,7 +2571,7 @@
 
                 if (p.reviveProgress >= 100) {
                   p.isDowned = false; p.reviveProgress = 0; p.hp = Math.round(p.maxHp * 0.5); p.shield = p.maxShield;
-                  p.invulnerableTime = 60; playSound('revive'); createFloatingText(p.x, p.y - 40, '敺拇暑�𣂼�嚗�', '#4ade80', 20);
+                  p.invulnerableTime = 60; playSound('revive'); createFloatingText(p.x, p.y - 40, '復活成功！', '#4ade80', 20);
                 }
               }
             }
@@ -2869,7 +2869,7 @@
                   const newW = locked[Math.floor(Math.random() * locked.length)];
                   p.unlockedWeapons.push(newW); p.weapon = newW;
                   playSound('pickup');
-                  createFloatingText(p.x, p.y - 30, `閫��嚗�${WEAPONS[newW].name}嚗�`, '#38bdf8', 18);
+                  createFloatingText(p.x, p.y - 30, `解鎖：${WEAPONS[newW].name}！`, '#38bdf8', 18);
                   if (p.id === myPlayerId) renderWeaponHotbar();
                 }
               }
@@ -2895,7 +2895,7 @@
       } else p.hp -= damage;
 
       createFloatingText(p.x, p.y - 30, `-${damage}`, '#f87171', 18); playSound('hit');
-      if (p.hp <= 0) { p.hp = 0; p.isDowned = true; p.reviveProgress = 0; createFloatingText(p.x, p.y - 45, '�鍦𧑐嚗��閬����', '#ef4444', 20); }
+      if (p.hp <= 0) { p.hp = 0; p.isDowned = true; p.reviveProgress = 0; createFloatingText(p.x, p.y - 45, '倒地！需要救援', '#ef4444', 20); }
     }
 
     function showUpgradeModal() {
@@ -2915,12 +2915,12 @@
       if (!me.takenExclusiveTalents) me.takenExclusiveTalents = [];
 
       const generalUpgrades = [
-        { title: '�笔𦶢撘瑕�', desc: '��憭抒��賢�� +25 銝衣��單�敺�', action: (p) => { p.maxHp += 25; p.hp += 25; } },
-        { title: '�餅���𠂔', desc: '�冽郎�典�摰單��� +20%', action: (p) => { p.dmgMult = (p.dmgMult || 1) * 1.2; } },
-        { title: '�暸◢銋𧢲郊', desc: '蝘餃��笔漲�𣂼� +15%', action: (p) => { p.speed *= 1.15; } },
-        { title: '霅瑞㦛���', desc: '��憭扯風�曉�� +20', action: (p) => { p.maxShield += 20; p.shield += 20; } },
-        { title: '蝛輸�誩���', desc: '摮𣂼��脣�蝛輸�讛���', action: (p) => { p.penetrate = true; } },
-        { title: '頞���瑕㭱', desc: '銵嘥��瑕㭱���蝮桃� 30%', action: (p) => { p.dashMaxCooldown = Math.round((p.dashMaxCooldown || 90) * 0.7); } }
+        { title: '生命強化', desc: '最大生命值 +25 並立即恢復', action: (p) => { p.maxHp += 25; p.hp += 25; } },
+        { title: '攻擊狂暴', desc: '全武器傷害提升 +20%', action: (p) => { p.dmgMult = (p.dmgMult || 1) * 1.2; } },
+        { title: '疾風之步', desc: '移動速度提升 +15%', action: (p) => { p.speed *= 1.15; } },
+        { title: '護盾充能', desc: '最大護盾值 +20', action: (p) => { p.maxShield += 20; p.shield += 20; } },
+        { title: '穿透彈藥', desc: '子彈獲得穿透能力', action: (p) => { p.penetrate = true; } },
+        { title: '超能冷卻', desc: '衝刺冷卻時間縮短 30%', action: (p) => { p.dashMaxCooldown = Math.round((p.dashMaxCooldown || 90) * 0.7); } }
       ];
 
       const shuffledGeneral = [...generalUpgrades].sort(() => 0.5 - Math.random());
@@ -2939,7 +2939,7 @@
         let borderStyle = 'border-slate-700/80 hover:border-amber-400', titleBadge = '';
         if (u.isExclusive) {
           borderStyle = 'border-2 shadow-lg'; btn.style.borderColor = clsDef.color;
-          titleBadge = `<span class="text-[9px] px-1.5 py-0.5 rounded font-black text-slate-950 ml-2" style="background-color: ${clsDef.color}">[撠�惇]</span>`;
+          titleBadge = `<span class="text-[9px] px-1.5 py-0.5 rounded font-black text-slate-950 ml-2" style="background-color: ${clsDef.color}">[專屬]</span>`;
         }
         btn.className = `w-full glass-panel p-3.5 rounded-2xl ${borderStyle} text-left transition-all active:scale-95 group flex flex-col gap-0.5 bg-slate-900/90`;
         btn.innerHTML = `<div class="text-sm font-bold text-amber-400 group-hover:text-amber-300 flex items-center justify-between"><span>${u.title}</span>${titleBadge}</div><div class="text-xs text-slate-300">${u.desc}</div>`;
@@ -3008,7 +3008,7 @@
       if (minionTag) {
         if (me.classId === 'necromancer') {
           const myMinionCount = minions.filter(m => m.ownerId === myPlayerId).length;
-          minionTag.innerText = `�� x ${myMinionCount}`;
+          minionTag.innerText = `💀 x ${myMinionCount}`;
           minionTag.classList.remove('hidden');
         } else {
           minionTag.classList.add('hidden');
@@ -3055,7 +3055,7 @@
           ctx.fillStyle = '#38bdf8'; ctx.shadowColor = '#38bdf8'; ctx.shadowBlur = 12;
           ctx.beginPath(); ctx.arc(drop.x, drop.y, 8, 0, Math.PI * 2); ctx.fill();
           ctx.fillStyle = '#ffffff'; ctx.font = 'bold 10px system-ui'; ctx.textAlign = 'center';
-          ctx.fillText('�僟', drop.x, drop.y + 3); ctx.shadowBlur = 0;
+          ctx.fillText('🔫', drop.x, drop.y + 3); ctx.shadowBlur = 0;
         }
       });
 
@@ -3076,7 +3076,7 @@
       });
 
       skillAreas.forEach(a => { ctx.save(); ctx.globalAlpha=Math.max(0.15,Math.min(0.45,a.duration/(a.maxDuration||1))); ctx.fillStyle=a.type==='fire'?'#f97316':a.type==='freeze'?'#67e8f9':a.type==='heal'?'#4ade80':a.type==='frost'?'#38bdf8':'#fbbf24'; ctx.strokeStyle=ctx.fillStyle; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(a.x,a.y,a.radius,0,Math.PI*2); ctx.fill(); ctx.stroke(); ctx.restore(); });
-      skillTurrets.forEach(t=>{ctx.save();ctx.fillStyle='#c084fc';ctx.strokeStyle='#e9d5ff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(t.x,t.y,15,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#fff';ctx.font='16px system-ui';ctx.textAlign='center';ctx.fillText('�圲',t.x,t.y+5);ctx.restore();});
+      skillTurrets.forEach(t=>{ctx.save();ctx.fillStyle='#c084fc';ctx.strokeStyle='#e9d5ff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(t.x,t.y,15,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#fff';ctx.font='16px system-ui';ctx.textAlign='center';ctx.fillText('🔧',t.x,t.y+5);ctx.restore();});
       renderDefenses();
 
       const { darkFactor } = getDayNightColorOverlay();
@@ -3096,7 +3096,7 @@
         } else if (b.isAxe) {
           ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.rotationAngle || 0);
           ctx.font = '32px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-          ctx.fillText('��', 0, 0); ctx.restore();
+          ctx.fillText('🪓', 0, 0); ctx.restore();
         } else if (b.isFlame) {
           ctx.save(); ctx.translate(b.x, b.y);
           const flicker = Math.sin(Date.now() * 0.02 + b.id.charCodeAt(0)) * 0.3;
@@ -3164,7 +3164,7 @@
         ctx.beginPath(); ctx.arc(-r * 0.3, -r * 0.15, r * 0.15, 0, Math.PI * 2);
         ctx.arc(r * 0.3, -r * 0.15, r * 0.15, 0, Math.PI * 2); ctx.fill();
         ctx.fillStyle = 'rgba(196, 181, 253, 0.85)'; ctx.font = '8px system-ui'; ctx.textAlign = 'center';
-        const displayName = m.ownerName.length > 6 ? m.ownerName.substring(0, 6) + '��' : m.ownerName;
+        const displayName = m.ownerName.length > 6 ? m.ownerName.substring(0, 6) + '…' : m.ownerName;
         ctx.fillText(displayName, 0, -r - 4);
         if (m.hp < m.maxHp) {
           const barW = m.size; ctx.fillStyle = 'rgba(15, 23, 42, 0.8)';
@@ -3259,7 +3259,7 @@
         ctx.fillStyle = '#ef4444';
         ctx.font = 'bold 14px system-ui';
         ctx.textAlign = 'center';
-        ctx.fillText('�� �鍦𧑐瘙��', 0, -35);
+        ctx.fillText('🆘 倒地求救', 0, -35);
 
         ctx.strokeStyle = '#38bdf8';
         ctx.lineWidth = 4;
@@ -3296,8 +3296,8 @@
         else if (weapon.isFrost) { gunColor = '#67e8f9'; gunLength = 16; gunThick = 5; }
         else if (weapon.isNecro) { gunColor = '#a78bfa'; gunLength = 18; gunThick = 5; }
         else if (weapon.isTesla) { gunColor = '#a855f7'; gunLength = 14; gunThick = 6; }
-        else if (weapon.name === '�啣�瑽�') { gunColor = '#ef4444'; gunLength = 14; gunThick = 8; }
-        else if (weapon.name === '蝒��甇交�') { gunColor = '#38bdf8'; gunLength = 16; gunThick = 5; }
+        else if (weapon.name === '霰彈槍') { gunColor = '#ef4444'; gunLength = 14; gunThick = 8; }
+        else if (weapon.name === '突擊步槍') { gunColor = '#38bdf8'; gunLength = 16; gunThick = 5; }
       }
 
       ctx.fillStyle = gunColor;
@@ -3393,21 +3393,21 @@
         ctx.fillStyle = '#facc15';
         ctx.font = 'bold 14px system-ui';
         ctx.textAlign = 'center';
-        ctx.fillText('潃�', 0, -radius - 16);
+        ctx.fillText('⭐', 0, -radius - 16);
       }
 
       if (z.slowTimer > 0 && z.stunTimer <= 0) {
         ctx.fillStyle = '#67e8f9';
         ctx.font = 'bold 12px system-ui';
         ctx.textAlign = 'center';
-        ctx.fillText('���', 0, -radius - 16);
+        ctx.fillText('❄️', 0, -radius - 16);
       }
 
       if (z.burnTimer > 0) {
         ctx.fillStyle = '#f97316';
         ctx.font = 'bold 12px system-ui';
         ctx.textAlign = 'center';
-        ctx.fillText('�𤣳', 0, -radius - 16);
+        ctx.fillText('🔥', 0, -radius - 16);
       }
 
       if (z.hp < z.maxHp) {
@@ -3539,7 +3539,7 @@
       const msgDiv = document.createElement('div'); msgDiv.className = 'chat-bubble flex gap-1 text-xs';
       const senderEl = document.createElement('strong');
       senderEl.style.color = (typeof msg.color === 'string' && /^#[0-9a-f]{6}$/i.test(msg.color)) ? msg.color : '#f59e0b';
-      senderEl.textContent = `${typeof msg.sender === 'string' ? msg.sender.slice(0, 24) : '�拙振'}:`;
+      senderEl.textContent = `${typeof msg.sender === 'string' ? msg.sender.slice(0, 24) : '玩家'}:`;
       const textEl = document.createElement('span'); textEl.className = 'text-slate-200';
       textEl.textContent = typeof msg.text === 'string' ? msg.text.slice(0, 300) : '';
       msgDiv.appendChild(senderEl); msgDiv.appendChild(textEl);
@@ -3550,7 +3550,7 @@
     function startGame(singlePlayerMode = true) {
       isSinglePlayer = singlePlayerMode;
       const nickInput = document.getElementById('nicknameInput');
-      let nick = (nickInput && nickInput.value) ? nickInput.value.trim() : '����';
+      let nick = (nickInput && nickInput.value) ? nickInput.value.trim() : '勇者';
 
       if (isHost) {
         const selected = getRandomMapAndSeed();
@@ -3578,8 +3578,8 @@
     function handleNetworkData(data, conn) {
       if (!data || typeof data !== 'object' || typeof data.type !== 'string') return;
 
-      // 銝餅�蝡臬蘨�亙�撌脣��� JOIN_PLAYER 蝬�������嚗𥡝��臭葉��焵摰� ID 敹����府���銝��氬��
-      // �躰��餅迫銝��祉�頝函焵摰� ID �垍鍂嚗䔶��桀�瘝埝�撣唾�/撖�麯撽𡑒�嚗䔶蒂�𧼮��渡��脖�撘𦠜��嗚��
+      // 主機端只接受已完成 JOIN_PLAYER 綁定的連線；訊息中的玩家 ID 必須與該連線一致。
+      // 這能阻止一般的跨玩家 ID 冒用，但目前沒有帳號/密鑰驗證，並非完整的防作弊機制。
       if (isHost && conn && data.type !== 'JOIN_PLAYER') {
         const senderId = conn.metadata && conn.metadata.playerId;
         if (!senderId || !players[senderId]) return;
@@ -3594,17 +3594,17 @@
           if (conn && typeof conn.close === 'function') conn.close();
           return;
         }
-        // �𣂼���憭� 8 �滨焵摰塚���鉄�蹂蜓嚗㚁��踹�頞�枂憭批輒摰����犖�訾��僐��
+        // 限制最多 8 名玩家（包含房主），避免超出大廳宣告的人數上限。
         if (!players[data.id] && Object.keys(players).length >= 8) {
           if (conn && typeof conn.close === 'function') conn.close();
           return;
         }
-        // �䔶��拙振�漤���嚗��瘨���滨�皜�膄閮���具��
+        // 同一玩家重連時，取消先前的清除計時器。
         if (disconnectTimeoutTimers[data.id]) {
           clearTimeout(disconnectTimeoutTimers[data.id]);
           delete disconnectTimeoutTimers[data.id];
         }
-        // �亥����隞滚��剁��𣈯��𢠃���銝虫誑�圈����碶誨��
+        // 若舊連線仍存在，關閉舊連線並以新連線取代。
         connections.forEach(oldConn => {
           if (oldConn !== conn && oldConn && oldConn.open && oldConn.metadata && oldConn.metadata.playerId === data.id) {
             try { oldConn.close(); } catch (e) {}
@@ -3613,12 +3613,12 @@
         if (!conn.metadata) conn.metadata = {};
         conn.metadata.playerId = data.id;
         const classId = data.classId && CLASSES[data.classId] ? data.classId : 'assault';
-        const safeName = typeof data.name === 'string' ? data.name.trim().slice(0, 24) : '�𠰴�';
+        const safeName = typeof data.name === 'string' ? data.name.trim().slice(0, 24) : '隊友';
         const safeColor = typeof data.color === 'string' && /^#[0-9a-f]{6}$/i.test(data.color) ? data.color : '#f59e0b';
-        // �漤��焵摰嗡��坔��厰��脩��页��啁焵摰嗆�撱箇��啗��脯��
-        if (!players[data.id]) players[data.id] = createPlayerWithClass(data.id, safeName || '�𠰴�', safeColor, classId);
+        // 重連玩家保留原有遊戲狀態；新玩家才建立新角色。
+        if (!players[data.id]) players[data.id] = createPlayerWithClass(data.id, safeName || '隊友', safeColor, classId);
         else {
-          players[data.id].name = safeName || players[data.id].name || '�𠰴�';
+          players[data.id].name = safeName || players[data.id].name || '隊友';
           players[data.id].color = safeColor;
         }
         const joinedPlayer = players[data.id];
@@ -3626,7 +3626,7 @@
         joinedPlayer.generalSkillId = GENERAL_SKILL_IDS.includes(data.generalSkillId) ? data.generalSkillId : 'heal';
         joinedPlayer.skillCooldowns = joinedPlayer.skillCooldowns || { exclusive: 0, general: 0 };
         const connTxt = document.getElementById('connectedPlayersText');
-        if (connTxt) connTxt.innerText = `撌脤��𦻖 ${connections.filter(c => c && c.open).length} 雿漤��㞗;
+        if (connTxt) connTxt.innerText = `已連接 ${connections.filter(c => c && c.open).length} 位隊友`;
         broadcastState(); if (myHostRoomCode) broadcastRoomInfo();
       } else if (data.type === 'USE_SKILL' && isHost) {
         const p = players[data.id];
@@ -3652,7 +3652,7 @@
         const p = players[data.id];
         if (p) p.weapon = data.weapon;
       } else if (data.type === 'PLAYER_UPGRADE' && isHost) {
-        // ���甇亙�閮梁����撅祆�改�銝滢誑摰Ｘ�蝡舀㟲隞賜�隞嗉��衤蜓璈��憡���卝��
+        // 僅同步允許的升級屬性，不以客戶端整份物件覆蓋主機權威狀態。
         if (players[data.id] && data.playerState && typeof data.playerState === 'object') {
           const p = players[data.id], u = data.playerState;
           const setNumber = (key, min, max) => {
@@ -3696,7 +3696,7 @@
         }
         if (!data.players || typeof data.players !== 'object' || Array.isArray(data.players)) return;
         const myLocalP = players[myPlayerId];
-        // 隞乩蜓璈笔��游��桃�皞吔�皜�膄撌脤𣪧蝺帋�銝滚��箇𣶹�典�甇亦��衤葉���蝡舐焵摰嗚��
+        // 以主機完整名單為準，清除已離線且不再出現在同步狀態中的遠端玩家。
         Object.keys(players).forEach(pid => {
           if (pid !== myPlayerId && !Object.prototype.hasOwnProperty.call(data.players, pid)) delete players[pid];
         });
@@ -3755,7 +3755,7 @@
       SKIN_COLORS.forEach((colorObj, idx) => {
         const option = document.createElement('option');
         option.value = colorObj.hex;
-        option.innerText = `�� ${colorObj.name} (${colorObj.hex})`;
+        option.innerText = `● ${colorObj.name} (${colorObj.hex})`;
         if (idx === 0) option.selected = true;
         select.appendChild(option);
       });
@@ -3777,7 +3777,7 @@
       Object.values(CLASSES).forEach(cls => {
         const option = document.createElement('option');
         option.value = cls.id;
-        option.innerText = `${cls.icon} ${cls.name} �� ${cls.desc}`;
+        option.innerText = `${cls.icon} ${cls.name} — ${cls.desc}`;
         if (cls.id === selectedClassId) option.selected = true;
         select.appendChild(option);
       });
@@ -3785,7 +3785,7 @@
       select.onchange = () => {
         selectedClassId = select.value;
         selectedExclusiveSkillId = CLASS_EXCLUSIVE_SKILLS[selectedClassId] || CLASS_EXCLUSIVE_SKILLS.assault;
-        const exPicker = document.getElementById('exclusiveSkillPicker'); if (exPicker) { const cls = CLASSES[selectedClassId] || CLASSES.assault, id = CLASS_EXCLUSIVE_SKILLS[selectedClassId] || CLASS_EXCLUSIVE_SKILLS.assault; exPicker.innerHTML = ''; const opt = document.createElement('option'); opt.value = id; opt.textContent = `${cls.icon} ${cls.name}嚗�${SKILLS[id].name}`; exPicker.appendChild(opt); exPicker.value = id; }
+        const exPicker = document.getElementById('exclusiveSkillPicker'); if (exPicker) { const cls = CLASSES[selectedClassId] || CLASSES.assault, id = CLASS_EXCLUSIVE_SKILLS[selectedClassId] || CLASS_EXCLUSIVE_SKILLS.assault; exPicker.innerHTML = ''; const opt = document.createElement('option'); opt.value = id; opt.textContent = `${cls.icon} ${cls.name}：${SKILLS[id].name}`; exPicker.appendChild(opt); exPicker.value = id; }
         updateClassStatsDisplay();
       };
 
@@ -3794,8 +3794,8 @@
 
     function initSkillPickers() {
       const ex=document.getElementById('exclusiveSkillPicker'), gen=document.getElementById('generalSkillPicker');
-      if(ex){ const id=CLASS_EXCLUSIVE_SKILLS[selectedClassId] || CLASS_EXCLUSIVE_SKILLS.assault, skill=SKILLS[id], cls=CLASSES[selectedClassId] || CLASSES.assault; ex.innerHTML=''; const o=document.createElement('option'); o.value=id; o.textContent=`${cls.icon} ${cls.name}嚗�${skill.name}`; ex.appendChild(o); ex.value=id; selectedExclusiveSkillId=id; ex.onchange=()=>{selectedExclusiveSkillId=ex.value;}; }
-      if(gen){gen.innerHTML='';GENERAL_SKILL_IDS.forEach(id=>{const sk=SKILLS[id],o=document.createElement('option');o.value=id;o.textContent=`${sk.icon} ${sk.name}嚗�${sk.desc}嚗头;gen.appendChild(o);});gen.value=selectedGeneralSkillId;gen.onchange=()=>{selectedGeneralSkillId=gen.value;};}
+      if(ex){ const id=CLASS_EXCLUSIVE_SKILLS[selectedClassId] || CLASS_EXCLUSIVE_SKILLS.assault, skill=SKILLS[id], cls=CLASSES[selectedClassId] || CLASSES.assault; ex.innerHTML=''; const o=document.createElement('option'); o.value=id; o.textContent=`${cls.icon} ${cls.name}：${skill.name}`; ex.appendChild(o); ex.value=id; selectedExclusiveSkillId=id; ex.onchange=()=>{selectedExclusiveSkillId=ex.value;}; }
+      if(gen){gen.innerHTML='';GENERAL_SKILL_IDS.forEach(id=>{const sk=SKILLS[id],o=document.createElement('option');o.value=id;o.textContent=`${sk.icon} ${sk.name}（${sk.desc}）`;gen.appendChild(o);});gen.value=selectedGeneralSkillId;gen.onchange=()=>{selectedGeneralSkillId=gen.value;};}
     }
 
     function updateClassStatsDisplay() {
@@ -3803,10 +3803,10 @@
       const statsText = document.getElementById('classStatsText');
       if (statsText) {
         const st = cls.baseStats;
-        statsText.innerText = `�歹� �笔𦶢 ${st.maxHp} | �椘儭� 霅瑞㦛 ${st.maxShield} | �� 蝘駁�� ${st.speed} | �𤨎 �瑕拿 ${Math.round(st.dmgMult * 100)}%`;
+        statsText.innerText = `❤️ 生命 ${st.maxHp} | 🛡️ 護盾 ${st.maxShield} | ⚡ 移速 ${st.speed} | 💥 傷害 ${Math.round(st.dmgMult * 100)}%`;
       }
       const exclusiveText = document.getElementById('classExclusiveWeaponText');
-      if (exclusiveText) exclusiveText.innerText = `撠�惇甇血膥嚗�${cls.exclusiveWeaponName}`;
+      if (exclusiveText) exclusiveText.innerText = `專屬武器：${cls.exclusiveWeaponName}`;
     }
 
     function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
@@ -3856,7 +3856,7 @@
     window.addEventListener('mouseup', (e) => { if (e.button === 0) isMouseDown = false; });
 
     window.addEventListener('DOMContentLoaded', () => {
-      // �脫迫�𧢲��蹱�蝮格𦆮
+      // 防止手機雙擊縮放
       let lastTouchEnd = 0;
 
       document.addEventListener('touchend', (e) => {
@@ -3879,7 +3879,7 @@
       try { initClassPicker(); } catch(e) {}
       try { initSkillPickers(); } catch(e) {}
 
-      // 蝬���日𥲤敶������㕑�銴�ˊ�厰�
+      // 綁定除錯彈窗的關閉與複製按鈕
       const closeBtn = document.getElementById('closeErrorOverlayBtn');
       if (closeBtn) {
         closeBtn.onclick = () => {
@@ -3897,9 +3897,9 @@
 
           const fullText = `[Error]\nMessage: ${msg}\nLocation: ${loc}\n\n[Stack Trace]\n${stack}`;
           navigator.clipboard?.writeText(fullText).then(() => {
-            copyBtn.innerText = '撌脰�鋆踝�';
+            copyBtn.innerText = '已複製！';
             setTimeout(() => {
-              copyBtn.innerText = '�� 銴�ˊ摰峕㟲�航炊閮𦠜�';
+              copyBtn.innerText = '📋 複製完整錯誤訊息';
             }, 1500);
           });
         };
@@ -3955,7 +3955,7 @@
         initAudio(); isHost = true; stopHostingBroadcast();
         const nickInput = document.getElementById('nicknameInput');
         let nick = (nickInput && nickInput.value) ? nickInput.value.trim() : '';
-        if (!nick) nick = '����';
+        if (!nick) nick = '勇者';
         startGame(true);
       };
 
@@ -3965,7 +3965,7 @@
         const shortCode = generateShortRoomCode();
         const nickInput = document.getElementById('nicknameInput');
         let nick = (nickInput && nickInput.value) ? nickInput.value.trim() : '';
-        if (!nick) nick = '�蹂蜓';
+        if (!nick) nick = '房主';
         players[myPlayerId] = createPlayerWithClass(myPlayerId, nick, selectedSkinColor, selectedClassId);
         try {
           peer = new Peer('dungeon_' + shortCode);
@@ -3982,7 +3982,7 @@
               connections = connections.filter(c => c !== conn);
               handleClientDisconnectionInHost(conn);
               const cTxt = document.getElementById('connectedPlayersText');
-              if (cTxt) cTxt.innerText = `撌脤��𦻖 ${connections.length} 雿漤��㞗;
+              if (cTxt) cTxt.innerText = `已連接 ${connections.length} 位隊友`;
               if (myHostRoomCode) broadcastRoomInfo();
             });
           });
@@ -4002,12 +4002,12 @@
         initAudio();
         const jInput = document.getElementById('joinRoomInput');
         const rawCode = jInput ? jInput.value.trim().toUpperCase() : '';
-        if (!rawCode || rawCode.length !== 6) { alert('隢贝撓�� 6 雿齿彍�輸�蝣潘�'); return; }
+        if (!rawCode || rawCode.length !== 6) { alert('請輸入 6 位數房間碼！'); return; }
         hostPeerIdStore = 'dungeon_' + rawCode;
         isHost = false; stopHostingBroadcast();
         const nickInput = document.getElementById('nicknameInput');
         let nick = (nickInput && nickInput.value) ? nickInput.value.trim() : '';
-        if (!nick) nick = '�𠰴�';
+        if (!nick) nick = '隊友';
         players[myPlayerId] = createPlayerWithClass(myPlayerId, nick, selectedSkinColor, selectedClassId);
         try {
           peer = new Peer();
