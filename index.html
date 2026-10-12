@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>元氣地牢:技能與縮放</title>
+  <title>元氣地牢:正在修復升級</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- PeerJS CDN -->
@@ -522,7 +522,8 @@
   <!-- 升級天賦選擇 Modal -->
   <div id="upgradeModal" class="absolute inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden items-center justify-center p-4">
     <div class="glass-panel p-6 rounded-3xl border border-amber-500/40 shadow-2xl max-w-sm w-full flex flex-col gap-4 text-center">
-      <div class="flex flex-col items-center gap-1">
+      <div class="flex flex-col items-center gap-1 relative">
+        <button id="forceCloseUpgradeBtn" type="button" class="absolute right-0 top-0 text-slate-400 hover:text-red-400 text-sm px-2 py-1 rounded-lg" aria-label="關閉升級彈窗">✕</button>
         <span class="text-2xl animate-bounce">🎉</span>
         <h2 class="text-xl font-black text-amber-400">等級提升！選擇一項天賦</h2>
       </div>
@@ -2945,7 +2946,7 @@
         btn.innerHTML = `<div class="text-sm font-bold text-amber-400 group-hover:text-amber-300 flex items-center justify-between"><span>${u.title}</span>${titleBadge}</div><div class="text-xs text-slate-300">${u.desc}</div>`;
 
         let isClicked = false;
-        btn.onclick = () => {
+        btn.addEventListener('pointerup', () => {
           if (isClicked) return;
           isClicked = true;
 
@@ -2970,7 +2971,7 @@
               hostConn.send({ type: 'PLAYER_UPGRADE', id: myPlayerId, playerState: me });
             }
           }
-        };
+        });
         container.appendChild(btn);
       });
 
@@ -3870,6 +3871,16 @@
       document.addEventListener('dblclick', (e) => {
         e.preventDefault();
       }, { passive: false });
+
+      const forceCloseUpgradeBtn = document.getElementById('forceCloseUpgradeBtn');
+      if (forceCloseUpgradeBtn) {
+        forceCloseUpgradeBtn.addEventListener('pointerup', () => {
+          const upgradeModal = document.getElementById('upgradeModal');
+          if (upgradeModal) upgradeModal.style.display = 'none';
+          document.body.classList.remove('modal-open');
+          isUpgradeModalOpen = false;
+        });
+      }
 
       document.body.classList.add('modal-open');
       try { resizeCanvas(); } catch(e) {}
