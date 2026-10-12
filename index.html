@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>元氣地牢:繽紛世界</title>
+  <title>元氣地牢:技能與連線</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- PeerJS CDN -->
@@ -492,6 +492,20 @@
     </div>
   </div>
 
+  <div id="waitingRoomOverlay" class="absolute inset-0 z-40 bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center p-4 hidden">
+    <div class="glass-panel p-8 rounded-3xl border border-emerald-500/40 shadow-2xl max-w-sm w-full flex flex-col items-center gap-4 text-center">
+      <span class="text-4xl">✅</span>
+      <h2 class="text-xl font-black text-emerald-400">已進入房間</h2>
+      <p class="text-xs text-slate-300">等待房主開始遊戲...</p>
+      <div class="flex gap-1 mt-1">
+        <span class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></span>
+        <span class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" style="animation-delay:0.2s"></span>
+        <span class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" style="animation-delay:0.4s"></span>
+      </div>
+      <button id="leaveRoomBtn" type="button" class="mt-3 w-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold py-2 rounded-xl text-xs border border-slate-700">🚪 離開房間</button>
+    </div>
+  </div>
+
   <!-- MQTT 遊戲大廳房間列表 Modal -->
   <div id="lobbyModal" class="absolute inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 hidden">
     <div class="glass-panel p-6 rounded-3xl border border-slate-700 shadow-2xl max-w-lg w-full flex flex-col gap-4 max-h-[85vh]">
@@ -804,16 +818,48 @@
       flameStorm: { name: '火焰風暴', icon: '🔥', type: '腳下', desc: '半徑 180 燃燒 5 秒，每秒 15 傷害', cooldown: 30, slot: 'exclusive' },
       frostField: { name: '冰霜領域', icon: '❄️', type: '腳下', desc: '半徑 200 冰凍敵人 3 秒', cooldown: 30, slot: 'exclusive' },
       paladinBastion: { name: '神聖壁壘', icon: '✨', type: '自己', desc: '無敵 3 秒並反傷 50%', cooldown: 30, slot: 'exclusive' },
-      necroSummon: { name: '亡靈召喚', icon: '💀', type: '自己', desc: '召喚 3 隻亡靈', cooldown: 30, slot: 'exclusive' }
+      necroSummon: { name: '亡靈召喚', icon: '💀', type: '自己', desc: '召喚 3 隻亡靈', cooldown: 30, slot: 'exclusive' },
+      medicShieldBurst: { name: '護盾爆散', icon: '🛡️', type: '周圍', desc: '半徑 150 內隊友獲得 50 護盾', cooldown: 30, slot: 'exclusive' },
+      medicPoisonZone: { name: '毒霧圈', icon: '☠️', type: '腳下', desc: '圈內每秒 8 傷害，持續 5 秒', cooldown: 30, slot: 'exclusive' },
+      assaultAirstrike: { name: '空襲轟炸', icon: '💣', type: '向前', desc: '前方 3 次爆炸，每次間隔 1 秒，每次 60 傷害', cooldown: 30, slot: 'exclusive' },
+      assaultRapidFire: { name: '狂暴射速', icon: '🔫', type: '自己', desc: '3 秒內射速翻倍', cooldown: 30, slot: 'exclusive' },
+      sniperMark: { name: '致命標記', icon: '🎯', type: '腳下', desc: '圈內敵人受到傷害 +50%，持續 5 秒', cooldown: 30, slot: 'exclusive' },
+      sniperHeadshot: { name: '爆頭一擊', icon: '💥', type: '向前', desc: '一道穿透光束，最多 3 個敵人各受 200 傷害', cooldown: 30, slot: 'exclusive' },
+      berserkerBloodlust: { name: '嗜血', icon: '🩸', type: '自己', desc: '5 秒內擊殺回復 10 HP', cooldown: 30, slot: 'exclusive' },
+      berserkerCharge: { name: '衝鋒斬', icon: '🪓', type: '向前', desc: '向前衝 200 距離，附近敵人受到 100 傷害', cooldown: 30, slot: 'exclusive' },
+      engineerWall: { name: '護盾牆', icon: '🧱', type: '腳下', desc: '放置減速區，敵人減速 80%，持續 8 秒', cooldown: 30, slot: 'exclusive' },
+      engineerOverload: { name: '超載', icon: '⚡', type: '自己', desc: '5 秒內所有砲塔攻速 +100%', cooldown: 30, slot: 'exclusive' },
+      scoutSmoke: { name: '煙霧彈', icon: '💨', type: '腳下', desc: '圈內敵人停止追蹤你，持續 3 秒', cooldown: 30, slot: 'exclusive' },
+      scoutShadowStrike: { name: '影襲', icon: '🗡️', type: '向前', desc: '瞬移至 200 距離內最近敵人旁，造成 100 傷害', cooldown: 30, slot: 'exclusive' },
+      flameMeteor: { name: '隕石', icon: '☄️', type: '向前', desc: '前方 150 距離造成 150 傷害並留下火圈', cooldown: 30, slot: 'exclusive' },
+      flameAura: { name: '火焰光環', icon: '🔥', type: '自己', desc: '5 秒內周圍每秒造成 20 傷害', cooldown: 30, slot: 'exclusive' },
+      frostFreezeArrow: { name: '冰封箭', icon: '❄️', type: '向前', desc: '冰凍直線上第一個敵人 2 秒', cooldown: 30, slot: 'exclusive' },
+      frostArmor: { name: '冰甲', icon: '🧊', type: '自己', desc: '獲得 80 護盾，持續 8 秒', cooldown: 30, slot: 'exclusive' },
+      paladinHeal: { name: '聖光治療', icon: '✨', type: '周圍', desc: '半徑 150 內隊友回復 50 HP', cooldown: 30, slot: 'exclusive' },
+      paladinSmite: { name: '制裁', icon: '⚔️', type: '向前', desc: '前方半徑 100 造成 120 傷害並眩暈 1.5 秒', cooldown: 30, slot: 'exclusive' },
+      necroBoneArmor: { name: '骨甲', icon: '🦴', type: '自己', desc: '獲得 100 護盾，持續 10 秒', cooldown: 30, slot: 'exclusive' },
+      necroExplode: { name: '亡爆', icon: '💀', type: '自己', desc: '引爆所有自己的亡靈，每隻對周圍造成 60 傷害', cooldown: 30, slot: 'exclusive' }
     };
-    const CLASS_EXCLUSIVE_SKILLS = { medic: 'medicHealCircle', assault: 'assaultBombard', sniper: 'sniperPierce', berserker: 'berserkerRage', engineer: 'engineerTurret', scout: 'scoutBlink', flameMage: 'flameStorm', frostHunter: 'frostField', paladin: 'paladinBastion', necromancer: 'necroSummon' };
+    const CLASS_EXCLUSIVE_SKILLS = {
+      medic: ['medicHealCircle', 'medicShieldBurst', 'medicPoisonZone'],
+      assault: ['assaultBombard', 'assaultAirstrike', 'assaultRapidFire'],
+      sniper: ['sniperPierce', 'sniperMark', 'sniperHeadshot'],
+      berserker: ['berserkerRage', 'berserkerBloodlust', 'berserkerCharge'],
+      engineer: ['engineerTurret', 'engineerWall', 'engineerOverload'],
+      scout: ['scoutBlink', 'scoutSmoke', 'scoutShadowStrike'],
+      flameMage: ['flameStorm', 'flameMeteor', 'flameAura'],
+      frostHunter: ['frostField', 'frostFreezeArrow', 'frostArmor'],
+      paladin: ['paladinBastion', 'paladinHeal', 'paladinSmite'],
+      necromancer: ['necroSummon', 'necroBoneArmor', 'necroExplode']
+    };
     const GENERAL_SKILL_IDS = ['heal', 'shield', 'critBoost', 'pierceShot', 'frostWave', 'knockbackRing', 'dashStep', 'timeRift', 'magnetStorm', 'fireBomb', 'thornBody', 'stealth', 'multiShot', 'healField', 'poisonBomb', 'thunderStrike', 'shieldBlast', 'rageBoost'];
-    let selectedExclusiveSkillId = CLASS_EXCLUSIVE_SKILLS.assault;
+    let selectedExclusiveSkillId = CLASS_EXCLUSIVE_SKILLS.assault[0];
     let selectedGeneralSkillId = 'heal';
     let skillAreas = [];
     let skillTurrets = [];
 
     let selectedClassId = 'assault';
+    let manualRoomLeave = false;
 
     const MAPS = [
       { id: 'forest', name: '黑森林', floorColor: '#142e12', accentColor: '#15803d', decorType: 'tree', obstacleDensity: 130, envParticle: 'leaf' },
@@ -1607,7 +1653,7 @@
           newConn.on('open', () => {
             hostConn = newConn;
             const me = players[myPlayerId];
-            hostConn.send({ type: 'JOIN_PLAYER', id: myPlayerId, name: me ? me.name : '隊友', color: selectedSkinColor, classId: selectedClassId, exclusiveSkillId: selectedExclusiveSkillId || CLASS_EXCLUSIVE_SKILLS[selectedClassId], generalSkillId: selectedGeneralSkillId });
+            hostConn.send({ type: 'JOIN_PLAYER', id: myPlayerId, name: me ? me.name : '隊友', color: selectedSkinColor, classId: selectedClassId, exclusiveSkillId: selectedExclusiveSkillId || (CLASS_EXCLUSIVE_SKILLS[selectedClassId] || CLASS_EXCLUSIVE_SKILLS.assault)[0], generalSkillId: selectedGeneralSkillId });
             const modal = document.getElementById('hostDisconnectedModal');
             if (modal) modal.classList.add('hidden');
             document.body.classList.remove('modal-open');
@@ -1615,7 +1661,7 @@
             requestAnimationFrame(gameLoop);
           });
           newConn.on('data', (data) => handleNetworkData(data));
-          newConn.on('close', () => { handleHostDisconnection(); });
+          newConn.on('close', () => { if (!manualRoomLeave) handleHostDisconnection(); });
         } catch (e) {}
       }
 
@@ -2145,7 +2191,7 @@
         penetrate: false, dashCooldown: 0, invulnerableTime: 0,
         isDowned: false, reviveProgress: 0, chatBubble: null, isDead: false,
         takenExclusiveTalents: [],
-        exclusiveSkillId: CLASS_EXCLUSIVE_SKILLS[cls.id] || CLASS_EXCLUSIVE_SKILLS.assault,
+        exclusiveSkillId: (CLASS_EXCLUSIVE_SKILLS[cls.id] || CLASS_EXCLUSIVE_SKILLS.assault)[0],
         generalSkillId: selectedGeneralSkillId || 'heal',
         skillCooldowns: { exclusive: 0, general: 0 }, skillEffects: {}
       };
@@ -2155,7 +2201,7 @@
       const bar = document.getElementById('weaponBar'); if (!bar) return;
       const p = players[myPlayerId]; if (!p) return;
       const old = bar.querySelectorAll('[data-skill-slot]'); old.forEach(el => el.remove());
-      const slots = [{ slot: 'exclusive', id: p.exclusiveSkillId || CLASS_EXCLUSIVE_SKILLS[p.classId], key: 'E' }, { slot: 'general', id: p.generalSkillId || 'heal', key: 'R' }];
+      const slots = [{ slot: 'exclusive', id: p.exclusiveSkillId || (CLASS_EXCLUSIVE_SKILLS[p.classId] || CLASS_EXCLUSIVE_SKILLS.assault)[0], key: 'E' }, { slot: 'general', id: p.generalSkillId || 'heal', key: 'R' }];
       slots.forEach(item => {
         const skill = SKILLS[item.id]; if (!skill) return;
         const btn = document.createElement('button'); btn.type = 'button'; btn.dataset.skillSlot = item.slot;
@@ -2171,7 +2217,7 @@
     function updateSkillCooldownUI() {
       const p = players[myPlayerId]; if (!p) return;
       document.querySelectorAll('#weaponBar [data-skill-slot]').forEach(btn => {
-        const slot = btn.dataset.skillSlot, skillId = slot === 'exclusive' ? (p.exclusiveSkillId || CLASS_EXCLUSIVE_SKILLS[p.classId]) : (p.generalSkillId || 'heal');
+        const slot = btn.dataset.skillSlot, skillId = slot === 'exclusive' ? (p.exclusiveSkillId || (CLASS_EXCLUSIVE_SKILLS[p.classId] || CLASS_EXCLUSIVE_SKILLS.assault)[0]) : (p.generalSkillId || 'heal');
         const skill = SKILLS[skillId], cd = Math.max(0, p.skillCooldowns?.[slot] || 0), total = skill?.cooldown || 1;
         const mask = btn.querySelector('.skill-cooldown-mask'), label = btn.querySelector('.skill-cooldown-text');
         btn.classList.toggle('grayscale', cd > 0); btn.classList.toggle('opacity-60', cd > 0);
@@ -2182,17 +2228,34 @@
 
     function useSkill(slot) {
       const p = players[myPlayerId]; if (!p || p.isDead || p.isDowned) return;
-      const skillId = slot === 'exclusive' ? (p.exclusiveSkillId || CLASS_EXCLUSIVE_SKILLS[p.classId]) : (p.generalSkillId || 'heal');
+      const skillId = slot === 'exclusive' ? (p.exclusiveSkillId || (CLASS_EXCLUSIVE_SKILLS[p.classId] || CLASS_EXCLUSIVE_SKILLS.assault)[0]) : (p.generalSkillId || 'heal');
       if (!SKILLS[skillId] || (p.skillCooldowns?.[slot] || 0) > 0) return;
       if (isHost) triggerSkill(myPlayerId, skillId, p.angle);
       else if (hostConn && hostConn.open) hostConn.send({ type: 'USE_SKILL', id: myPlayerId, skillId, angle: p.angle });
+    }
+
+    function processSkillZombieDeaths(owner) {
+      for (let zi = zombies.length - 1; zi >= 0; zi--) {
+        const z = zombies[zi];
+        if (z.hp > 0) continue;
+        triggerZombieDeathEffects(z.x, z.y, z.type === 'boss', z.color);
+        if (owner) {
+          trySummonMinionOnKill(owner, z);
+          if (owner.skillEffects?.bloodlust > 0) {
+            owner.hp = Math.min(owner.maxHp, owner.hp + 10);
+            createFloatingText(owner.x, owner.y - 20, '+10 HP', '#fb7185', 16);
+          }
+        }
+        expGems.push({ x: z.x, y: z.y, value: z.type === 'boss' ? 25 : 2 });
+        zombies.splice(zi, 1);
+      }
     }
 
     function triggerSkill(playerId, skillId, angle) {
       const p = players[playerId], skill = SKILLS[skillId]; if (!p || !skill || p.isDead || p.isDowned) return false;
       const slot = skill.slot, cd = p.skillCooldowns || (p.skillCooldowns = { exclusive: 0, general: 0 });
       if (cd[slot] > 0) return false;
-      if (slot === 'exclusive' && skillId !== CLASS_EXCLUSIVE_SKILLS[p.classId]) return false;
+      if (slot === 'exclusive' && !(CLASS_EXCLUSIVE_SKILLS[p.classId] || []).includes(skillId)) return false;
       const a = Number.isFinite(angle) ? angle : (p.angle || 0), now = Date.now();
       cd[slot] = skill.cooldown; p.skillEffects = p.skillEffects || {};
       const addArea = (type, radius, duration, extra={}) => skillAreas.push({ id: Math.random().toString(36).slice(2), ownerId: playerId, x: p.x, y: p.y, type, radius, duration, maxDuration: duration, ...extra });
@@ -2272,6 +2335,91 @@
       }
       else if (skillId === 'rageBoost') p.skillEffects.rageBoost = 3;
       else if (skillId === 'medicHealCircle') addArea('heal',150,5);
+      else if (skillId === 'medicShieldBurst') {
+        Object.values(players).forEach(ally => {
+          if (!ally.isDead && !ally.isDowned && Math.hypot(ally.x - p.x, ally.y - p.y) <= 150) {
+            ally.shield = Math.min(ally.maxShield + 50, ally.shield + 50);
+            ally.tempShield = (ally.tempShield || 0) + 50;
+            ally.skillEffects = ally.skillEffects || {};
+            ally.skillEffects.shield = Math.max(ally.skillEffects.shield || 0, 10);
+          }
+        });
+        addArea('shield', 150, 0.45);
+      }
+      else if (skillId === 'medicPoisonZone') addArea('poison', 150, 5, { dps: 8 });
+      else if (skillId === 'assaultAirstrike') p.skillEffects.airstrike = { count: 3, timer: 0, angle: a };
+      else if (skillId === 'assaultRapidFire') p.skillEffects.rapidFire = 3;
+      else if (skillId === 'sniperMark') addArea('mark', 200, 5);
+      else if (skillId === 'sniperHeadshot') {
+        const ex = p.x + Math.cos(a) * 700, ey = p.y + Math.sin(a) * 700;
+        const hits = zombies.map(z => ({ z, t: (z.x-p.x)*Math.cos(a)+(z.y-p.y)*Math.sin(a), d: distToSegment(z.x,z.y,p.x,p.y,ex,ey) }))
+          .filter(v => v.t >= 0 && v.t <= 700 && v.d < (v.z.size || 0) / 2 + 8).sort((u,v) => u.t-v.t).slice(0,3);
+        hits.forEach(({z}) => { z.hp -= 200; createFloatingText(z.x,z.y-20,'-200','#f87171',20); });
+        bullets.push({ id: Math.random().toString(36).slice(2), ownerId: playerId, x: p.x, y: p.y, startX: p.x, startY: p.y, angle: a, isBeam: true, hasHit: true, beamLength: 700, beamWidth: 8, damage: 0, penetrate: true, life: 8, color: '#f87171' });
+        processSkillZombieDeaths(p);
+      }
+      else if (skillId === 'berserkerBloodlust') p.skillEffects.bloodlust = 5;
+      else if (skillId === 'berserkerCharge') {
+        const ox = p.x, oy = p.y;
+        p.x = Math.max(MAP_BOUNDS.minX + p.size, Math.min(MAP_BOUNDS.maxX - p.size, p.x + Math.cos(a) * 200));
+        p.y = Math.max(MAP_BOUNDS.minY + p.size, Math.min(MAP_BOUNDS.maxY - p.size, p.y + Math.sin(a) * 200));
+        for (let i=0;i<12;i++) particles.push({x:ox+(p.x-ox)*i/12,y:oy+(p.y-oy)*i/12,vx:0,vy:0,life:18,maxLife:18,color:'#fb7185',size:5});
+        zombies.forEach(z => { if (Math.hypot(z.x-p.x,z.y-p.y) <= 60 + (z.size || 0)/2) { z.hp -= 100; createFloatingText(z.x,z.y-15,'-100','#fb7185',18); } });
+        processSkillZombieDeaths(p);
+      }
+      else if (skillId === 'engineerWall') addArea('wall', 100, 8);
+      else if (skillId === 'engineerOverload') p.skillEffects.overload = 5;
+      else if (skillId === 'scoutSmoke') addArea('smoke', 150, 3);
+      else if (skillId === 'scoutShadowStrike') {
+        let target = null, best = 201;
+        zombies.forEach(z => { const d = Math.hypot(z.x-p.x,z.y-p.y); if (d < best) { best=d; target=z; } });
+        if (target) {
+          const ang = Math.atan2(target.y-p.y,target.x-p.x);
+          p.x = Math.max(MAP_BOUNDS.minX+p.size,Math.min(MAP_BOUNDS.maxX-p.size,target.x-Math.cos(ang)*40));
+          p.y = Math.max(MAP_BOUNDS.minY+p.size,Math.min(MAP_BOUNDS.maxY-p.size,target.y-Math.sin(ang)*40));
+          target.hp -= 100; createFloatingText(target.x,target.y-15,'-100','#c084fc',18);
+          processSkillZombieDeaths(p);
+        }
+      }
+      else if (skillId === 'flameMeteor') {
+        const x=p.x+Math.cos(a)*150, y=p.y+Math.sin(a)*150;
+        triggerGrenadeExplosion(x,y,150,120,playerId);
+        addArea('fire',120,5,{x,y,dps:15});
+        addArea('explosion',120,0.5,{x,y});
+      }
+      else if (skillId === 'flameAura') p.skillEffects.flameAura = 5;
+      else if (skillId === 'frostFreezeArrow') {
+        const ex=p.x+Math.cos(a)*700, ey=p.y+Math.sin(a)*700;
+        const target=zombies.map(z=>({z,t:(z.x-p.x)*Math.cos(a)+(z.y-p.y)*Math.sin(a),d:distToSegment(z.x,z.y,p.x,p.y,ex,ey)}))
+          .filter(v=>v.t>=0&&v.t<=700&&v.d<(v.z.size||0)/2+8).sort((u,v)=>u.t-v.t)[0];
+        if(target){target.z.stunTimer=Math.max(target.z.stunTimer||0,2);createFloatingText(target.z.x,target.z.y-20,'凍結！','#67e8f9',18);}
+        bullets.push({id:Math.random().toString(36).slice(2),ownerId:playerId,x:p.x,y:p.y,startX:p.x,startY:p.y,angle:a,isBeam:true,hasHit:true,beamLength:700,beamWidth:6,damage:0,penetrate:false,life:8,color:'#67e8f9'});
+      }
+      else if (skillId === 'frostArmor') {
+        p.shield = Math.min(p.maxShield + 80, p.shield + 80);
+        p.tempShield = (p.tempShield || 0) + 80;
+        p.skillEffects.shield = Math.max(p.skillEffects.shield || 0, 8);
+      }
+      else if (skillId === 'paladinHeal') {
+        Object.values(players).forEach(ally => { if (!ally.isDead && !ally.isDowned && Math.hypot(ally.x-p.x,ally.y-p.y)<=150) { ally.hp=Math.min(ally.maxHp,ally.hp+50); createFloatingText(ally.x,ally.y-25,'+50 HP','#4ade80',18); } });
+        addArea('healBurst',150,0.45);
+      }
+      else if (skillId === 'paladinSmite') {
+        const x=p.x+Math.cos(a)*80, y=p.y+Math.sin(a)*80;
+        zombies.forEach(z=>{if(Math.hypot(z.x-x,z.y-y)<=100+(z.size||0)/2){z.hp-=120;z.stunTimer=Math.max(z.stunTimer||0,1.5);createFloatingText(z.x,z.y-15,'-120','#fbbf24',18);}});
+        addArea('smite',100,0.5,{x,y}); processSkillZombieDeaths(p);
+      }
+      else if (skillId === 'necroBoneArmor') {
+        p.shield = Math.min(p.maxShield + 100, p.shield + 100);
+        p.tempShield = (p.tempShield || 0) + 100;
+        p.skillEffects.shield = Math.max(p.skillEffects.shield || 0, 10);
+      }
+      else if (skillId === 'necroExplode') {
+        const owned = minions.filter(m => m.ownerId === playerId);
+        owned.forEach(m => { zombies.forEach(z => { if (Math.hypot(z.x-m.x,z.y-m.y)<=100+(z.size||0)/2) { z.hp-=60; createFloatingText(z.x,z.y-15,'-60','#a78bfa',16); } }); });
+        for (let mi=minions.length-1;mi>=0;mi--) if(minions[mi].ownerId===playerId) minions.splice(mi,1);
+        processSkillZombieDeaths(p);
+      }
       else if (skillId === 'assaultBombard') { const x=p.x+Math.cos(a)*120,y=p.y+Math.sin(a)*120; triggerGrenadeExplosion(x,y,80,120,playerId); addArea('explosion',120,0.5,{x,y}); }
       else if (skillId === 'sniperPierce') { const ex=p.x+Math.cos(a)*700,ey=p.y+Math.sin(a)*700; for(let zi=zombies.length-1;zi>=0;zi--){const z=zombies[zi]; if(distToSegment(z.x,z.y,p.x,p.y,ex,ey)<z.size/2+8) { z.hp-=150*(p.dmgMult||1); createFloatingText(z.x,z.y-20,'-150','#38bdf8',20); if(z.hp<=0){triggerZombieDeathEffects(z.x,z.y,z.type==='boss');trySummonMinionOnKill(p,z);expGems.push({x:z.x,y:z.y,value:z.type==='boss'?25:2});zombies.splice(zi,1);} } } bullets.push({id:Math.random().toString(36).slice(2),ownerId:playerId,x:p.x,y:p.y,startX:p.x,startY:p.y,angle:a,isBeam:true,hasHit:true,beamLength:700,beamWidth:8,damage:0,penetrate:true,life:8,color:'#7dd3fc'}); }
       else if (skillId === 'berserkerRage') { p.skillEffects.rage=5; }
@@ -2348,7 +2496,7 @@
       const now = Date.now(); const w = WEAPONS[me.weapon];
       if (!w || !w.isMelee) return;
 
-      if (now - lastShootTime >= w.fireRate / ((me.skillEffects?.rage > 0) ? 1.5 : 1)) {
+      if (now - lastShootTime >= w.fireRate / (((me.skillEffects?.rage > 0) ? 1.5 : 1) * ((me.skillEffects?.rapidFire > 0) ? 2 : 1))) {
         lastShootTime = now;
         let attackAngle = me.angle;
         if (aimJoystickData.active) { attackAngle = Math.atan2(aimJoystickData.y, aimJoystickData.x); me.angle = attackAngle; }
@@ -2423,7 +2571,7 @@
 
       if (w.isAxe && bullets.filter(b => b.isAxe && b.ownerId === myPlayerId).length >= 1) return;
 
-      if (now - lastShootTime >= w.fireRate / ((me.skillEffects?.rage > 0) ? 1.5 : 1)) {
+      if (now - lastShootTime >= w.fireRate / (((me.skillEffects?.rage > 0) ? 1.5 : 1) * ((me.skillEffects?.rapidFire > 0) ? 2 : 1))) {
         lastShootTime = now; let fireAngle = me.angle;
         if (aimJoystickData.active) { fireAngle = Math.atan2(aimJoystickData.y, aimJoystickData.x); me.angle = fireAngle; }
 
@@ -2536,7 +2684,10 @@
           if (z.hp <= 0) {
             triggerZombieDeathEffects(z.x, z.y, z.type === 'boss');
             if (damage > 100) triggerCritFlashOverlay();
-            if (owner) trySummonMinionOnKill(owner, z);
+            if (owner) {
+              trySummonMinionOnKill(owner, z);
+              if (owner.skillEffects?.bloodlust > 0) { owner.hp = Math.min(owner.maxHp, owner.hp + 10); createFloatingText(owner.x, owner.y - 20, '+10 HP', '#fb7185', 16); }
+            }
             expGems.push({ x: z.x, y: z.y, value: z.type === 'boss' ? 25 : 2 }); zombies.splice(i, 1);
           }
         }
@@ -2609,16 +2760,52 @@
         p.skillCooldowns = p.skillCooldowns || { exclusive: 0, general: 0 };
         ['exclusive','general'].forEach(slot => p.skillCooldowns[slot] = Math.max(0, (p.skillCooldowns[slot] || 0) - deltaTime));
         p.skillEffects = p.skillEffects || {};
-        Object.keys(p.skillEffects).forEach(k => { const before=p.skillEffects[k]; p.skillEffects[k] = Math.max(0, before - deltaTime); if(k==='shield' && before>0 && p.skillEffects[k]===0 && p.tempShield>0){ p.shield=Math.max(0,p.shield-p.tempShield); p.tempShield=0; } });
+        Object.keys(p.skillEffects).forEach(k => {
+          if (k === 'airstrike') return;
+          const before = p.skillEffects[k];
+          p.skillEffects[k] = Math.max(0, before - deltaTime);
+          if (k === 'shield' && before > 0 && p.skillEffects[k] === 0 && p.tempShield > 0) {
+            p.shield = Math.max(0, p.shield - p.tempShield); p.tempShield = 0;
+          }
+        });
+        const strike = p.skillEffects.airstrike;
+        if (strike && typeof strike === 'object') {
+          strike.timer -= deltaTime;
+          if (strike.timer <= 0) {
+            const x = p.x + Math.cos(strike.angle || 0) * 120, y = p.y + Math.sin(strike.angle || 0) * 120;
+            triggerGrenadeExplosion(x, y, 60, 80, p.id);
+            skillAreas.push({ id: Math.random().toString(36).slice(2), ownerId: p.id, x, y, type: 'explosion', radius: 80, duration: 0.5, maxDuration: 0.5 });
+            strike.count -= 1;
+            if (strike.count <= 0) delete p.skillEffects.airstrike;
+            else strike.timer = 1;
+          }
+        }
+        if (p.skillEffects.flameAura > 0) {
+          zombies.forEach(z => { if (Math.hypot(z.x-p.x,z.y-p.y) <= 100 + (z.size || 0)/2) z.hp -= 20 * deltaTime; });
+          processSkillZombieDeaths(p);
+        }
       });
       for (let i=skillAreas.length-1;i>=0;i--) {
         const area=skillAreas[i]; area.duration-=deltaTime;
-        if(area.type==='heal') Object.values(players).forEach(ally=>{ if(!ally.isDead&&!ally.isDowned&&Math.hypot(ally.x-area.x,ally.y-area.y)<=area.radius) ally.hp=Math.min(ally.maxHp,ally.hp+5*deltaTime); });
-        if(area.type==='fire'||area.type==='freeze'||area.type==='poison') zombies.forEach(z=>{ if(Math.hypot(z.x-area.x,z.y-area.y)<=area.radius+z.size/2){ if(area.type==='fire'||area.type==='poison') z.hp-= (area.dps||(area.type==='fire'?15:10))*deltaTime; else z.stunTimer=Math.max(z.stunTimer||0,0.12); } });
-        for(let zi=zombies.length-1;zi>=0;zi--){ const z=zombies[zi]; if(z.hp<=0){triggerZombieDeathEffects(z.x,z.y,z.type==='boss'); const owner=players[area.ownerId]; if(owner)trySummonMinionOnKill(owner,z); expGems.push({x:z.x,y:z.y,value:z.type==='boss'?25:2}); zombies.splice(zi,1);} }
+        if (area.type === 'heal') Object.values(players).forEach(ally => { if (!ally.isDead && !ally.isDowned && Math.hypot(ally.x-area.x,ally.y-area.y) <= area.radius) ally.hp = Math.min(ally.maxHp,ally.hp+5*deltaTime); });
+        if (area.type === 'fire' || area.type === 'freeze' || area.type === 'poison') zombies.forEach(z => {
+          if (Math.hypot(z.x-area.x,z.y-area.y) <= area.radius + (z.size || 0)/2) {
+            if (area.type === 'fire' || area.type === 'poison') z.hp -= (area.dps || (area.type === 'fire' ? 15 : 10)) * deltaTime;
+            else z.stunTimer = Math.max(z.stunTimer || 0, 0.12);
+          }
+        });
+        if (area.type === 'wall') zombies.forEach(z => { if (Math.hypot(z.x-area.x,z.y-area.y) <= area.radius + (z.size || 0)/2) z.wallSlowTimer = Math.max(z.wallSlowTimer || 0, 0.3); });
+        for (let zi=zombies.length-1; zi>=0; zi--) {
+          const z=zombies[zi]; if (z.hp<=0) {
+            triggerZombieDeathEffects(z.x,z.y,z.type==='boss',z.color);
+            const owner=players[area.ownerId];
+            if(owner){trySummonMinionOnKill(owner,z);if(owner.skillEffects?.bloodlust>0){owner.hp=Math.min(owner.maxHp,owner.hp+10);createFloatingText(owner.x,owner.y-20,'+10 HP','#fb7185',16);}}
+            expGems.push({x:z.x,y:z.y,value:z.type==='boss'?25:2}); zombies.splice(zi,1);
+          }
+        }
         if(area.duration<=0) skillAreas.splice(i,1);
       }
-      for(let i=skillTurrets.length-1;i>=0;i--){ const t=skillTurrets[i]; t.life-=deltaTime; t.cooldown-=deltaTime; if(t.life<=0){skillTurrets.splice(i,1);continue;} if(t.cooldown<=0){ let target=null,dist=260; zombies.forEach(z=>{const d=Math.hypot(z.x-t.x,z.y-t.y);if(d<dist){dist=d;target=z;}}); if(target){target.hp-=20; createFloatingText(target.x,target.y-15,'-20','#c084fc',14); if(target.hp<=0){triggerZombieDeathEffects(target.x,target.y,target.type==='boss');const owner=players[t.ownerId];if(owner)trySummonMinionOnKill(owner,target);expGems.push({x:target.x,y:target.y,value:target.type==='boss'?25:2});const zi=zombies.indexOf(target);if(zi>=0)zombies.splice(zi,1);} t.cooldown=0.6;} } }
+      for(let i=skillTurrets.length-1;i>=0;i--){ const t=skillTurrets[i]; t.life-=deltaTime; t.cooldown-=deltaTime; if(t.life<=0){skillTurrets.splice(i,1);continue;} if(t.cooldown<=0){ let target=null,dist=260; zombies.forEach(z=>{const d=Math.hypot(z.x-t.x,z.y-t.y);if(d<dist){dist=d;target=z;}}); if(target){target.hp-=20; createFloatingText(target.x,target.y-15,'-20','#c084fc',14); if(target.hp<=0){triggerZombieDeathEffects(target.x,target.y,target.type==='boss');const owner=players[t.ownerId];if(owner){trySummonMinionOnKill(owner,target);if(owner.skillEffects?.bloodlust>0){owner.hp=Math.min(owner.maxHp,owner.hp+10);createFloatingText(owner.x,owner.y-20,'+10 HP','#fb7185',16);}}expGems.push({x:target.x,y:target.y,value:target.type==='boss'?25:2});const zi=zombies.indexOf(target);if(zi>=0)zombies.splice(zi,1);} t.cooldown = (players[t.ownerId]?.skillEffects?.overload > 0) ? 0.3 : 0.6;} } }
       playerList.forEach(p => {
         applyTopDownPhysicsAndCollision(p, true);
         if (!p.isDowned && !p.isDead) livingCount++;
@@ -2715,12 +2902,17 @@
             for (let j = zombies.length - 1; j >= 0; j--) {
               const z = zombies[j];
               if (distToSegment(z.x, z.y, startX, startY, endX, endY) < (z.size / 2) + b.beamWidth) {
-                let actualDamage = b.damage; z.hp -= actualDamage; playSound('hit');
+                let actualDamage = b.damage;
+                if (skillAreas.some(area => area.type === 'mark' && Math.hypot(z.x-area.x,z.y-area.y) <= area.radius + (z.size || 0)/2)) actualDamage = Math.round(actualDamage * 1.5);
+                z.hp -= actualDamage; playSound('hit');
                 createFloatingText(z.x, z.y - z.size / 2 - 5, `-${actualDamage}`, '#38bdf8', 20);
                 if (z.hp <= 0) {
                   triggerZombieDeathEffects(z.x, z.y, z.type === 'boss');
                   if (actualDamage > 100) triggerCritFlashOverlay();
-                  if (owner) trySummonMinionOnKill(owner, z);
+                  if (owner) {
+                    trySummonMinionOnKill(owner, z);
+                    if (owner.skillEffects?.bloodlust > 0) { owner.hp = Math.min(owner.maxHp, owner.hp + 10); createFloatingText(owner.x, owner.y - 20, '+10 HP', '#fb7185', 16); }
+                  }
                   expGems.push({ x: z.x, y: z.y, value: z.type === 'boss' ? 25 : 2 }); zombies.splice(j, 1);
                 }
                 if (!b.penetrate) break;
@@ -2743,6 +2935,7 @@
           const z = zombies[j];
           if (Math.hypot(b.x - z.x, b.y - z.y) < (z.size / 2) + b.size) {
             let actualDamage = b.damage;
+            if (skillAreas.some(area => area.type === 'mark' && Math.hypot(z.x-area.x,z.y-area.y) <= area.radius + (z.size || 0)/2)) actualDamage = Math.round(actualDamage * 1.5);
             if (owner && owner.critChance && Math.random() < owner.critChance) actualDamage *= 2;
             if (owner && owner.slowDmgBonus && z.slowTimer > 0) actualDamage *= owner.slowDmgBonus;
 
@@ -2821,12 +3014,14 @@
 
         if (z.slowTimer > 0) z.slowTimer = Math.max(0, z.slowTimer - deltaTime);
         if (z.timeRiftSlowTimer > 0) z.timeRiftSlowTimer = Math.max(0, z.timeRiftSlowTimer - deltaTime);
+        if (z.wallSlowTimer > 0) z.wallSlowTimer = Math.max(0, z.wallSlowTimer - deltaTime);
 
         applyTopDownPhysicsAndCollision(z, false);
         let nearestTarget = null, minDist = Infinity, targetType = null;
 
         playerList.forEach(p => {
           if (p.isDowned || p.isDead || p.skillEffects?.stealth > 0) return;
+          if (skillAreas.some(area => area.type === 'smoke' && area.ownerId === p.id && Math.hypot(p.x-area.x,p.y-area.y) <= area.radius)) return;
           const d = Math.hypot(p.x - z.x, p.y - z.y);
           if (d < minDist) { minDist = d; nearestTarget = p; targetType = 'player'; }
         });
@@ -2838,7 +3033,7 @@
 
         if (nearestTarget) {
           z.angle = Math.atan2(nearestTarget.y - z.y, nearestTarget.x - z.x);
-          const speedMult = (z.timeRiftSlowTimer > 0) ? 0.3 : ((z.slowTimer > 0) ? 0.5 : 1.0);
+          const speedMult = (z.wallSlowTimer > 0) ? 0.2 : ((z.timeRiftSlowTimer > 0) ? 0.3 : ((z.slowTimer > 0) ? 0.5 : 1.0));
           z.vx += Math.cos(z.angle) * 0.4 * speedMult;
           z.vy += Math.sin(z.angle) * 0.4 * speedMult;
         }
@@ -3162,7 +3357,7 @@
         }
       });
 
-      skillAreas.forEach(a => { ctx.save(); ctx.globalAlpha=Math.max(0.15,Math.min(0.45,a.duration/(a.maxDuration||1))); ctx.fillStyle=a.type==='fire'?'#f97316':a.type==='poison'?'#a3e635':a.type==='freeze'?'#67e8f9':a.type==='heal'?'#4ade80':a.type==='frost'?'#38bdf8':'#fbbf24'; ctx.strokeStyle=ctx.fillStyle; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(a.x,a.y,a.radius,0,Math.PI*2); ctx.fill(); ctx.stroke(); ctx.restore(); });
+      skillAreas.forEach(a => { ctx.save(); ctx.globalAlpha=Math.max(0.15,Math.min(0.45,a.duration/(a.maxDuration||1))); ctx.fillStyle=a.type==='fire'?'#f97316':a.type==='poison'?'#a3e635':a.type==='mark'?'#f472b6':a.type==='smoke'?'#94a3b8':a.type==='wall'?'#cbd5e1':a.type==='shield'?'#60a5fa':a.type==='healBurst'?'#4ade80':a.type==='smite'?'#fbbf24':a.type==='freeze'?'#67e8f9':a.type==='heal'?'#4ade80':a.type==='frost'?'#38bdf8':'#fbbf24'; ctx.strokeStyle=ctx.fillStyle; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(a.x,a.y,a.radius,0,Math.PI*2); ctx.fill(); ctx.stroke(); ctx.restore(); });
       skillTurrets.forEach(t=>{ctx.save();ctx.fillStyle='#c084fc';ctx.strokeStyle='#e9d5ff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(t.x,t.y,15,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#fff';ctx.font='16px system-ui';ctx.textAlign='center';ctx.fillText('🔧',t.x,t.y+5);ctx.restore();});
       renderDefenses();
 
@@ -3647,7 +3842,12 @@
       if (isHost && !players[myPlayerId]) {
         players[myPlayerId] = createPlayerWithClass(myPlayerId, nick, selectedSkinColor, selectedClassId);
       }
-      if (players[myPlayerId]) { players[myPlayerId].exclusiveSkillId = CLASS_EXCLUSIVE_SKILLS[selectedClassId] || CLASS_EXCLUSIVE_SKILLS.assault; players[myPlayerId].generalSkillId = selectedGeneralSkillId || 'heal'; }
+      if (players[myPlayerId]) {
+        const ids = CLASS_EXCLUSIVE_SKILLS[selectedClassId] || CLASS_EXCLUSIVE_SKILLS.assault;
+        if (selectedExclusiveSkillId && ids.includes(selectedExclusiveSkillId)) players[myPlayerId].exclusiveSkillId = selectedExclusiveSkillId;
+        else if (!ids.includes(players[myPlayerId].exclusiveSkillId)) players[myPlayerId].exclusiveSkillId = ids[0];
+        players[myPlayerId].generalSkillId = selectedGeneralSkillId || 'heal';
+      }
 
       document.getElementById('mainMenu').classList.add('hidden');
       document.body.classList.remove('modal-open');
@@ -3709,7 +3909,8 @@
           players[data.id].color = safeColor;
         }
         const joinedPlayer = players[data.id];
-        joinedPlayer.exclusiveSkillId = CLASS_EXCLUSIVE_SKILLS[joinedPlayer.classId] || CLASS_EXCLUSIVE_SKILLS.assault;
+        const allowedIds = CLASS_EXCLUSIVE_SKILLS[joinedPlayer.classId] || CLASS_EXCLUSIVE_SKILLS.assault;
+        joinedPlayer.exclusiveSkillId = (typeof data.exclusiveSkillId === 'string' && allowedIds.includes(data.exclusiveSkillId)) ? data.exclusiveSkillId : allowedIds[0];
         joinedPlayer.generalSkillId = GENERAL_SKILL_IDS.includes(data.generalSkillId) ? data.generalSkillId : 'heal';
         joinedPlayer.skillCooldowns = joinedPlayer.skillCooldowns || { exclusive: 0, general: 0 };
         const connTxt = document.getElementById('connectedPlayersText');
@@ -3828,6 +4029,7 @@
         minions = data.minions || []; skillAreas = data.skillAreas || []; skillTurrets = data.skillTurrets || [];
         updateHud(); renderWeaponHotbar(); updateSkillCooldownUI();
       } else if (data.type === 'GAME_START' && !isHost) {
+        document.getElementById('waitingRoomOverlay').classList.add('hidden');
         if (data.mapId && data.seed) generateMap(data.mapId, data.seed);
         startGame(false);
       }
@@ -3871,8 +4073,23 @@
 
       select.onchange = () => {
         selectedClassId = select.value;
-        selectedExclusiveSkillId = CLASS_EXCLUSIVE_SKILLS[selectedClassId] || CLASS_EXCLUSIVE_SKILLS.assault;
-        const exPicker = document.getElementById('exclusiveSkillPicker'); if (exPicker) { const cls = CLASSES[selectedClassId] || CLASSES.assault, id = CLASS_EXCLUSIVE_SKILLS[selectedClassId] || CLASS_EXCLUSIVE_SKILLS.assault; exPicker.innerHTML = ''; const opt = document.createElement('option'); opt.value = id; opt.textContent = `${cls.icon} ${cls.name}：${SKILLS[id].name}`; exPicker.appendChild(opt); exPicker.value = id; }
+        const ids = CLASS_EXCLUSIVE_SKILLS[selectedClassId] || CLASS_EXCLUSIVE_SKILLS.assault;
+        selectedExclusiveSkillId = ids[0];
+        const exPicker = document.getElementById('exclusiveSkillPicker');
+        if (exPicker) {
+          const cls = CLASSES[selectedClassId] || CLASSES.assault;
+          exPicker.innerHTML = '';
+          ids.forEach(id => {
+            const sk = SKILLS[id];
+            const opt = document.createElement('option');
+            opt.value = id;
+            opt.textContent = `${sk.icon} ${sk.name}（${sk.desc}）`;
+            exPicker.appendChild(opt);
+          });
+          exPicker.value = ids[0];
+          selectedExclusiveSkillId = ids[0];
+          exPicker.onchange = () => { selectedExclusiveSkillId = exPicker.value; };
+        }
         updateClassStatsDisplay();
       };
 
@@ -3881,7 +4098,7 @@
 
     function initSkillPickers() {
       const ex=document.getElementById('exclusiveSkillPicker'), gen=document.getElementById('generalSkillPicker');
-      if(ex){ const id=CLASS_EXCLUSIVE_SKILLS[selectedClassId] || CLASS_EXCLUSIVE_SKILLS.assault, skill=SKILLS[id], cls=CLASSES[selectedClassId] || CLASSES.assault; ex.innerHTML=''; const o=document.createElement('option'); o.value=id; o.textContent=`${cls.icon} ${cls.name}：${skill.name}`; ex.appendChild(o); ex.value=id; selectedExclusiveSkillId=id; ex.onchange=()=>{selectedExclusiveSkillId=ex.value;}; }
+      if(ex){ const ids=CLASS_EXCLUSIVE_SKILLS[selectedClassId] || CLASS_EXCLUSIVE_SKILLS.assault, cls=CLASSES[selectedClassId] || CLASSES.assault; ex.innerHTML=''; ids.forEach(id=>{const skill=SKILLS[id],o=document.createElement('option');o.value=id;o.textContent=`${skill.icon} ${skill.name}（${skill.desc}）`;ex.appendChild(o);}); ex.value=ids[0]; selectedExclusiveSkillId=ids[0]; ex.onchange=()=>{selectedExclusiveSkillId=ex.value;}; }
       if(gen){gen.innerHTML='';GENERAL_SKILL_IDS.forEach(id=>{const sk=SKILLS[id],o=document.createElement('option');o.value=id;o.textContent=`${sk.icon} ${sk.name}（${sk.desc}）`;gen.appendChild(o);});gen.value=selectedGeneralSkillId;gen.onchange=()=>{selectedGeneralSkillId=gen.value;};}
     }
 
@@ -4101,7 +4318,7 @@
         const rawCode = jInput ? jInput.value.trim().toUpperCase() : '';
         if (!rawCode || rawCode.length !== 6) { alert('請輸入 6 位數房間碼！'); return; }
         hostPeerIdStore = 'dungeon_' + rawCode;
-        isHost = false; stopHostingBroadcast();
+        isHost = false; manualRoomLeave = false; stopHostingBroadcast();
         const nickInput = document.getElementById('nicknameInput');
         let nick = (nickInput && nickInput.value) ? nickInput.value.trim() : '';
         if (!nick) nick = '隊友';
@@ -4111,14 +4328,32 @@
           peer.on('open', () => {
             hostConn = peer.connect(hostPeerIdStore);
             hostConn.on('open', () => {
-              hostConn.send({ type: 'JOIN_PLAYER', id: myPlayerId, name: nick, color: selectedSkinColor, classId: selectedClassId, exclusiveSkillId: selectedExclusiveSkillId || CLASS_EXCLUSIVE_SKILLS[selectedClassId], generalSkillId: selectedGeneralSkillId });
+              document.getElementById('waitingRoomOverlay').classList.remove('hidden');
+              document.getElementById('joinRoomBtn').disabled = true;
+              document.getElementById('joinRoomBtn').classList.add('opacity-50', 'pointer-events-none');
+              hostConn.send({ type: 'JOIN_PLAYER', id: myPlayerId, name: nick, color: selectedSkinColor, classId: selectedClassId, exclusiveSkillId: selectedExclusiveSkillId || (CLASS_EXCLUSIVE_SKILLS[selectedClassId] || CLASS_EXCLUSIVE_SKILLS.assault)[0], generalSkillId: selectedGeneralSkillId });
             });
             hostConn.on('data', (data) => handleNetworkData(data));
-            hostConn.on('close', () => { handleHostDisconnection(); });
+            hostConn.on('close', () => { if (!manualRoomLeave) handleHostDisconnection(); });
           });
           peer.on('error', () => { document.getElementById('connectionWarn').classList.remove('hidden'); });
         } catch (err) { document.getElementById('connectionWarn').classList.remove('hidden'); }
       };
+
+      const leaveRoomBtn = document.getElementById('leaveRoomBtn');
+      if (leaveRoomBtn) leaveRoomBtn.addEventListener('pointerup', () => {
+        manualRoomLeave = true;
+        try { if (hostConn) hostConn.close(); } catch (e) {}
+        try { if (peer) peer.destroy(); } catch (e) {}
+        hostConn = null; peer = null; hostPeerIdStore = null;
+        document.getElementById('waitingRoomOverlay').classList.add('hidden');
+        const joinBtn = document.getElementById('joinRoomBtn');
+        if (joinBtn) {
+          joinBtn.disabled = false;
+          joinBtn.classList.remove('opacity-50', 'pointer-events-none');
+        }
+        document.body.classList.add('modal-open');
+      });
 
       const rstBtn = document.getElementById('restartBtn');
       if (rstBtn) rstBtn.onclick = () => { location.reload(); };
