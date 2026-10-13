@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>元氣地牢:抽卡與鑽石</title>
+  <title>元氣地牢:抽卡與鑽石(2)</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- PeerJS CDN -->
@@ -1136,6 +1136,7 @@
       pityLegendCounter: 0,
       multiplayerWave5DiamondClaimed: false,
       multiplayerDiamondWavesClaimed: [],
+      waveRewardIdsClaimed: [],
       unlockedSkins: ['#38bdf8', '#f59e0b', '#10b981', '#ec4899'],
       unlockedGunSkins: {},
       unlockedSkills: [],
@@ -1164,6 +1165,8 @@
           if (typeof saveData.multiplayerWave5DiamondClaimed !== 'boolean') saveData.multiplayerWave5DiamondClaimed = false;
           if (!Array.isArray(saveData.multiplayerDiamondWavesClaimed)) saveData.multiplayerDiamondWavesClaimed = saveData.multiplayerWave5DiamondClaimed ? [5] : [];
           saveData.multiplayerDiamondWavesClaimed = saveData.multiplayerDiamondWavesClaimed.filter(w => Number.isInteger(w) && w > 0 && w % 5 === 0);
+          if (!Array.isArray(saveData.waveRewardIdsClaimed)) saveData.waveRewardIdsClaimed = [];
+          saveData.waveRewardIdsClaimed = saveData.waveRewardIdsClaimed.filter(id => typeof id === 'string' && id.length <= 160);
           if (!Array.isArray(saveData.unlockedSkins)) saveData.unlockedSkins = ['#38bdf8', '#f59e0b', '#10b981', '#ec4899'];
           if (!saveData.unlockedGunSkins || typeof saveData.unlockedGunSkins !== 'object') saveData.unlockedGunSkins = {};
           if (!Array.isArray(saveData.unlockedSkills)) saveData.unlockedSkills = [];
@@ -1181,6 +1184,8 @@
         if (typeof saveData.multiplayerWave5DiamondClaimed !== 'boolean') saveData.multiplayerWave5DiamondClaimed = false;
         if (!Array.isArray(saveData.multiplayerDiamondWavesClaimed)) saveData.multiplayerDiamondWavesClaimed = saveData.multiplayerWave5DiamondClaimed ? [5] : [];
         saveData.multiplayerDiamondWavesClaimed = saveData.multiplayerDiamondWavesClaimed.filter(w => Number.isInteger(w) && w > 0 && w % 5 === 0);
+        if (!Array.isArray(saveData.waveRewardIdsClaimed)) saveData.waveRewardIdsClaimed = [];
+        saveData.waveRewardIdsClaimed = saveData.waveRewardIdsClaimed.filter(id => typeof id === 'string' && id.length <= 160);
         STARTER_SKILL_IDS.forEach(id => { if (!saveData.unlockedSkills.includes(id)) saveData.unlockedSkills.push(id); });
         if (!Array.isArray(saveData.unlockedSkins)) saveData.unlockedSkins = ['#38bdf8', '#f59e0b', '#10b981', '#ec4899'];
         if (typeof saveData.currentSkinColor === 'string' && saveData.unlockedSkins.includes(saveData.currentSkinColor)) selectedSkinColor = saveData.currentSkinColor;
@@ -1225,6 +1230,7 @@
     let minions = [];
 
     let currentWave = 1;
+    let currentWaveRewardSessionId = '';
     let zombiesToSpawn = 0;
     let lastSpawnTime = 0;
 
@@ -2823,13 +2829,7 @@
     function startNextWave() {
       showNextWaveButton = false;
       if (hasStartedWave) {
-        const reward = currentWave * 10 + currentWaveKills * 1;
-        saveData.coins += reward;
-        saveData.stats.totalKills += currentWaveKills;
-        if (currentWave > saveData.stats.bestWave) saveData.stats.bestWave = currentWave;
-        saveGameData();
-        updateCoinDisplay();
-        createFloatingText(0, -250, `💰 +${reward} 金幣`, '#fbbf24', 24);
+        // 金幣與每 5 波的鑽石已在上一波結束時直接發放，這裡只切換到下一波。
         currentWaveKills = 0;
         waveStartKillCount = saveData.stats.totalKills;
         currentWave++;
@@ -2837,15 +2837,6 @@
         hasStartedWave = true;
         currentWaveKills = 0;
         waveStartKillCount = saveData.stats.totalKills;
-      }
-      if (currentWave > 0 && currentWave % 5 === 0 && isSinglePlayer === false && !saveData.multiplayerDiamondWavesClaimed.includes(currentWave)) {
-        saveData.diamonds += 5;
-        saveData.multiplayerDiamondWavesClaimed.push(currentWave);
-        // 舊欄位保留以相容舊存檔；第 5 波領取狀態同步更新。
-        if (currentWave === 5) saveData.multiplayerWave5DiamondClaimed = true;
-        saveGameData();
-        updateDiamondDisplay();
-        showDebugToast(`💎 多人模式達到第 ${currentWave} 波，獲得 5 鑽石`);
       }
       const playerCount = Math.max(1, Object.keys(players).length);
       zombiesToSpawn = Math.round((12 + currentWave * 6) * (1 + (playerCount - 1) * 0.5));
@@ -2968,6 +2959,39 @@
       pts.push({ x: x2, y: y2 }); return pts;
     }
 
+    function grantWaveEndRewards(wave) {
+      if (!isHost || !Number.isInteger(wave) || wave < 1) return;
+      if (!Array.isArray(saveData.waveRewardIdsClaimed)) saveData.waveRewardIdsClaimed = [];
+      const rewardId = `${currentWaveRewardSessionId || currentSeed}:${wave}`;
+      if (saveData.waveRewardIdsClaimed.includes(rewardId)) return;
+
+      const coinReward = wave * 10 + currentWaveKills;
+      let diamondReward = 0;
+      saveData.coins += coinReward;
+      saveData.stats.totalKills += currentWaveKills;
+      if (wave > saveData.stats.bestWave) saveData.stats.bestWave = wave;
+      saveData.waveRewardIdsClaimed.push(rewardId);
+
+      if (!isSinglePlayer && wave % 5 === 0) {
+        diamondReward = 5;
+        saveData.diamonds += diamondReward;
+        if (!saveData.multiplayerDiamondWavesClaimed.includes(wave)) saveData.multiplayerDiamondWavesClaimed.push(wave);
+        if (wave === 5) saveData.multiplayerWave5DiamondClaimed = true;
+      }
+
+      saveGameData();
+      updateCoinDisplay();
+      updateDiamondDisplay();
+      createFloatingText(0, -250, `💰 +${coinReward} 金幣${diamondReward ? '　💎 +5 鑽石' : ''}`, '#fbbf24', 24);
+      if (diamondReward) showDebugToast(`💎 多人模式第 ${wave} 波完成，獲得 5 鑽石`);
+
+      // 房主是權威發獎者；通知每位客機把同一份波次獎勵存入自己的本機存檔。
+      if (!isSinglePlayer) {
+        const message = { type: 'WAVE_REWARD', rewardId, wave, coins: coinReward, diamonds: diamondReward };
+        connections.forEach(conn => { if (conn && conn.open) { try { conn.send(message); } catch (e) {} } });
+      }
+    }
+
     function updateWorldHost() {
       const now = Date.now(), deltaTime = 0.016;
       const { darkFactor } = getDayNightColorOverlay();
@@ -2979,8 +3003,11 @@
       if (zombiesToSpawn > 0 && now - lastSpawnTime > spawnDelay) {
         lastSpawnTime = now; spawnZombie();
       } else if (zombiesToSpawn <= 0 && zombies.length === 0 && !isTutorialMode) {
-        // 波次結束後等待玩家手動開始，不自動進入下一波。
-        if (!showNextWaveButton) showNextWaveButton = true;
+        // 波次結束後立即發放獎勵，再等待玩家手動開始下一波。
+        if (!showNextWaveButton) {
+          showNextWaveButton = true;
+          grantWaveEndRewards(currentWave);
+        }
       }
 
       updateDefensesHost(deltaTime);
@@ -4274,6 +4301,7 @@
     window.sendPresetChat = function(presetText) { sendChatMessage(presetText); };
 
     function startGame(singlePlayerMode = true) {
+      currentWaveRewardSessionId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
       isSinglePlayer = singlePlayerMode;
       hasStartedWave = false;
       showNextWaveButton = false;
@@ -4424,6 +4452,26 @@
           players[data.id].name = data.name;
           broadcastState(); if (myHostRoomCode) broadcastRoomInfo();
         }
+      } else if (data.type === 'WAVE_REWARD' && !isHost) {
+        const wave = Number(data.wave);
+        const coins = Number(data.coins);
+        const diamonds = Number(data.diamonds);
+        const rewardId = typeof data.rewardId === 'string' ? data.rewardId : '';
+        if (!Number.isInteger(wave) || wave < 1 || !rewardId || rewardId.length > 160 || !Number.isFinite(coins) || coins < 0 || !Number.isFinite(diamonds) || diamonds < 0) return;
+        if (!Array.isArray(saveData.waveRewardIdsClaimed)) saveData.waveRewardIdsClaimed = [];
+        if (saveData.waveRewardIdsClaimed.includes(rewardId)) return;
+        saveData.coins += Math.floor(coins);
+        saveData.diamonds += Math.floor(diamonds);
+        saveData.waveRewardIdsClaimed.push(rewardId);
+        if (Math.floor(diamonds) > 0 && wave % 5 === 0) {
+          if (!saveData.multiplayerDiamondWavesClaimed.includes(wave)) saveData.multiplayerDiamondWavesClaimed.push(wave);
+          if (wave === 5) saveData.multiplayerWave5DiamondClaimed = true;
+        }
+        if (wave > saveData.stats.bestWave) saveData.stats.bestWave = wave;
+        saveGameData();
+        updateCoinDisplay();
+        updateDiamondDisplay();
+        showDebugToast(`🏁 WAVE ${wave} 完成：+${Math.floor(coins)} 金幣${Math.floor(diamonds) ? `、+${Math.floor(diamonds)} 鑽石` : ''}`);
       } else if (data.type === 'STATE_UPDATE' && !isHost) {
         showNextWaveButton = !!data.showNextWaveButton;
         if (data.mapId && data.seed && (data.mapId !== currentMap.id || data.seed !== currentSeed)) {
