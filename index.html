@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>元氣地牢:繽紛世界</title>
+  <title>元氣地牢:金錢與商城</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- PeerJS CDN -->
@@ -243,6 +243,9 @@
 
   <!-- HUD 抬頭顯示器 -->
   <div id="hud" class="absolute top-4 left-4 z-20 flex flex-col gap-2.5 pointer-events-none hidden max-w-[280px] sm:max-w-xs">
+    <div class="glass-panel px-3 py-1.5 rounded-xl border border-amber-500/40 text-amber-300 font-black text-xs shadow-lg">
+      <span id="hudCoinDisplay">💰 0</span>
+    </div>
     <!-- 玩家資訊卡片 -->
     <div class="glass-panel p-3 rounded-2xl border border-slate-700/60 shadow-xl flex flex-col gap-2 pointer-events-auto">
       <div class="flex items-center justify-between gap-2">
@@ -447,10 +450,15 @@
         </button>
       </div>
 
+      <div id="coinDisplay" class="text-amber-400 font-black text-sm text-center">💰 0</div>
+
       <!-- 遊戲模式按鈕 -->
       <div class="flex flex-col gap-2 pt-1">
         <button id="tutorialBtn" type="button" class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold py-2 rounded-2xl text-xs shadow-lg active:scale-95 transition-all">
           📖 新手教學
+        </button>
+        <button id="shopBtn" type="button" class="w-full bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white font-bold py-2 rounded-2xl text-xs shadow-lg active:scale-95 transition-all">
+          🛒 商店
         </button>
         <button id="singlePlayerBtn" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black py-2.5 rounded-2xl text-sm shadow-xl active:scale-95 transition-all">
           🎮 單人快速開始
@@ -635,6 +643,21 @@
           <button id="tutorialNextBtn" type="button" class="flex-1 bg-gradient-to-r from-amber-600 to-orange-600 text-white font-bold py-2 rounded-xl text-xs">下一步</button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <div id="shopModal" class="hidden fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-3">
+    <div class="w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col rounded-2xl border border-pink-500/40 bg-slate-900 shadow-2xl">
+      <div class="flex items-center justify-between gap-3 p-4 border-b border-slate-700">
+        <div><h2 class="text-lg font-black text-pink-300">🛒 局外成長商店</h2><div id="shopCoinDisplay" class="text-amber-300 text-xs font-bold">💰 0</div></div>
+        <button id="shopCloseBtn" type="button" class="px-3 py-2 rounded-xl bg-slate-800 text-white text-sm font-bold">✕ 關閉</button>
+      </div>
+      <div class="grid grid-cols-3 gap-2 p-3 border-b border-slate-700">
+        <button type="button" data-shop-tab="skins" class="shop-tab rounded-xl py-2 px-1 text-xs font-black bg-pink-600 text-white">🎨 角色皮膚</button>
+        <button type="button" data-shop-tab="guns" class="shop-tab rounded-xl py-2 px-1 text-xs font-black bg-slate-800 text-slate-200">🔫 武器皮膚</button>
+        <button type="button" data-shop-tab="skills" class="shop-tab rounded-xl py-2 px-1 text-xs font-black bg-slate-800 text-slate-200">✨ 技能</button>
+      </div>
+      <div id="shopContent" class="overflow-y-auto p-3 space-y-3"></div>
     </div>
   </div>
 
@@ -948,6 +971,11 @@
       necroStaff: { name: '亡靈權杖', fireRate: 400, speed: 16, damage: 35, color: '#a78bfa', size: 5, count: 1, spread: 0, recoil: 2, penetrate: true, range: 100, exclusiveTo: 'necromancer', icon: '💀', isNecro: true, summonChance: 0.3 }
     };
 
+    const GUN_SKINS = {
+      gold: { name: '黃金', color: '#fbbf24', price: 300 },
+      shadow: { name: '暗影', color: '#7c3aed', price: 300 }
+    };
+
     const SKIN_COLORS = [
       { name: '極光藍', hex: '#38bdf8' },
       { name: '琥珀金', hex: '#f59e0b' },
@@ -1059,6 +1087,55 @@
     let roomCleanupInterval = null;
     let myHostRoomCode = null;
     let renderLobbyScheduled = false;
+
+    const SAVE_KEY = 'zombieGameSave_v1';
+    let saveData = {
+      coins: 0,
+      unlockedSkins: ['#38bdf8', '#f59e0b', '#10b981', '#ec4899'],
+      unlockedGunSkins: {},
+      unlockedSkills: [],
+      currentGunSkin: {},
+      currentSkinColor: '#38bdf8',
+      stats: { totalKills: 0, bestWave: 0, totalPlayTime: 0 },
+      hasSeenTutorial: false
+    };
+    const STARTER_SKILL_IDS = ['heal', 'shield', 'critBoost', 'pierceShot', 'frostWave', 'knockbackRing', 'medicHealCircle', 'assaultBombard', 'sniperPierce', 'berserkerRage', 'engineerTurret', 'scoutBlink', 'flameStorm', 'frostField', 'paladinBastion', 'necroSummon'];
+
+    function loadSaveData() {
+      try {
+        const raw = localStorage.getItem(SAVE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          saveData = { ...saveData, ...parsed };
+          saveData.stats = { ...saveData.stats, ...(parsed.stats || {}) };
+          if (!Array.isArray(saveData.unlockedSkins)) saveData.unlockedSkins = ['#38bdf8', '#f59e0b', '#10b981', '#ec4899'];
+          if (!saveData.unlockedGunSkins || typeof saveData.unlockedGunSkins !== 'object') saveData.unlockedGunSkins = {};
+          if (!Array.isArray(saveData.unlockedSkills)) saveData.unlockedSkills = [];
+          if (!saveData.currentGunSkin || typeof saveData.currentGunSkin !== 'object') saveData.currentGunSkin = {};
+        }
+        if (!Array.isArray(saveData.unlockedSkills)) saveData.unlockedSkills = [];
+        STARTER_SKILL_IDS.forEach(id => { if (!saveData.unlockedSkills.includes(id)) saveData.unlockedSkills.push(id); });
+        if (!Array.isArray(saveData.unlockedSkins)) saveData.unlockedSkins = ['#38bdf8', '#f59e0b', '#10b981', '#ec4899'];
+        if (typeof saveData.currentSkinColor === 'string' && saveData.unlockedSkins.includes(saveData.currentSkinColor)) selectedSkinColor = saveData.currentSkinColor;
+        saveGameData();
+      } catch(e) { console.error('load save failed', e); }
+    }
+    function saveGameData() {
+      try {
+        localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
+      } catch(e) { console.error('save failed', e); }
+    }
+    function updateCoinDisplay() {
+      const el = document.getElementById('coinDisplay');
+      if (el) el.innerText = `💰 ${saveData.coins}`;
+      const hudEl = document.getElementById('hudCoinDisplay');
+      if (hudEl) hudEl.innerText = `💰 ${saveData.coins}`;
+      const shopEl = document.getElementById('shopCoinDisplay');
+      if (shopEl) shopEl.innerText = `💰 ${saveData.coins}`;
+    }
+
+    let waveStartKillCount = 0;
+    let currentWaveKills = 0;
 
     let players = {};
     let bullets = [];
@@ -1944,7 +2021,14 @@
       if (!dailyChallenge) return;
       if (currentWave >= 10) {
         const todayStr = new Date().toISOString().slice(0, 10);
-        localStorage.setItem(`dailyChallengeCompleted_${todayStr}`, 'true');
+        const dailyKey = `dailyChallengeCompleted_${todayStr}`;
+        if (localStorage.getItem(dailyKey) !== 'true') {
+          localStorage.setItem(dailyKey, 'true');
+          saveData.coins += 200;
+          saveGameData();
+          updateCoinDisplay();
+          showDebugToast('🎉 每日挑戰通關！獲得 200 金幣');
+        }
         createFloatingText(0, -200, '🎉 今日挑戰通關！成就已達成！', '#f59e0b', 28);
         playSound('levelup');
         const badgeEl = document.getElementById('challengeStatusBadge');
@@ -1956,6 +2040,7 @@
     }
 
     function triggerZombieDeathEffects(x, y, isBoss = false) {
+      currentWaveKills++;
       const particleCount = isBoss ? 60 : 18;
       for (let i = 0; i < particleCount; i++) {
         const angle = Math.random() * Math.PI * 2;
@@ -2660,8 +2745,22 @@
 
     function startNextWave() {
       showNextWaveButton = false;
-      if (hasStartedWave) currentWave++;
-      else hasStartedWave = true;
+      if (hasStartedWave) {
+        const reward = currentWave * 10 + currentWaveKills * 1;
+        saveData.coins += reward;
+        saveData.stats.totalKills += currentWaveKills;
+        if (currentWave > saveData.stats.bestWave) saveData.stats.bestWave = currentWave;
+        saveGameData();
+        updateCoinDisplay();
+        createFloatingText(0, -250, `💰 +${reward} 金幣`, '#fbbf24', 24);
+        currentWaveKills = 0;
+        waveStartKillCount = saveData.stats.totalKills;
+        currentWave++;
+      } else {
+        hasStartedWave = true;
+        currentWaveKills = 0;
+        waveStartKillCount = saveData.stats.totalKills;
+      }
       const playerCount = Math.max(1, Object.keys(players).length);
       zombiesToSpawn = Math.round((12 + currentWave * 6) * (1 + (playerCount - 1) * 0.5));
       updateHud();
@@ -3626,6 +3725,8 @@
         else if (weapon.isTesla) { gunColor = '#a855f7'; gunLength = 14; gunThick = 6; }
         else if (weapon.name === '霰彈槍') { gunColor = '#ef4444'; gunLength = 14; gunThick = 8; }
         else if (weapon.name === '突擊步槍') { gunColor = '#38bdf8'; gunLength = 16; gunThick = 5; }
+        const equippedGunSkin = saveData.currentGunSkin[p.weapon];
+        if (equippedGunSkin && GUN_SKINS[equippedGunSkin]) gunColor = GUN_SKINS[equippedGunSkin].color;
       }
 
       ctx.fillStyle = gunColor;
@@ -4141,21 +4242,22 @@
       const preview = document.getElementById('colorPreviewBox');
       if (!select) return;
       select.innerHTML = '';
-
-      SKIN_COLORS.forEach((colorObj, idx) => {
+      const available = SKIN_COLORS.filter(c => saveData.unlockedSkins.includes(c.hex));
+      SKIN_COLORS.forEach(colorObj => {
+        if (!saveData.unlockedSkins.includes(colorObj.hex)) return;
         const option = document.createElement('option');
         option.value = colorObj.hex;
         option.innerText = `● ${colorObj.name} (${colorObj.hex})`;
-        if (idx === 0) option.selected = true;
         select.appendChild(option);
       });
-
-      if (preview) preview.style.backgroundColor = SKIN_COLORS[0].hex;
-      selectedSkinColor = SKIN_COLORS[0].hex;
-
+      if (!saveData.unlockedSkins.includes(selectedSkinColor)) selectedSkinColor = available[0]?.hex || '#38bdf8';
+      select.value = selectedSkinColor;
+      if (preview) preview.style.backgroundColor = selectedSkinColor;
       select.onchange = () => {
         selectedSkinColor = select.value;
         if (preview) preview.style.backgroundColor = select.value;
+        saveData.currentSkinColor = selectedSkinColor;
+        saveGameData();
       };
     }
 
@@ -4174,8 +4276,8 @@
 
       select.onchange = () => {
         selectedClassId = select.value;
-        const ids = CLASS_EXCLUSIVE_SKILLS[selectedClassId] || CLASS_EXCLUSIVE_SKILLS.assault;
-        selectedExclusiveSkillId = ids[0];
+        const ids = (CLASS_EXCLUSIVE_SKILLS[selectedClassId] || CLASS_EXCLUSIVE_SKILLS.assault).filter(id => saveData.unlockedSkills.includes(id));
+        selectedExclusiveSkillId = ids[0] || (CLASS_EXCLUSIVE_SKILLS[selectedClassId] || CLASS_EXCLUSIVE_SKILLS.assault)[0];
         const exPicker = document.getElementById('exclusiveSkillPicker');
         if (exPicker) {
           const cls = CLASSES[selectedClassId] || CLASSES.assault;
@@ -4192,15 +4294,31 @@
           exPicker.onchange = () => { selectedExclusiveSkillId = exPicker.value; };
         }
         updateClassStatsDisplay();
+        initSkillPickers();
       };
 
       updateClassStatsDisplay();
     }
 
     function initSkillPickers() {
-      const ex=document.getElementById('exclusiveSkillPicker'), gen=document.getElementById('generalSkillPicker');
-      if(ex){ const ids=CLASS_EXCLUSIVE_SKILLS[selectedClassId] || CLASS_EXCLUSIVE_SKILLS.assault, cls=CLASSES[selectedClassId] || CLASSES.assault; ex.innerHTML=''; ids.forEach(id=>{const skill=SKILLS[id],o=document.createElement('option');o.value=id;o.textContent=`${skill.icon} ${skill.name}（${skill.desc}）`;ex.appendChild(o);}); ex.value=ids[0]; selectedExclusiveSkillId=ids[0]; ex.onchange=()=>{selectedExclusiveSkillId=ex.value;}; }
-      if(gen){gen.innerHTML='';GENERAL_SKILL_IDS.forEach(id=>{const sk=SKILLS[id],o=document.createElement('option');o.value=id;o.textContent=`${sk.icon} ${sk.name}（${sk.desc}）`;gen.appendChild(o);});gen.value=selectedGeneralSkillId;gen.onchange=()=>{selectedGeneralSkillId=gen.value;};}
+      const ex = document.getElementById('exclusiveSkillPicker');
+      const gen = document.getElementById('generalSkillPicker');
+      if (ex) {
+        const ids = (CLASS_EXCLUSIVE_SKILLS[selectedClassId] || CLASS_EXCLUSIVE_SKILLS.assault).filter(id => saveData.unlockedSkills.includes(id));
+        ex.innerHTML = '';
+        ids.forEach(id => { const skill = SKILLS[id]; if (!skill) return; const o = document.createElement('option'); o.value = id; o.textContent = `${skill.icon} ${skill.name}（${skill.desc}）`; ex.appendChild(o); });
+        if (!ids.includes(selectedExclusiveSkillId)) selectedExclusiveSkillId = ids[0] || (CLASS_EXCLUSIVE_SKILLS[selectedClassId] || CLASS_EXCLUSIVE_SKILLS.assault)[0];
+        ex.value = selectedExclusiveSkillId;
+        ex.onchange = () => { selectedExclusiveSkillId = ex.value; };
+      }
+      if (gen) {
+        const ids = GENERAL_SKILL_IDS.filter(id => saveData.unlockedSkills.includes(id));
+        gen.innerHTML = '';
+        ids.forEach(id => { const sk = SKILLS[id]; if (!sk) return; const o = document.createElement('option'); o.value = id; o.textContent = `${sk.icon} ${sk.name}（${sk.desc}）`; gen.appendChild(o); });
+        if (!ids.includes(selectedGeneralSkillId)) selectedGeneralSkillId = ids[0] || 'heal';
+        gen.value = selectedGeneralSkillId;
+        gen.onchange = () => { selectedGeneralSkillId = gen.value; };
+      }
     }
 
     function updateClassStatsDisplay() {
@@ -4212,6 +4330,92 @@
       }
       const exclusiveText = document.getElementById('classExclusiveWeaponText');
       if (exclusiveText) exclusiveText.innerText = `專屬武器：${cls.exclusiveWeaponName}`;
+    }
+
+    let currentShopTab = 'skins';
+    function purchaseItem(type, key, price) {
+      if (saveData.coins < price) { showDebugToast('💰 金幣不足'); return false; }
+      saveData.coins -= price;
+      if (type === 'skin') {
+        if (!saveData.unlockedSkins.includes(key)) saveData.unlockedSkins.push(key);
+      } else if (type === 'gunSkin') {
+        const [weaponKey, skinKey] = key.split(':');
+        if (!saveData.unlockedGunSkins[weaponKey]) saveData.unlockedGunSkins[weaponKey] = [];
+        if (!saveData.unlockedGunSkins[weaponKey].includes(skinKey)) saveData.unlockedGunSkins[weaponKey].push(skinKey);
+      } else if (type === 'skill') {
+        if (!saveData.unlockedSkills.includes(key)) saveData.unlockedSkills.push(key);
+      }
+      saveGameData(); updateCoinDisplay(); renderShop();
+      return true;
+    }
+
+    function renderShop() {
+      const content = document.getElementById('shopContent');
+      if (!content) return;
+      updateCoinDisplay();
+      document.querySelectorAll('[data-shop-tab]').forEach(btn => {
+        const active = btn.dataset.shopTab === currentShopTab;
+        btn.className = `shop-tab rounded-xl py-2 px-1 text-xs font-black ${active ? 'bg-pink-600 text-white' : 'bg-slate-800 text-slate-200'}`;
+      });
+      const card = (title, desc, action, extra='') => `<div class="rounded-xl border border-slate-700 bg-slate-800/80 p-3 flex items-center justify-between gap-3"><div class="min-w-0"><div class="font-black text-sm text-white">${title}</div><div class="text-[11px] text-slate-300 mt-1">${desc}</div>${extra}</div><div class="shrink-0">${action}</div></div>`;
+      const btn = (label, action, disabled=false) => `<button type="button" data-shop-action="${action}" ${disabled?'disabled':''} class="rounded-lg px-3 py-2 text-[11px] font-black ${disabled?'bg-slate-700 text-slate-400':'bg-pink-600 hover:bg-pink-500 text-white'}">${label}</button>`;
+      if (currentShopTab === 'skins') {
+        content.innerHTML = SKIN_COLORS.map(c => {
+          const owned = saveData.unlockedSkins.includes(c.hex), active = selectedSkinColor === c.hex;
+          const action = owned ? (active ? btn('使用中','noop',true) : btn('使用',`equip-skin:${c.hex}`)) : btn('200 💰 購買',`buy-skin:${c.hex}`);
+          return card(`<span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${c.hex};margin-right:6px"></span>${c.name}`, `${c.hex} · ${owned?'已解鎖':'未解鎖'}`, action);
+        }).join('');
+      } else if (currentShopTab === 'guns') {
+        const weaponKeys = Object.keys(WEAPONS).filter(key => WEAPONS[key].exclusiveTo);
+        content.innerHTML = weaponKeys.map(key => {
+          const w = WEAPONS[key], owned = saveData.unlockedGunSkins[key] || [], equipped = saveData.currentGunSkin[key] || null;
+          const options = [{id:'base',name:'原色',color:w.color,price:0}, {id:'gold',...GUN_SKINS.gold}, {id:'shadow',...GUN_SKINS.shadow}];
+          const choices = options.map(opt => {
+            const isActive = (opt.id === 'base' && !equipped) || equipped === opt.id;
+            const has = opt.id === 'base' || owned.includes(opt.id);
+            let a = isActive ? btn('使用中','noop',true) : has ? btn('使用',`equip-gun:${key}:${opt.id}`) : btn(`${opt.price} 💰 購買`,`buy-gun:${key}:${opt.id}`);
+            return `<div class="flex items-center justify-between gap-2 rounded-lg bg-slate-900/80 p-2"><span class="text-xs text-slate-200"><i style="display:inline-block;width:10px;height:10px;background:${opt.color};border-radius:3px;margin-right:6px"></i>${opt.name}${has?' · 已解鎖':' · 未解鎖'}</span>${a}</div>`;
+          }).join('');
+          return `<div class="rounded-xl border border-slate-700 bg-slate-800/80 p-3"><div class="font-black text-sm text-white mb-2">${w.icon} ${w.name}</div><div class="space-y-2">${choices}</div></div>`;
+        }).join('');
+      } else {
+        const general = GENERAL_SKILL_IDS.map(id => ({id,skill:SKILLS[id]}));
+        const exclusive = Object.values(CLASS_EXCLUSIVE_SKILLS).flat().filter((id,i,arr)=>arr.indexOf(id)===i).map(id=>({id,skill:SKILLS[id]}));
+        const renderSkill = ({id,skill}) => {
+          if (!skill) return '';
+          const owned = saveData.unlockedSkills.includes(id), price = skill.slot === 'exclusive' ? 500 : 300;
+          const action = owned ? btn('已擁有','noop',true) : btn(`${price} 💰 解鎖`,`buy-skill:${id}`);
+          return card(`${skill.icon} ${skill.name}`, `${skill.desc} · ${owned?'已解鎖':`${price} 金幣`}`, action);
+        };
+        content.innerHTML = `<h3 class="text-sm font-black text-cyan-300">通用技能</h3>${general.map(renderSkill).join('')}<h3 class="text-sm font-black text-amber-300 pt-2">專屬技能</h3>${exclusive.map(renderSkill).join('')}`;
+      }
+    }
+
+    function openShop() {
+      const modal = document.getElementById('shopModal'); if (!modal) return;
+      currentShopTab = 'skins'; modal.classList.remove('hidden'); document.body.classList.add('modal-open'); renderShop();
+    }
+    function closeShop() {
+      const modal = document.getElementById('shopModal'); if (modal) modal.classList.add('hidden');
+      const otherModalOpen = ['upgradeModal','waitingRoomOverlay','tutorialOverlay'].some(id => { const el=document.getElementById(id); return el && !el.classList.contains('hidden') && getComputedStyle(el).display !== 'none'; });
+      if (!otherModalOpen && !gameRunning) document.body.classList.add('modal-open');
+      else if (!otherModalOpen) document.body.classList.remove('modal-open');
+    }
+    function handleShopAction(action) {
+      const parts = action.split(':');
+      if (parts[0] === 'buy-skin') {
+        if (purchaseItem('skin', parts.slice(1).join(':'), 200)) { initSkinColorPicker(); }
+      } else if (parts[0] === 'equip-skin') {
+        const color = parts.slice(1).join(':'); if (saveData.unlockedSkins.includes(color)) { selectedSkinColor=color; saveData.currentSkinColor=color; saveGameData(); initSkinColorPicker(); renderShop(); }
+      } else if (parts[0] === 'buy-gun') {
+        const weaponKey=parts[1], skinKey=parts[2]; if (GUN_SKINS[skinKey]) purchaseItem('gunSkin', `${weaponKey}:${skinKey}`, GUN_SKINS[skinKey].price);
+      } else if (parts[0] === 'equip-gun') {
+        const weaponKey=parts[1], skinKey=parts[2];
+        if (skinKey === 'base') { saveData.currentGunSkin[weaponKey]=null; saveGameData(); renderShop(); }
+        else if ((saveData.unlockedGunSkins[weaponKey]||[]).includes(skinKey)) { saveData.currentGunSkin[weaponKey]=skinKey; saveGameData(); renderShop(); }
+      } else if (parts[0] === 'buy-skill') {
+        const id=parts.slice(1).join(':'), sk=SKILLS[id]; if (sk) { const price=sk.slot==='exclusive'?500:300; if (purchaseItem('skill',id,price)) initSkillPickers(); }
+      }
     }
 
     function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
@@ -4261,6 +4465,17 @@
     window.addEventListener('mouseup', (e) => { if (e.button === 0) isMouseDown = false; });
 
     window.addEventListener('DOMContentLoaded', () => {
+      loadSaveData();
+      updateCoinDisplay();
+      const shopBtn = document.getElementById('shopBtn');
+      if (shopBtn) shopBtn.addEventListener('pointerup', openShop);
+      const shopCloseBtn = document.getElementById('shopCloseBtn');
+      if (shopCloseBtn) shopCloseBtn.addEventListener('pointerup', closeShop);
+      const shopModal = document.getElementById('shopModal');
+      if (shopModal) shopModal.addEventListener('pointerup', (e) => { if (e.target === shopModal) closeShop(); });
+      const shopContent = document.getElementById('shopContent');
+      if (shopContent) shopContent.addEventListener('pointerup', (e) => { const b=e.target.closest('[data-shop-action]'); if (b && !b.disabled) handleShopAction(b.dataset.shopAction); });
+      document.querySelectorAll('[data-shop-tab]').forEach(btn => btn.addEventListener('pointerup', () => { currentShopTab=btn.dataset.shopTab; renderShop(); }));
       // 防止手機雙擊縮放
       let lastTouchEnd = 0;
 
