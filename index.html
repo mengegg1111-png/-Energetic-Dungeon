@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>元氣地牢:金錢與商城</title>
+  <title>元氣地牢:抽卡與鑽石</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- PeerJS CDN -->
@@ -245,6 +245,7 @@
   <div id="hud" class="absolute top-4 left-4 z-20 flex flex-col gap-2.5 pointer-events-none hidden max-w-[280px] sm:max-w-xs">
     <div class="glass-panel px-3 py-1.5 rounded-xl border border-amber-500/40 text-amber-300 font-black text-xs shadow-lg">
       <span id="hudCoinDisplay">💰 0</span>
+      <span id="hudDiamondDisplay">💎 0</span>
     </div>
     <!-- 玩家資訊卡片 -->
     <div class="glass-panel p-3 rounded-2xl border border-slate-700/60 shadow-xl flex flex-col gap-2 pointer-events-auto">
@@ -451,6 +452,7 @@
       </div>
 
       <div id="coinDisplay" class="text-amber-400 font-black text-sm text-center">💰 0</div>
+      <div id="diamondDisplay" class="text-cyan-300 font-black text-sm text-center">💎 0</div>
 
       <!-- 遊戲模式按鈕 -->
       <div class="flex flex-col gap-2 pt-1">
@@ -459,6 +461,9 @@
         </button>
         <button id="shopBtn" type="button" class="w-full bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white font-bold py-2 rounded-2xl text-xs shadow-lg active:scale-95 transition-all">
           🛒 商店
+        </button>
+        <button id="gachaBtn" type="button" class="w-full bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-bold py-2 rounded-2xl text-xs shadow-lg active:scale-95 transition-all">
+          🎴 抽卡
         </button>
         <button id="singlePlayerBtn" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black py-2.5 rounded-2xl text-sm shadow-xl active:scale-95 transition-all">
           🎮 單人快速開始
@@ -660,6 +665,39 @@
       <div id="shopContent" class="overflow-y-auto p-3 space-y-3"></div>
     </div>
   </div>
+
+  <div id="gachaModal" class="hidden fixed inset-0 z-50 bg-slate-950/95 backdrop-blur-sm flex items-center justify-center p-3">
+    <div class="w-full max-w-4xl max-h-[94vh] overflow-hidden flex flex-col rounded-2xl border border-violet-500/50 bg-slate-900 shadow-2xl">
+      <div class="flex items-center justify-between gap-3 p-3 border-b border-slate-700">
+        <div><h2 class="text-lg font-black text-violet-300">🎴 形狀召喚</h2><div id="gachaDiamondDisplay" class="text-cyan-300 text-xs font-bold">💎 0</div></div>
+        <button id="gachaCloseBtn" type="button" class="px-3 py-2 rounded-xl bg-slate-800 text-white text-sm font-bold">✕ 關閉</button>
+      </div>
+      <div class="grid grid-cols-3 gap-2 p-3 border-b border-slate-700">
+        <button type="button" data-gacha-pool="east" class="rounded-xl py-2 px-1 text-xs font-black bg-violet-600 text-white">🏯 東方池</button>
+        <button type="button" data-gacha-pool="west" class="rounded-xl py-2 px-1 text-xs font-black bg-slate-800 text-slate-200">🏰 西方池</button>
+        <button type="button" data-gacha-pool="sci" class="rounded-xl py-2 px-1 text-xs font-black bg-slate-800 text-slate-200">🚀 科幻池</button>
+      </div>
+      <div id="gachaShapeList" class="overflow-y-auto p-3 grid grid-cols-2 sm:grid-cols-4 gap-2"></div>
+      <div class="p-3 border-t border-slate-700 space-y-2">
+        <div id="gachaPityDisplay" class="text-center text-xs text-slate-300">距離稀有保底：0 / 10　｜　距離傳說保底：0 / 50</div>
+        <div class="grid grid-cols-2 gap-2"><button id="gachaPullOneBtn" type="button" class="rounded-xl py-2.5 bg-violet-600 hover:bg-violet-500 text-white text-sm font-black">🎴 單抽（3 鑽）</button><button id="gachaPullTenBtn" type="button" class="rounded-xl py-2.5 bg-fuchsia-600 hover:bg-fuchsia-500 text-white text-sm font-black">✨ 十連（27 鑽）</button></div>
+      </div>
+    </div>
+  </div>
+  <div id="gachaResultModal" class="hidden fixed inset-0 z-[60] bg-slate-950/95 backdrop-blur-sm flex items-center justify-center p-3">
+    <div class="w-full max-w-3xl rounded-2xl border border-violet-400/50 bg-slate-900 p-4 shadow-2xl">
+      <div id="gachaSpinView" class="py-10 text-center"><div class="gacha-spinner mx-auto mb-4"></div><div class="text-violet-200 font-black">命運轉動中……</div></div>
+      <div id="gachaResultsView" class="hidden"><h3 class="text-center text-lg font-black text-violet-200 mb-3">🎉 召喚結果</h3><div id="gachaResultsGrid" class="grid grid-cols-2 sm:grid-cols-5 gap-2"></div><button id="gachaResultConfirmBtn" type="button" class="mt-4 w-full rounded-xl bg-violet-600 hover:bg-violet-500 py-2.5 font-black text-white">確定</button></div>
+    </div>
+  </div>
+
+  <style>
+    .gacha-spinner{width:56px;height:56px;border:6px solid #334155;border-top-color:#c084fc;border-right-color:#f0abfc;border-radius:50%;animation:gachaSpin 0.7s linear infinite}
+    @keyframes gachaSpin{to{transform:rotate(360deg)}}
+    .gacha-card{min-height:92px;border:2px solid #64748b;border-radius:12px;padding:8px;text-align:center;background:rgba(15,23,42,.85)}
+    .gacha-card.rarity-common{border-color:#e2e8f0}.gacha-card.rarity-rare{border-color:#60a5fa;box-shadow:0 0 8px #3b82f655}.gacha-card.rarity-legend{border-color:#facc15;box-shadow:0 0 16px #facc1588}
+    .gacha-locked{filter:grayscale(1);opacity:.58}
+  </style>
 
   <script>
     // ===== 除錯模式相關全域變數與監聽邏輯 =====
@@ -1091,6 +1129,13 @@
     const SAVE_KEY = 'zombieGameSave_v1';
     let saveData = {
       coins: 0,
+      diamonds: 0,
+      unlockedShapes: ['circle'],
+      currentShape: 'circle',
+      pityCounter: 0,
+      pityLegendCounter: 0,
+      multiplayerWave5DiamondClaimed: false,
+      multiplayerDiamondWavesClaimed: [],
       unlockedSkins: ['#38bdf8', '#f59e0b', '#10b981', '#ec4899'],
       unlockedGunSkins: {},
       unlockedSkills: [],
@@ -1108,16 +1153,39 @@
           const parsed = JSON.parse(raw);
           saveData = { ...saveData, ...parsed };
           saveData.stats = { ...saveData.stats, ...(parsed.stats || {}) };
+          if (typeof saveData.diamonds !== 'number' || !Number.isFinite(saveData.diamonds) || saveData.diamonds < 0) saveData.diamonds = 0;
+          if (!Array.isArray(saveData.unlockedShapes)) saveData.unlockedShapes = ['circle'];
+          if (!saveData.unlockedShapes.includes('circle')) saveData.unlockedShapes.unshift('circle');
+          saveData.unlockedShapes = saveData.unlockedShapes.filter(id => id === 'circle' || (typeof id === 'string' && id in (typeof SHAPES !== 'undefined' ? SHAPES : {})));
+          if (typeof saveData.currentShape !== 'string' || !saveData.currentShape) saveData.currentShape = 'circle';
+          if (!saveData.unlockedShapes.includes(saveData.currentShape)) saveData.currentShape = 'circle';
+          if (!Number.isFinite(saveData.pityCounter) || saveData.pityCounter < 0) saveData.pityCounter = 0;
+          if (!Number.isFinite(saveData.pityLegendCounter) || saveData.pityLegendCounter < 0) saveData.pityLegendCounter = 0;
+          if (typeof saveData.multiplayerWave5DiamondClaimed !== 'boolean') saveData.multiplayerWave5DiamondClaimed = false;
+          if (!Array.isArray(saveData.multiplayerDiamondWavesClaimed)) saveData.multiplayerDiamondWavesClaimed = saveData.multiplayerWave5DiamondClaimed ? [5] : [];
+          saveData.multiplayerDiamondWavesClaimed = saveData.multiplayerDiamondWavesClaimed.filter(w => Number.isInteger(w) && w > 0 && w % 5 === 0);
           if (!Array.isArray(saveData.unlockedSkins)) saveData.unlockedSkins = ['#38bdf8', '#f59e0b', '#10b981', '#ec4899'];
           if (!saveData.unlockedGunSkins || typeof saveData.unlockedGunSkins !== 'object') saveData.unlockedGunSkins = {};
           if (!Array.isArray(saveData.unlockedSkills)) saveData.unlockedSkills = [];
           if (!saveData.currentGunSkin || typeof saveData.currentGunSkin !== 'object') saveData.currentGunSkin = {};
         }
         if (!Array.isArray(saveData.unlockedSkills)) saveData.unlockedSkills = [];
+        if (typeof saveData.diamonds !== 'number' || !Number.isFinite(saveData.diamonds) || saveData.diamonds < 0) saveData.diamonds = 0;
+        if (!Array.isArray(saveData.unlockedShapes)) saveData.unlockedShapes = ['circle'];
+        if (!saveData.unlockedShapes.includes('circle')) saveData.unlockedShapes.unshift('circle');
+        saveData.unlockedShapes = saveData.unlockedShapes.filter(id => id === 'circle' || (typeof id === 'string' && id in (typeof SHAPES !== 'undefined' ? SHAPES : {})));
+        if (typeof saveData.currentShape !== 'string' || !saveData.currentShape) saveData.currentShape = 'circle';
+        if (!saveData.unlockedShapes.includes(saveData.currentShape)) saveData.currentShape = 'circle';
+        if (!Number.isFinite(saveData.pityCounter) || saveData.pityCounter < 0) saveData.pityCounter = 0;
+        if (!Number.isFinite(saveData.pityLegendCounter) || saveData.pityLegendCounter < 0) saveData.pityLegendCounter = 0;
+        if (typeof saveData.multiplayerWave5DiamondClaimed !== 'boolean') saveData.multiplayerWave5DiamondClaimed = false;
+        if (!Array.isArray(saveData.multiplayerDiamondWavesClaimed)) saveData.multiplayerDiamondWavesClaimed = saveData.multiplayerWave5DiamondClaimed ? [5] : [];
+        saveData.multiplayerDiamondWavesClaimed = saveData.multiplayerDiamondWavesClaimed.filter(w => Number.isInteger(w) && w > 0 && w % 5 === 0);
         STARTER_SKILL_IDS.forEach(id => { if (!saveData.unlockedSkills.includes(id)) saveData.unlockedSkills.push(id); });
         if (!Array.isArray(saveData.unlockedSkins)) saveData.unlockedSkins = ['#38bdf8', '#f59e0b', '#10b981', '#ec4899'];
         if (typeof saveData.currentSkinColor === 'string' && saveData.unlockedSkins.includes(saveData.currentSkinColor)) selectedSkinColor = saveData.currentSkinColor;
         saveGameData();
+        updateDiamondDisplay();
       } catch(e) { console.error('load save failed', e); }
     }
     function saveGameData() {
@@ -1132,6 +1200,13 @@
       if (hudEl) hudEl.innerText = `💰 ${saveData.coins}`;
       const shopEl = document.getElementById('shopCoinDisplay');
       if (shopEl) shopEl.innerText = `💰 ${saveData.coins}`;
+    }
+    function updateDiamondDisplay() {
+      const amount = Number.isFinite(saveData.diamonds) ? saveData.diamonds : 0;
+      const el = document.getElementById('diamondDisplay');
+      if (el) el.innerText = `💎 ${amount}`;
+      const hudEl = document.getElementById('hudDiamondDisplay');
+      if (hudEl) hudEl.innerText = `💎 ${amount}`;
     }
 
     let waveStartKillCount = 0;
@@ -2025,9 +2100,11 @@
         if (localStorage.getItem(dailyKey) !== 'true') {
           localStorage.setItem(dailyKey, 'true');
           saveData.coins += 200;
+          saveData.diamonds += 10;
           saveGameData();
           updateCoinDisplay();
-          showDebugToast('🎉 每日挑戰通關！獲得 200 金幣');
+          updateDiamondDisplay();
+          showDebugToast('🎉 每日挑戰通關！獲得 200 金幣與 10 鑽石');
         }
         createFloatingText(0, -200, '🎉 今日挑戰通關！成就已達成！', '#f59e0b', 28);
         playSound('levelup');
@@ -2760,6 +2837,15 @@
         hasStartedWave = true;
         currentWaveKills = 0;
         waveStartKillCount = saveData.stats.totalKills;
+      }
+      if (currentWave > 0 && currentWave % 5 === 0 && isSinglePlayer === false && !saveData.multiplayerDiamondWavesClaimed.includes(currentWave)) {
+        saveData.diamonds += 5;
+        saveData.multiplayerDiamondWavesClaimed.push(currentWave);
+        // 舊欄位保留以相容舊存檔；第 5 波領取狀態同步更新。
+        if (currentWave === 5) saveData.multiplayerWave5DiamondClaimed = true;
+        saveGameData();
+        updateDiamondDisplay();
+        showDebugToast(`💎 多人模式達到第 ${currentWave} 波，獲得 5 鑽石`);
       }
       const playerCount = Math.max(1, Object.keys(players).length);
       zombiesToSpawn = Math.round((12 + currentWave * 6) * (1 + (playerCount - 1) * 0.5));
@@ -3663,6 +3749,164 @@
       renderDarknessAndLightingOverlay(darkFactor);
     }
 
+    // ===== 抽卡形狀系統：第一批（東方池） =====
+    const SHAPES = {
+      samurai: { name: '武士', rarity: 'common', pool: 'east' },
+      ninja: { name: '忍者', rarity: 'common', pool: 'east' },
+      taoist: { name: '道士', rarity: 'common', pool: 'east' },
+      foxSpirit: { name: '狐妖', rarity: 'rare', pool: 'east' },
+      swordsman: { name: '劍客', rarity: 'rare', pool: 'east' },
+      monk: { name: '僧侶', rarity: 'rare', pool: 'east' },
+      dragonoid: { name: '龍人', rarity: 'legend', pool: 'east' },
+      knight: { name: '騎士', rarity: 'common', pool: 'west' },
+      wizard: { name: '巫師', rarity: 'common', pool: 'west' },
+      druid: { name: '德魯伊', rarity: 'common', pool: 'west' },
+      angel: { name: '天使', rarity: 'rare', pool: 'west' },
+      werewolf: { name: '狼人', rarity: 'rare', pool: 'west' },
+      vampire: { name: '吸血鬼', rarity: 'rare', pool: 'west' },
+      demon: { name: '惡魔', rarity: 'legend', pool: 'west' },
+      robot: { name: '機器人', rarity: 'common', pool: 'sci' },
+      spaceMarine: { name: '太空兵', rarity: 'common', pool: 'sci' },
+      cyborg: { name: '改造人', rarity: 'common', pool: 'sci' },
+      alien: { name: '外星人', rarity: 'rare', pool: 'sci' },
+      aiCore: { name: 'AI', rarity: 'rare', pool: 'sci' },
+      mechaDragon: { name: '機械龍', rarity: 'rare', pool: 'sci' },
+      starWarrior: { name: '星際戰士', rarity: 'legend', pool: 'sci' },
+      circle: { name: '圓形', rarity: 'common', pool: 'default' }
+    };
+
+    function drawShapeBody(ctx, shapeId, radius, fillColor) {
+      ctx.save();
+      ctx.fillStyle = fillColor;
+      ctx.strokeStyle = '#0f172a';
+      ctx.lineWidth = 2;
+      const polygon = (pts) => { ctx.beginPath(); ctx.moveTo(pts[0][0],pts[0][1]); pts.slice(1).forEach(pt=>ctx.lineTo(pt[0],pt[1])); ctx.closePath(); ctx.fill(); ctx.stroke(); };
+      if (shapeId === 'samurai') {
+        ctx.beginPath(); ctx.arc(0, 1, radius * .88, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#991b1b'; ctx.fillRect(-radius*.62,-radius*.72,radius*1.24,5);
+        ctx.fillStyle = '#cbd5e1'; ctx.fillRect(-radius*.38,-radius*1.02,radius*.76,5);
+        ctx.fillStyle = '#f8fafc'; ctx.fillRect(-radius*.18,-2,radius*.36,3);
+      } else if (shapeId === 'ninja') {
+        ctx.beginPath(); ctx.arc(0,0,radius*.9,0,Math.PI*2); ctx.fill(); ctx.stroke();
+        ctx.fillStyle='#111827'; ctx.fillRect(-radius*.72,-radius*.2,radius*1.44,radius*.32);
+        ctx.fillStyle='#f8fafc'; ctx.fillRect(radius*.12,-radius*.12,3,2); ctx.fillRect(-radius*.28,-radius*.12,3,2);
+        ctx.fillStyle='#dc2626'; polygon([[-radius*.5,-radius*.7],[-radius*.1,-radius*1.03],[radius*.48,-radius*.62]]);
+      } else if (shapeId === 'taoist') {
+        ctx.beginPath(); ctx.arc(0,0,radius*.88,0,Math.PI*2); ctx.fill(); ctx.stroke();
+        ctx.fillStyle='#fef3c7'; ctx.fillRect(-radius*.4,-radius*1.08,radius*.8,6);
+        ctx.fillStyle='#facc15'; ctx.fillRect(-3,-radius*.8,6,5);
+        ctx.strokeStyle='#fef3c7'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(-radius*.8,radius*.35); ctx.lineTo(-radius*.35,radius*.72); ctx.stroke();
+      } else if (shapeId === 'foxSpirit') {
+        polygon([[-radius*.75,-radius*.2],[-radius*.72,-radius*1.05],[-radius*.12,-radius*.65],[radius*.15,-radius*.68],[radius*.72,-radius*1.05],[radius*.76,-radius*.2],[radius*.62,radius*.5],[0,radius*.9],[-radius*.62,radius*.5]]);
+        ctx.fillStyle='#fff7ed'; ctx.beginPath(); ctx.arc(0,0,radius*.45,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle='#fef3c7'; ctx.fillRect(-radius*.24,-2,3,3); ctx.fillRect(radius*.13,-2,3,3);
+      } else if (shapeId === 'swordsman') {
+        polygon([[-radius*.78,-radius*.25],[-radius*.42,-radius*.8],[radius*.38,-radius*.8],[radius*.78,-radius*.2],[radius*.6,radius*.55],[0,radius*.85],[-radius*.6,radius*.55]]);
+        ctx.fillStyle='#e2e8f0'; ctx.fillRect(-radius*.16,-radius*.65,radius*.32,radius*.5);
+        ctx.fillStyle='#f8fafc'; ctx.fillRect(-radius*.08,-radius*.58,radius*.16,radius*.36);
+      } else if (shapeId === 'monk') {
+        ctx.beginPath(); ctx.arc(0,0,radius*.88,0,Math.PI*2); ctx.fill(); ctx.stroke();
+        ctx.fillStyle='#b45309'; ctx.beginPath(); ctx.arc(0,-radius*.25,radius*.74,Math.PI,Math.PI*2); ctx.fill();
+        ctx.strokeStyle='#fbbf24'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(0,0,radius*.55,0,Math.PI*2); ctx.stroke();
+      } else if (shapeId === 'dragonoid') {
+        polygon([[-radius*.8,-radius*.1],[-radius*.72,-radius*.65],[-radius*.25,-radius*.45],[0,-radius*.85],[radius*.25,-radius*.45],[radius*.72,-radius*.65],[radius*.8,-radius*.1],[radius*.55,radius*.58],[0,radius*.9],[-radius*.55,radius*.58]]);
+        ctx.fillStyle='#fef08a'; ctx.fillRect(-radius*.34,-radius*.2,4,3); ctx.fillRect(radius*.15,-radius*.2,4,3);
+        ctx.fillStyle='#7f1d1d'; ctx.fillRect(-radius*.45,radius*.35,radius*.9,3);
+      } else if (shapeId === 'knight') {
+        polygon([[-radius*.72,-radius*.25],[-radius*.62,-radius*.72],[0,-radius*.92],[radius*.62,-radius*.72],[radius*.72,-radius*.25],[radius*.55,radius*.62],[0,radius*.85],[-radius*.55,radius*.62]]);
+        ctx.fillStyle='#cbd5e1'; ctx.fillRect(-radius*.42,-radius*.3,radius*.84,5); ctx.fillStyle='#f8fafc'; ctx.fillRect(-2,-radius*.62,4,radius*.8);
+      } else if (shapeId === 'wizard') {
+        ctx.beginPath(); ctx.arc(0,radius*.12,radius*.76,0,Math.PI*2); ctx.fill(); ctx.stroke();
+        ctx.fillStyle='#312e81'; polygon([[-radius*.75,-radius*.35],[0,-radius*1.12],[radius*.75,-radius*.35]]);
+        ctx.fillStyle='#fde68a'; ctx.beginPath(); ctx.arc(0,-radius*.52,2.5,0,Math.PI*2); ctx.fill();
+      } else if (shapeId === 'druid') {
+        polygon([[-radius*.75,-radius*.05],[-radius*.4,-radius*.72],[0,-radius*.5],[radius*.4,-radius*.72],[radius*.75,-radius*.05],[radius*.55,radius*.65],[0,radius*.85],[-radius*.55,radius*.65]]);
+        ctx.fillStyle='#86efac'; ctx.beginPath(); ctx.ellipse(0,-radius*.12,radius*.25,radius*.5,-.45,0,Math.PI*2); ctx.fill();
+      } else if (shapeId === 'angel') {
+        ctx.beginPath(); ctx.arc(0,0,radius*.76,0,Math.PI*2); ctx.fill(); ctx.stroke();
+        ctx.fillStyle='#f8fafc'; polygon([[-radius*.45,-radius*.15],[-radius*1.02,-radius*.65],[-radius*.82,radius*.18],[-radius*.38,radius*.4]]);
+        polygon([[radius*.45,-radius*.15],[radius*1.02,-radius*.65],[radius*.82,radius*.18],[radius*.38,radius*.4]]);
+        ctx.strokeStyle='#fde68a';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,-radius*.78,radius*.25,0,Math.PI*2);ctx.stroke();
+      } else if (shapeId === 'werewolf') {
+        polygon([[-radius*.78,-radius*.2],[-radius*.82,-radius*.9],[-radius*.25,-radius*.62],[radius*.25,-radius*.62],[radius*.82,-radius*.9],[radius*.78,-radius*.2],[radius*.58,radius*.55],[0,radius*.86],[-radius*.58,radius*.55]]);
+        ctx.fillStyle='#fef3c7';ctx.fillRect(-radius*.42,-radius*.1,4,3);ctx.fillRect(radius*.22,-radius*.1,4,3);
+      } else if (shapeId === 'vampire') {
+        polygon([[-radius*.72,-radius*.35],[-radius*.5,-radius*.8],[0,-radius*.55],[radius*.5,-radius*.8],[radius*.72,-radius*.35],[radius*.58,radius*.55],[0,radius*.82],[-radius*.58,radius*.55]]);
+        ctx.fillStyle='#f8fafc';polygon([[-radius*.3,radius*.18],[-radius*.12,radius*.18],[-radius*.2,radius*.42]]);polygon([[radius*.12,radius*.18],[radius*.3,radius*.18],[radius*.2,radius*.42]]);
+      } else if (shapeId === 'demon') {
+        polygon([[-radius*.8,-radius*.05],[-radius*.95,-radius*.95],[-radius*.3,-radius*.55],[0,-radius*.72],[radius*.3,-radius*.55],[radius*.95,-radius*.95],[radius*.8,-radius*.05],[radius*.55,radius*.6],[0,radius*.9],[-radius*.55,radius*.6]]);
+        ctx.fillStyle='#fca5a5';ctx.fillRect(-radius*.4,-radius*.15,5,3);ctx.fillRect(radius*.15,-radius*.15,5,3);
+      } else if (shapeId === 'robot') {
+        ctx.fillStyle=fillColor;ctx.fillRect(-radius*.72,-radius*.72,radius*1.44,radius*1.44);ctx.strokeRect(-radius*.72,-radius*.72,radius*1.44,radius*1.44);
+        ctx.fillStyle='#67e8f9';ctx.fillRect(-radius*.42,-radius*.22,radius*.28,4);ctx.fillRect(radius*.14,-radius*.22,radius*.28,4);ctx.fillStyle='#334155';ctx.fillRect(-radius*.25,radius*.3,radius*.5,3);
+      } else if (shapeId === 'spaceMarine') {
+        polygon([[-radius*.72,-radius*.35],[-radius*.5,-radius*.82],[radius*.5,-radius*.82],[radius*.72,-radius*.35],[radius*.58,radius*.55],[0,radius*.82],[-radius*.58,radius*.55]]);
+        ctx.fillStyle='#bae6fd';ctx.fillRect(-radius*.4,-radius*.25,radius*.8,5);ctx.fillStyle='#f8fafc';ctx.fillRect(-3,-radius*.58,6,3);
+      } else if (shapeId === 'cyborg') {
+        ctx.beginPath();ctx.arc(0,0,radius*.85,0,Math.PI*2);ctx.fill();ctx.stroke();
+        ctx.fillStyle='#94a3b8';ctx.fillRect(-radius*.78,-radius*.12,radius*1.56,radius*.34);ctx.fillStyle='#22d3ee';ctx.fillRect(-radius*.3,-radius*.08,radius*.6,3);
+        ctx.strokeStyle='#cbd5e1';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-radius*.45,-radius*.7);ctx.lineTo(-radius*.2,-radius*.95);ctx.moveTo(radius*.45,-radius*.7);ctx.lineTo(radius*.2,-radius*.95);ctx.stroke();
+      } else if (shapeId === 'alien') {
+        ctx.beginPath();ctx.ellipse(0,0,radius*.7,radius*.95,0,0,Math.PI*2);ctx.fill();ctx.stroke();
+        ctx.fillStyle='#111827';ctx.beginPath();ctx.ellipse(-radius*.28,-radius*.12,radius*.2,radius*.32,-.25,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.ellipse(radius*.28,-radius*.12,radius*.2,radius*.32,.25,0,Math.PI*2);ctx.fill();
+      } else if (shapeId === 'aiCore') {
+        polygon([[0,-radius*.95],[radius*.75,-radius*.45],[radius*.75,radius*.45],[0,radius*.95],[-radius*.75,radius*.45],[-radius*.75,-radius*.45]]);
+        ctx.fillStyle='#e0f2fe';ctx.beginPath();ctx.arc(0,0,radius*.32,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#38bdf8';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,radius*.52,0,Math.PI*2);ctx.stroke();
+      } else if (shapeId === 'mechaDragon') {
+        polygon([[-radius*.8,-radius*.1],[-radius*.72,-radius*.65],[-radius*.25,-radius*.45],[0,-radius*.85],[radius*.25,-radius*.45],[radius*.72,-radius*.65],[radius*.8,-radius*.1],[radius*.55,radius*.58],[0,radius*.9],[-radius*.55,radius*.58]]);
+        ctx.fillStyle='#cbd5e1';ctx.fillRect(-radius*.5,-radius*.25,radius,4);ctx.fillStyle='#f97316';ctx.fillRect(-radius*.28,-radius*.05,5,3);ctx.fillRect(radius*.12,-radius*.05,5,3);
+      } else if (shapeId === 'starWarrior') {
+        polygon([[0,-radius*.95],[radius*.24,-radius*.28],[radius*.88,-radius*.28],[radius*.36,radius*.12],[radius*.56,radius*.82],[0,radius*.4],[-radius*.56,radius*.82],[-radius*.36,radius*.12],[-radius*.88,-radius*.28],[-radius*.24,-radius*.28]]);
+        ctx.fillStyle='#fde68a';ctx.beginPath();ctx.arc(0,0,radius*.24,0,Math.PI*2);ctx.fill();
+      } else {
+        ctx.beginPath(); ctx.arc(0,0,radius,0,Math.PI*2); ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    function drawShapeGunDecor(ctx, shapeId, radius, weapon, fillColor) {
+      ctx.save();
+      if (shapeId === 'samurai' || shapeId === 'swordsman') {
+        ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(radius*.35, radius*.55); ctx.lineTo(radius+4, -radius*.8); ctx.stroke();
+        ctx.strokeStyle = '#92400e'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(radius*.1,radius*.45); ctx.lineTo(radius*.55,radius*.1); ctx.stroke();
+      } else if (shapeId === 'ninja') {
+        ctx.strokeStyle='#cbd5e1';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-radius*.8,radius*.65);ctx.lineTo(-radius*.45,radius*.3);ctx.stroke();
+      } else if (shapeId === 'taoist') {
+        ctx.strokeStyle='#fbbf24';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-radius*.65,-radius*.25);ctx.lineTo(-radius*.85,radius*.7);ctx.stroke();
+      } else if (shapeId === 'foxSpirit') {
+        ctx.fillStyle='#fff7ed';[-1,0,1].forEach((n)=>{ctx.beginPath();ctx.arc(-radius*.8+n*3,radius*.65+n*2,2,0,Math.PI*2);ctx.fill();});
+      } else if (shapeId === 'monk') {
+        ctx.strokeStyle='#fbbf24';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(-radius*.8,-radius*.3);ctx.lineTo(-radius*.9,radius*.7);ctx.stroke();
+      } else if (shapeId === 'dragonoid') {
+        ctx.fillStyle='#f97316';ctx.beginPath();ctx.moveTo(-radius*.5,-radius*.6);ctx.lineTo(-radius-3,-radius*.9);ctx.lineTo(-radius*.6,-radius*.1);ctx.fill();
+      } else if (shapeId === 'knight') {
+        ctx.strokeStyle='#cbd5e1';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(-radius*.4,radius*.3);ctx.lineTo(-radius*.8,radius+3);ctx.stroke();
+      } else if (shapeId === 'wizard') {
+        ctx.strokeStyle='#c4b5fd';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-radius*.65,-radius*.1);ctx.lineTo(-radius*.9,radius*.75);ctx.stroke();ctx.fillStyle='#fde68a';ctx.beginPath();ctx.arc(-radius*.65,-radius*.1,3,0,Math.PI*2);ctx.fill();
+      } else if (shapeId === 'druid') {
+        ctx.strokeStyle='#86efac';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-radius*.7,radius*.1);ctx.lineTo(-radius*.9,radius*.85);ctx.stroke();
+      } else if (shapeId === 'angel') {
+        ctx.strokeStyle='#fef3c7';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-radius*.6,radius*.4);ctx.lineTo(-radius*.95,radius*.85);ctx.stroke();
+      } else if (shapeId === 'werewolf') {
+        ctx.strokeStyle='#e2e8f0';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(radius*.55,radius*.25);ctx.lineTo(radius+3,-radius*.35);ctx.stroke();
+      } else if (shapeId === 'vampire') {
+        ctx.strokeStyle='#b91c1c';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-radius*.55,radius*.35);ctx.lineTo(-radius*.95,radius*.8);ctx.stroke();
+      } else if (shapeId === 'demon') {
+        ctx.strokeStyle='#fb7185';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(-radius*.4,radius*.35);ctx.lineTo(-radius-3,radius*.8);ctx.stroke();
+      } else if (shapeId === 'robot' || shapeId === 'cyborg' || shapeId === 'aiCore') {
+        ctx.strokeStyle='#67e8f9';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-radius*.5,radius*.5);ctx.lineTo(-radius*.9,radius*.9);ctx.stroke();
+      } else if (shapeId === 'spaceMarine') {
+        ctx.strokeStyle='#94a3b8';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(-radius*.45,radius*.45);ctx.lineTo(-radius*.9,radius*.85);ctx.stroke();
+      } else if (shapeId === 'alien') {
+        ctx.fillStyle='#a7f3d0';ctx.beginPath();ctx.arc(-radius*.8,radius*.55,2,0,Math.PI*2);ctx.arc(-radius*.95,radius*.7,2,0,Math.PI*2);ctx.fill();
+      } else if (shapeId === 'mechaDragon') {
+        ctx.strokeStyle='#f97316';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(-radius*.45,radius*.35);ctx.lineTo(-radius-2,radius*.7);ctx.stroke();
+      } else if (shapeId === 'starWarrior') {
+        ctx.strokeStyle='#fde68a';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(-radius*.45,radius*.35);ctx.lineTo(-radius-2,radius*.8);ctx.stroke();
+      }
+      ctx.restore();
+    }
+
     function drawPlayerCharacter(p) {
       ctx.save();
       ctx.translate(p.x, p.y);
@@ -3701,12 +3945,12 @@
       ctx.save();
       ctx.rotate(angle);
 
-      ctx.fillStyle = p.color || '#38bdf8';
-      ctx.shadowColor = p.color || '#38bdf8';
+      const shapeId = SHAPES[saveData.currentShape] ? saveData.currentShape : 'circle';
+      const bodyColor = p.color || '#38bdf8';
+      ctx.fillStyle = bodyColor;
+      ctx.shadowColor = bodyColor;
       ctx.shadowBlur = 10;
-      ctx.beginPath();
-      ctx.arc(0, 0, radius, 0, Math.PI * 2);
-      ctx.fill();
+      drawShapeBody(ctx, shapeId, radius, bodyColor);
       ctx.shadowBlur = 0;
 
       const weapon = WEAPONS[p.weapon];
@@ -3739,6 +3983,7 @@
       ctx.fillRect(2, -5, 6, 10);
       ctx.fillStyle = p.color || '#38bdf8';
       ctx.fillRect(4, -3, 3, 6);
+      drawShapeGunDecor(ctx, shapeId, radius, weapon, bodyColor);
 
       ctx.restore();
 
@@ -4393,6 +4638,7 @@
 
     function openShop() {
       const modal = document.getElementById('shopModal'); if (!modal) return;
+      const gachaModal = document.getElementById('gachaModal'); if (gachaModal) gachaModal.classList.add('hidden');
       currentShopTab = 'skins'; modal.classList.remove('hidden'); document.body.classList.add('modal-open'); renderShop();
     }
     function closeShop() {
@@ -4464,11 +4710,138 @@
 
     window.addEventListener('mouseup', (e) => { if (e.button === 0) isMouseDown = false; });
 
+    // ===== 抽卡系統：三池 UI、保底與重複兌換 =====
+    let currentGachaPool = 'east';
+    let gachaPendingResults = [];
+    const GACHA_POOL_NAMES = { east: '東方池', west: '西方池', sci: '科幻池' };
+    const GACHA_RARITY_NAMES = { common: '普通', rare: '稀有', legend: '傳說' };
+    const GACHA_RARITY_EMOJI = { common: '⚪', rare: '🔷', legend: '🌟' };
+
+    function updateGachaDisplay() {
+      const amount = Number.isFinite(saveData.diamonds) ? saveData.diamonds : 0;
+      const top = document.getElementById('gachaDiamondDisplay'); if (top) top.textContent = `💎 ${amount}`;
+      updateDiamondDisplay();
+      const pity = document.getElementById('gachaPityDisplay');
+      if (pity) pity.textContent = `距離稀有保底：${Math.min(saveData.pityCounter,10)} / 10　｜　距離傳說保底：${Math.min(saveData.pityLegendCounter,50)} / 50`;
+    }
+
+    function renderGachaPool() {
+      const list = document.getElementById('gachaShapeList'); if (!list) return;
+      list.innerHTML = '';
+      document.querySelectorAll('[data-gacha-pool]').forEach(btn => {
+        const active = btn.dataset.gachaPool === currentGachaPool;
+        btn.className = `rounded-xl py-2 px-1 text-xs font-black ${active ? 'bg-violet-600 text-white' : 'bg-slate-800 text-slate-200'}`;
+      });
+      const poolEntries = Object.entries(SHAPES).filter(([id, shape]) => shape.pool === currentGachaPool);
+      if (!poolEntries.length) { list.innerHTML = `<div class="col-span-full rounded-xl border border-slate-700 bg-slate-800/70 p-6 text-center text-sm text-slate-300">此卡池的角色尚未加入，請等待後續階段更新。</div>`; updateGachaDisplay(); return; }
+      poolEntries.forEach(([id, shape]) => {
+        const unlocked = saveData.unlockedShapes.includes(id);
+        const equipped = saveData.currentShape === id;
+        const rarityClass = `rarity-${shape.rarity}`;
+        const card = document.createElement('button'); card.type='button';
+        card.className = `gacha-card ${rarityClass} ${unlocked ? '' : 'gacha-locked'}`;
+        card.dataset.shapeAction = unlocked ? `equip:${id}` : `locked:${id}`;
+        card.innerHTML = `<div class="text-2xl">${unlocked ? (equipped ? '⭐' : '🧍') : '🔒'}</div><div class="font-black text-sm">${shape.name}</div><div class="text-[10px] text-slate-300">${GACHA_RARITY_EMOJI[shape.rarity]} ${GACHA_RARITY_NAMES[shape.rarity]}</div><div class="text-[10px] ${equipped ? 'text-emerald-300' : 'text-slate-400'}">${equipped ? '使用中' : unlocked ? '點擊使用' : '尚未解鎖'}</div>`;
+        list.appendChild(card);
+      });
+      updateGachaDisplay();
+    }
+
+    function openGacha() {
+      const modal=document.getElementById('gachaModal'); if (!modal) return;
+      const shop=document.getElementById('shopModal'); if(shop) shop.classList.add('hidden');
+      modal.classList.remove('hidden'); document.body.classList.add('modal-open');
+      currentGachaPool='east'; renderGachaPool();
+    }
+    function closeGacha() {
+      const modal=document.getElementById('gachaModal'); if(modal) modal.classList.add('hidden');
+      const result=document.getElementById('gachaResultModal'); if(result) result.classList.add('hidden');
+      const otherModalOpen=['shopModal','upgradeModal','waitingRoomOverlay','tutorialOverlay'].some(id=>{const el=document.getElementById(id);return el&&!el.classList.contains('hidden')&&getComputedStyle(el).display!=='none';});
+      if(!otherModalOpen) document.body.classList.remove('modal-open');
+    }
+
+    function pullOneInternal(poolId) {
+      saveData.pityCounter = (Number(saveData.pityCounter) || 0) + 1;
+      saveData.pityLegendCounter = (Number(saveData.pityLegendCounter) || 0) + 1;
+      let rarity;
+      if (saveData.pityLegendCounter >= 50) rarity = 'legend';
+      else if (saveData.pityCounter >= 10) rarity = Math.random() < 0.17 ? 'legend' : 'rare';
+      else { const roll=Math.random(); rarity=roll<0.05?'legend':roll<0.30?'rare':'common'; }
+      const poolShapes=Object.entries(SHAPES).filter(([id,sh])=>sh.pool===poolId);
+      let candidates=poolShapes.filter(([id,sh])=>sh.rarity===rarity).map(([id])=>id);
+      if (!candidates.length) {
+        const fallback = rarity==='legend' ? 'rare' : 'common';
+        candidates=poolShapes.filter(([id,sh])=>sh.rarity===fallback).map(([id])=>id);
+        rarity=fallback;
+      }
+      if (!candidates.length) return null;
+      const shapeId=candidates[Math.floor(Math.random()*candidates.length)];
+      if (rarity==='rare'||rarity==='legend') saveData.pityCounter=0;
+      if (rarity==='legend') saveData.pityLegendCounter=0;
+      let isNew=false, coinReward=0;
+      if (saveData.unlockedShapes.includes(shapeId)) {
+        coinReward=rarity==='common'?50:rarity==='rare'?150:500;
+        saveData.coins += coinReward;
+      } else { saveData.unlockedShapes.push(shapeId); isNew=true; }
+      return {shapeId,rarity,isNew,coinReward};
+    }
+
+    function pullOne(poolId) {
+      if (!Object.values(SHAPES).some(sh => sh.pool === poolId)) { showDebugToast('此卡池尚未開放'); return null; }
+      if (saveData.diamonds < 3) { showDebugToast('💎 鑽石不足'); return null; }
+      saveData.diamonds -= 3;
+      const result=pullOneInternal(poolId);
+      saveGameData(); updateDiamondDisplay(); updateCoinDisplay(); updateGachaDisplay();
+      if (result) renderGachaPool();
+      return result;
+    }
+
+    function pullTen(poolId) {
+      if (!Object.values(SHAPES).some(sh => sh.pool === poolId)) { showDebugToast('此卡池尚未開放'); return []; }
+      if (saveData.diamonds < 27) { showDebugToast('💎 鑽石不足（需要 27）'); return []; }
+      saveData.diamonds -= 27;
+      const results=[];
+      for(let i=0;i<10;i++){ const r=pullOneInternal(poolId); if(r) results.push(r); }
+      saveGameData(); updateDiamondDisplay(); updateCoinDisplay(); updateGachaDisplay(); renderGachaPool();
+      return results;
+    }
+
+    function showGachaResults(results) {
+      gachaPendingResults=results.filter(Boolean);
+      const modal=document.getElementById('gachaResultModal');
+      const spin=document.getElementById('gachaSpinView'); const resultView=document.getElementById('gachaResultsView');
+      const grid=document.getElementById('gachaResultsGrid'); if(!modal||!spin||!resultView||!grid) return;
+      grid.innerHTML=''; spin.classList.remove('hidden'); resultView.classList.add('hidden'); modal.classList.remove('hidden');
+      setTimeout(()=>{
+        spin.classList.add('hidden'); resultView.classList.remove('hidden');
+        gachaPendingResults.forEach(r=>{
+          const shape=SHAPES[r.shapeId]; const card=document.createElement('div');
+          card.className=`gacha-card rarity-${r.rarity}`;
+          card.innerHTML=`<div class="text-2xl">${r.isNew?'✨':'🧍'}</div><div class="font-black text-sm">${shape?shape.name:r.shapeId}</div><div class="text-[10px]">${GACHA_RARITY_EMOJI[r.rarity]} ${GACHA_RARITY_NAMES[r.rarity]}</div><div class="text-[10px] ${r.isNew?'text-emerald-300':'text-amber-300'}">${r.isNew?'新解鎖！':`重複 +${r.coinReward} 金幣`}</div>`;
+          grid.appendChild(card);
+        });
+      },1000);
+    }
+
+    function handleGachaPull(count) {
+      const results=count===10?pullTen(currentGachaPool):[pullOne(currentGachaPool)].filter(Boolean);
+      if(results.length) showGachaResults(results);
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
       loadSaveData();
       updateCoinDisplay();
+      updateDiamondDisplay();
       const shopBtn = document.getElementById('shopBtn');
       if (shopBtn) shopBtn.addEventListener('pointerup', openShop);
+      const gachaBtn=document.getElementById('gachaBtn'); if(gachaBtn) gachaBtn.addEventListener('pointerup', openGacha);
+      const gachaCloseBtn=document.getElementById('gachaCloseBtn'); if(gachaCloseBtn) gachaCloseBtn.addEventListener('pointerup', closeGacha);
+      const gachaModal=document.getElementById('gachaModal'); if(gachaModal) gachaModal.addEventListener('pointerup',e=>{if(e.target===gachaModal) closeGacha();});
+      document.querySelectorAll('[data-gacha-pool]').forEach(btn=>btn.addEventListener('pointerup',()=>{currentGachaPool=btn.dataset.gachaPool;renderGachaPool();}));
+      const gachaList=document.getElementById('gachaShapeList'); if(gachaList) gachaList.addEventListener('pointerup',e=>{const card=e.target.closest('[data-shape-action]');if(!card)return;const [action,id]=card.dataset.shapeAction.split(':');if(action==='equip'){saveData.currentShape=id;saveGameData();renderGachaPool();}else showDebugToast('🔒 尚未解鎖，請透過抽卡取得');});
+      const pullOneBtn=document.getElementById('gachaPullOneBtn'); if(pullOneBtn) pullOneBtn.addEventListener('pointerup',()=>handleGachaPull(1));
+      const pullTenBtn=document.getElementById('gachaPullTenBtn'); if(pullTenBtn) pullTenBtn.addEventListener('pointerup',()=>handleGachaPull(10));
+      const resultConfirm=document.getElementById('gachaResultConfirmBtn'); if(resultConfirm) resultConfirm.addEventListener('pointerup',()=>{const r=document.getElementById('gachaResultModal');if(r)r.classList.add('hidden');renderGachaPool();});
       const shopCloseBtn = document.getElementById('shopCloseBtn');
       if (shopCloseBtn) shopCloseBtn.addEventListener('pointerup', closeShop);
       const shopModal = document.getElementById('shopModal');
