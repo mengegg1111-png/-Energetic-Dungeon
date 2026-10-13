@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>元氣地牢:抽卡與鑽石(2)</title>
+  <title>元氣地牢:抽卡與黑夜</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- PeerJS CDN -->
@@ -2329,7 +2329,7 @@
       if (progress < 0.15) { const t = progress / 0.15; overlayColor = `rgba(245, 158, 11, ${0.2 * (1 - t)})`; darkFactor = 0.2 * (1 - t); }
       else if (progress >= 0.15 && progress < 0.42) { overlayColor = 'rgba(0, 0, 0, 0)'; darkFactor = 0; }
       else if (progress >= 0.42 && progress < 0.5) { const t = (progress - 0.42) / 0.08; overlayColor = `rgba(239, 68, 68, ${0.35 * t})`; darkFactor = 0.5 * t; }
-      else if (progress >= 0.5 && progress < 0.92) { overlayColor = 'rgba(15, 23, 42, 0.75)'; darkFactor = 1.0; }
+      else if (progress >= 0.5 && progress < 0.92) { overlayColor = 'rgba(15, 23, 42, 0.42)'; darkFactor = 1.0; }
       else { const t = (progress - 0.92) / 0.08; overlayColor = `rgba(245, 158, 11, ${0.25 * (1 - t)})`; darkFactor = 1.0 * (1 - t); }
       if (currentWeather === 'bloodmoon') overlayColor = 'rgba(153, 27, 27, 0.65)';
       return { overlayColor, darkFactor, progress };
@@ -2349,17 +2349,18 @@
 
       const maskCanvas = document.createElement('canvas'); maskCanvas.width = canvas.width; maskCanvas.height = canvas.height;
       const maskCtx = maskCanvas.getContext('2d');
-      let baseAlpha = 0.92 * darkFactor; if (currentWeather === 'bloodmoon') baseAlpha = 0.82;
-      maskCtx.fillStyle = `rgba(5, 9, 15, ${Math.min(0.96, baseAlpha)})`; maskCtx.fillRect(0, 0, canvas.width, canvas.height);
+      // 夜晚提高環境亮度，但縮小玩家照明範圍，保留視野受限的壓迫感。
+      let baseAlpha = 0.72 * darkFactor; if (currentWeather === 'bloodmoon') baseAlpha = 0.76;
+      maskCtx.fillStyle = `rgba(5, 9, 15, ${Math.min(0.82, baseAlpha)})`; maskCtx.fillRect(0, 0, canvas.width, canvas.height);
       maskCtx.globalCompositeOperation = 'destination-out';
 
       activePlayers.forEach(p => {
         const screenX = p.x - camera.x, screenY = p.y - camera.y;
-        let lightRadius = 200 + flashLightIntensity; if (currentWeather === 'fog') lightRadius *= 0.7;
+        let lightRadius = 145 + flashLightIntensity; if (currentWeather === 'fog') lightRadius *= 0.7;
         if (!isFinite(screenX) || !isFinite(screenY) || !isFinite(lightRadius)) return;
-        const radGrad = maskCtx.createRadialGradient(screenX, screenY, lightRadius * 0.2, screenX, screenY, lightRadius * 1.6);
-        radGrad.addColorStop(0, 'rgba(0, 0, 0, 1.0)'); radGrad.addColorStop(0.6, 'rgba(0, 0, 0, 0.85)'); radGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-        maskCtx.fillStyle = radGrad; maskCtx.beginPath(); maskCtx.arc(screenX, screenY, lightRadius * 1.6, 0, Math.PI * 2); maskCtx.fill();
+        const radGrad = maskCtx.createRadialGradient(screenX, screenY, lightRadius * 0.15, screenX, screenY, lightRadius * 1.35);
+        radGrad.addColorStop(0, 'rgba(0, 0, 0, 1.0)'); radGrad.addColorStop(0.55, 'rgba(0, 0, 0, 0.72)'); radGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        maskCtx.fillStyle = radGrad; maskCtx.beginPath(); maskCtx.arc(screenX, screenY, lightRadius * 1.35, 0, Math.PI * 2); maskCtx.fill();
       });
 
       ctx.save(); ctx.drawImage(maskCanvas, 0, 0); ctx.restore();
