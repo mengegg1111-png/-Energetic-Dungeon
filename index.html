@@ -3,13 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>元氣地牢:抽卡與黑夜</title>
+  <title>元氣地牢:登陸系統？</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- PeerJS CDN -->
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
   <!-- MQTT CDN -->
   <script src="https://unpkg.com/mqtt@4.3.7/dist/mqtt.min.js"></script>
+  <!-- Firebase CDN -->
+  <script src="https://www.gstatic.com/firebasejs/13.0.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/13.0.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/13.0.0/firebase-database-compat.js"></script>
 <style>
   body {
     margin: 0;
@@ -396,6 +400,26 @@
   </div>
 
   <!-- 主選單 Modal -->
+  <div id="loginScreen" class="absolute inset-0 z-50 bg-slate-950/95 backdrop-blur-lg flex items-center justify-center p-4">
+    <div class="glass-panel p-8 rounded-3xl border border-slate-700 shadow-2xl max-w-sm w-full flex flex-col gap-4 text-center">
+      <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-amber-400 to-emerald-400 tracking-wider">
+        2D 殭屍倖存者
+      </h1>
+      <p class="text-xs text-slate-400">選擇登入方式</p>
+
+      <button id="googleLoginBtn" type="button" class="w-full bg-white hover:bg-gray-100 text-slate-900 font-bold py-3 rounded-2xl text-sm shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2">
+        <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.9 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 8 3.1l5.7-5.7C34.5 6.1 29.5 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.3-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 8 3.1l5.7-5.7C34.5 6.1 29.5 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.3 0-9.7-3.1-11.3-8l-6.5 5C9.6 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4-4.1 5.6l6.2 5.2C41.1 35.6 44 30.2 44 24c0-1.3-.1-2.3-.4-3.5z"/></svg>
+        Google 登入
+      </button>
+
+      <button id="guestLoginBtn" type="button" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold py-3 rounded-2xl text-sm shadow-lg active:scale-95 transition-all border border-slate-700">
+        👤 訪客登入
+      </button>
+
+      <p id="loginStatusText" class="text-xs text-slate-400 hidden"></p>
+    </div>
+  </div>
+
   <div id="mainMenu" class="absolute inset-0 bg-slate-950/90 backdrop-blur-md flex flex-col items-center p-3 sm:p-4 z-30 overflow-y-auto custom-scrollbar" style="padding-top: max(16px, env(safe-area-inset-top)); padding-bottom: max(16px, env(safe-area-inset-bottom));">
     <div class="max-w-xl w-full glass-panel p-5 sm:p-6 rounded-3xl shadow-2xl flex flex-col gap-3.5 border border-slate-700/60 text-center my-auto">
       <div class="flex flex-col items-center gap-1">
@@ -465,6 +489,7 @@
         <button id="gachaBtn" type="button" class="w-full bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-bold py-2 rounded-2xl text-xs shadow-lg active:scale-95 transition-all">
           🎴 抽卡
         </button>
+        <div id="loginStatusDisplay" class="text-xs text-slate-400 mt-1"></div>
         <button id="singlePlayerBtn" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black py-2.5 rounded-2xl text-sm shadow-xl active:scale-95 transition-all">
           🎮 單人快速開始
         </button>
@@ -700,6 +725,22 @@
   </style>
 
   <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBdH_SV3XnGJ3Z0ze13Wz_jBBYFLeHCxJk",
+      authDomain: "mengegg-824e9.firebaseapp.com",
+      databaseURL: "https://mengegg-824e9-default-rtdb.firebaseio.com/",
+      projectId: "mengegg-824e9",
+      storageBucket: "mengegg-824e9.firebasestorage.app",
+      messagingSenderId: "946224913734",
+      appId: "1:946224913734:web:ed51f90db64609cc6fd947"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.database();
+    let isGuestMode = true;
+    let currentFirebaseUid = null;
+    let firebaseLoginInProgress = false;
     // ===== 除錯模式相關全域變數與監聽邏輯 =====
     let isDebugMode = false;
     let debugTimer = null;
@@ -1197,6 +1238,12 @@
       try {
         localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
       } catch(e) { console.error('save failed', e); }
+
+      if (!isGuestMode && currentFirebaseUid) {
+        try {
+          db.ref('saves/' + currentFirebaseUid).set(saveData).catch(e => console.error('cloud save failed', e));
+        } catch(e) { console.error('cloud save failed', e); }
+      }
     }
     function updateCoinDisplay() {
       const el = document.getElementById('coinDisplay');
@@ -4877,10 +4924,135 @@
       if(results.length) showGachaResults(results);
     }
 
+    function updateLoginStatusDisplay() {
+      const el = document.getElementById('loginStatusDisplay');
+      if (!el) return;
+      if (isGuestMode || !currentFirebaseUid) {
+        el.innerHTML = '👤 訪客模式（存檔僅本機）';
+        return;
+      }
+      el.innerHTML = '✅ 已登入 Google <button id="logoutBtn" type="button" class="ml-2 px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700">登出</button>';
+      const logoutBtn = document.getElementById('logoutBtn');
+      if (logoutBtn) logoutBtn.addEventListener('pointerup', () => {
+        auth.signOut().then(() => {
+          location.reload();
+        }).catch(err => {
+          console.error('sign out failed', err);
+          showDebugToast('登出失敗');
+        });
+      });
+    }
+
+    function finishLoginUI() {
+      const loginScreen = document.getElementById('loginScreen');
+      const mainMenu = document.getElementById('mainMenu');
+      if (loginScreen) loginScreen.classList.add('hidden');
+      if (mainMenu) mainMenu.classList.remove('hidden');
+      updateCoinDisplay();
+      updateDiamondDisplay();
+      if (typeof initSkinColorPicker === 'function') initSkinColorPicker();
+      if (typeof initSkillPickers === 'function') initSkillPickers();
+      if (typeof renderShop === 'function') renderShop();
+      if (typeof updateLoginStatusDisplay === 'function') updateLoginStatusDisplay();
+    }
+
+    function loadCloudSaveForUser(user) {
+      if (!user) return Promise.resolve();
+      currentFirebaseUid = user.uid;
+      isGuestMode = false;
+      return db.ref('saves/' + user.uid).once('value').then(snapshot => {
+        const data = snapshot.val();
+        if (data) {
+          saveData = { ...saveData, ...data };
+          saveData.stats = { ...saveData.stats, ...(data.stats || {}) };
+          if (!Array.isArray(saveData.unlockedSkills)) saveData.unlockedSkills = [];
+          if (!Array.isArray(saveData.unlockedShapes)) saveData.unlockedShapes = ['circle'];
+          if (typeof saveData.currentShape !== 'string' || !saveData.currentShape) saveData.currentShape = 'circle';
+          if (!Array.isArray(saveData.unlockedSkins)) saveData.unlockedSkins = ['#38bdf8', '#f59e0b', '#10b981', '#ec4899'];
+          if (!saveData.unlockedGunSkins || typeof saveData.unlockedGunSkins !== 'object') saveData.unlockedGunSkins = {};
+          if (!saveData.currentGunSkin || typeof saveData.currentGunSkin !== 'object') saveData.currentGunSkin = {};
+          if (typeof saveData.diamonds !== 'number' || !Number.isFinite(saveData.diamonds) || saveData.diamonds < 0) saveData.diamonds = 0;
+          if (!Number.isFinite(saveData.pityCounter) || saveData.pityCounter < 0) saveData.pityCounter = 0;
+          if (!Number.isFinite(saveData.pityLegendCounter) || saveData.pityLegendCounter < 0) saveData.pityLegendCounter = 0;
+        } else {
+          return db.ref('saves/' + user.uid).set(saveData);
+        }
+      });
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
       loadSaveData();
       updateCoinDisplay();
       updateDiamondDisplay();
+
+      const loginScreen = document.getElementById('loginScreen');
+      const mainMenu = document.getElementById('mainMenu');
+      const googleLoginBtn = document.getElementById('googleLoginBtn');
+      const guestLoginBtn = document.getElementById('guestLoginBtn');
+      const loginStatusText = document.getElementById('loginStatusText');
+
+      if (mainMenu) mainMenu.classList.add('hidden');
+      if (loginScreen) loginScreen.classList.remove('hidden');
+
+      if (guestLoginBtn) guestLoginBtn.addEventListener('pointerup', () => {
+        if (firebaseLoginInProgress) return;
+        isGuestMode = true;
+        currentFirebaseUid = null;
+        if (loginStatusText) loginStatusText.classList.add('hidden');
+        finishLoginUI();
+      });
+
+      if (googleLoginBtn) googleLoginBtn.addEventListener('pointerup', () => {
+        if (firebaseLoginInProgress) return;
+        firebaseLoginInProgress = true;
+        googleLoginBtn.disabled = true;
+        googleLoginBtn.classList.add('opacity-50', 'pointer-events-none');
+        const originalText = googleLoginBtn.innerText;
+        googleLoginBtn.innerText = '登入中...';
+        if (loginStatusText) {
+          loginStatusText.innerText = '正在連線 Google...';
+          loginStatusText.classList.remove('hidden', 'text-red-400');
+        }
+
+        const provider = new firebase.auth.GoogleAuthProvider();
+        auth.signInWithPopup(provider).then((result) => {
+          if (!result || !result.user) throw new Error('Google 登入未取得使用者資料');
+          return loadCloudSaveForUser(result.user);
+        }).then(() => {
+          firebaseLoginInProgress = false;
+          googleLoginBtn.disabled = false;
+          googleLoginBtn.classList.remove('opacity-50', 'pointer-events-none');
+          googleLoginBtn.innerText = originalText;
+          if (loginStatusText) loginStatusText.classList.add('hidden');
+          finishLoginUI();
+        }).catch((err) => {
+          console.error('Google login failed', err);
+          firebaseLoginInProgress = false;
+          googleLoginBtn.disabled = false;
+          googleLoginBtn.classList.remove('opacity-50', 'pointer-events-none');
+          googleLoginBtn.innerText = originalText;
+          if (loginStatusText) {
+            loginStatusText.innerText = '登入失敗：' + (err && err.message ? err.message : '未知錯誤');
+            loginStatusText.classList.remove('hidden');
+            loginStatusText.classList.add('text-red-400');
+          }
+        });
+      });
+
+      auth.onAuthStateChanged((user) => {
+        if (!user || firebaseLoginInProgress) return;
+        loadCloudSaveForUser(user).then(() => {
+          finishLoginUI();
+        }).catch(err => {
+          console.error('cloud load failed', err);
+          if (loginStatusText) {
+            loginStatusText.innerText = '雲端存檔讀取失敗，請稍後再試。';
+            loginStatusText.classList.remove('hidden');
+            loginStatusText.classList.add('text-red-400');
+          }
+        });
+      });
+
       const shopBtn = document.getElementById('shopBtn');
       if (shopBtn) shopBtn.addEventListener('pointerup', openShop);
       const gachaBtn=document.getElementById('gachaBtn'); if(gachaBtn) gachaBtn.addEventListener('pointerup', openGacha);
