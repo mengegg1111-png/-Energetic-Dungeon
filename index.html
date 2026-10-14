@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>元氣地牢:大廳與鑽石</title>
+  <title>元氣地牢:大廳修復</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- PeerJS CDN -->
@@ -26,6 +26,34 @@
     touch-action: none;
     height: 100dvh;
   }
+  /* 多人等待大廳：手機觸控滾動修復 */
+  #lobbyScreen {
+    touch-action: pan-y !important;
+    overflow: hidden !important;
+    min-height: 0 !important;
+  }
+  #lobbyScreen > div:nth-child(2) {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-y !important;
+    overscroll-behavior-y: contain;
+    pointer-events: auto !important;
+  }
+  #lobbyPlayerList {
+    touch-action: pan-y !important;
+    -webkit-overflow-scrolling: touch;
+    overflow-y: visible;
+    pointer-events: auto !important;
+  }
+  #lobbyScreen > div:first-child,
+  #lobbyScreen > div:last-child,
+  #lobbySettings {
+    flex-shrink: 0 !important;
+  }
+
   canvas {
     display: block;
   }
@@ -4576,6 +4604,7 @@
       const mainMenu = document.getElementById('mainMenu');
       if (mainMenu) mainMenu.classList.add('hidden');
       document.body.classList.add('modal-open');
+      document.body.style.touchAction = 'pan-y';
 
       const codeEl = document.getElementById('lobbyRoomCode');
       if (codeEl) codeEl.innerText = myHostRoomCode || hostPeerIdStore?.replace(/^dungeon_/, '') || '------';
@@ -4614,6 +4643,7 @@
       const customize = document.getElementById('lobbyCustomizeModal');
       if (customize) { customize.classList.add('hidden'); customize.classList.remove('flex'); }
       document.body.classList.remove('modal-open');
+      document.body.style.touchAction = 'none';
     }
 
     function updateReadyButton() {
