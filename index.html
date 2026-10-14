@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>元氣地牢:登陸系統？</title>
+  <title>元氣地牢:登陸系統</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- PeerJS CDN -->
@@ -489,7 +489,7 @@
         <button id="gachaBtn" type="button" class="w-full bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-bold py-2 rounded-2xl text-xs shadow-lg active:scale-95 transition-all">
           🎴 抽卡
         </button>
-        <div id="loginStatusDisplay" class="text-xs text-slate-400 mt-1"></div>
+        <div id="loginStatusDisplay" class="flex flex-col gap-2 mt-2"></div>
         <button id="singlePlayerBtn" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black py-2.5 rounded-2xl text-sm shadow-xl active:scale-95 transition-all">
           🎮 單人快速開始
         </button>
@@ -530,6 +530,90 @@
       <button id="debugModeToggleBtn" type="button" class="w-full bg-slate-800 border border-red-500/40 text-red-400 text-xs py-1.5 rounded-xl hover:bg-slate-700 transition-all active:scale-95">
         🐞 除錯模式（整場有效）
       </button>
+    </div>
+  </div>
+
+  <!-- Among Us 式多人等待大廳 -->
+  <div id="lobbyScreen" class="absolute inset-0 z-40 bg-slate-950/95 backdrop-blur-lg hidden flex-col">
+    <div class="p-4 flex items-center justify-between border-b border-slate-800">
+      <div class="flex items-center gap-3">
+        <span class="text-sm font-black text-amber-400">房間：</span>
+        <span id="lobbyRoomCode" class="text-lg font-black text-white font-mono tracking-widest">------</span>
+      </div>
+      <button id="leaveLobbyBtn" type="button" class="bg-red-950/60 hover:bg-red-900 text-red-300 font-bold px-3 py-1.5 rounded-xl text-xs border border-red-500/40">
+        🚪 離開
+      </button>
+    </div>
+
+    <div class="flex-1 overflow-y-auto p-4">
+      <div class="text-xs text-slate-400 font-bold mb-2">玩家列表</div>
+      <div id="lobbyPlayerList" class="flex flex-col gap-2"></div>
+    </div>
+
+    <div id="lobbySettings" class="p-4 border-t border-slate-800 flex flex-col gap-3">
+      <div class="text-xs text-slate-400 font-bold">房間設定（房主）</div>
+      <div class="grid grid-cols-2 gap-2">
+        <select id="lobbyMapSelect" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"></select>
+        <select id="lobbyDifficultySelect" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+          <option value="easy">簡單</option>
+          <option value="normal" selected>普通</option>
+          <option value="hard">困難</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="p-4 border-t border-slate-800 flex gap-2">
+      <button id="lobbyReadyBtn" type="button" class="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-black py-3 rounded-2xl text-sm active:scale-95 transition-all">
+        準備
+      </button>
+      <button id="lobbyStartBtn" type="button" class="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-black py-3 rounded-2xl text-sm shadow-lg active:scale-95 transition-all opacity-50 pointer-events-none">
+        開始遊戲
+      </button>
+      <button id="lobbyCustomizeBtn" type="button" class="bg-slate-800 hover:bg-slate-700 text-white font-bold px-4 py-3 rounded-2xl text-xs">
+        ⚙️ 自訂
+      </button>
+    </div>
+  </div>
+
+  <!-- 多人自訂 Modal -->
+  <div id="lobbyCustomizeModal" class="absolute inset-0 z-50 bg-slate-950/95 backdrop-blur-lg hidden items-center justify-center p-4">
+    <div class="glass-panel p-5 rounded-3xl border border-cyan-500/30 shadow-2xl max-w-sm w-full flex flex-col gap-3">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-black text-white">⚙️ 玩家自訂</h2>
+        <button id="lobbyCustomizeCloseBtn" type="button" class="text-slate-400 hover:text-white px-2">✕</button>
+      </div>
+      <div class="flex flex-col gap-1">
+        <label class="text-xs font-bold text-slate-300">名字</label>
+        <input id="lobbyNameInput" maxlength="12" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white" />
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <div class="flex flex-col gap-1">
+          <label class="text-xs font-bold text-slate-300">顏色</label>
+          <select id="lobbyColorSelect" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"></select>
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-xs font-bold text-slate-300">形狀</label>
+          <select id="lobbyShapeSelect" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"></select>
+        </div>
+      </div>
+      <div class="flex flex-col gap-1">
+        <label class="text-xs font-bold text-slate-300">職業</label>
+        <select id="lobbyClassSelect" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"></select>
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <div class="flex flex-col gap-1">
+          <label class="text-xs font-bold text-slate-300">專屬技能</label>
+          <select id="lobbyExclusiveSkillSelect" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"></select>
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-xs font-bold text-slate-300">通用技能</label>
+          <select id="lobbyGeneralSkillSelect" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"></select>
+        </div>
+      </div>
+      <div class="flex gap-2 mt-2">
+        <button id="lobbyCustomizeCancelBtn" type="button" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold py-2 rounded-xl text-xs border border-slate-700">取消</button>
+        <button id="lobbyCustomizeConfirmBtn" type="button" class="flex-1 bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-black py-2 rounded-xl text-xs">確定</button>
+      </div>
     </div>
   </div>
 
@@ -1079,6 +1163,8 @@
     let connections = [];
     let hostConn = null;
     let myPlayerId = 'p_' + Math.random().toString(36).substr(2, 6);
+    let hostPlayerId = null;
+    let lobbyDifficulty = 'normal';
     let isHost = true;
     let isSinglePlayer = true;
     let gameRunning = false;
@@ -4384,6 +4470,290 @@
       lastFrameTime = performance.now(); requestAnimationFrame(gameLoop);
     }
 
+    function escapeLobbyText(value) {
+      return String(value ?? '').replace(/[&<>'"]/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' }[ch]));
+    }
+
+    function broadcastLobbyState() {
+      if (!isHost) return;
+      const state = { type: 'LOBBY_STATE', players, hostId: hostPlayerId || myPlayerId };
+      connections.forEach(conn => {
+        if (conn && conn.open) {
+          try { conn.send(state); } catch (e) {}
+        }
+      });
+      renderLobbyPlayerList(players);
+      updateReadyButton();
+      updateStartButton();
+    }
+
+    function renderLobbyPlayerList(playersData) {
+      const list = document.getElementById('lobbyPlayerList');
+      if (!list) return;
+      list.innerHTML = '';
+      Object.values(playersData || {}).forEach(p => {
+        const isHostPlayer = p.id === hostPlayerId;
+        const card = document.createElement('div');
+        card.className = 'flex items-center gap-3 p-3 rounded-2xl bg-slate-900/80 border border-slate-700';
+        const safeColor = (typeof p.color === 'string' && /^#[0-9a-f]{6}$/i.test(p.color)) ? p.color : '#38bdf8';
+        const colorDot = `<div class="w-10 h-10 rounded-full border-2 border-white/30 shrink-0" style="background-color:${safeColor}"></div>`;
+        const clsInfo = CLASSES[p.classId] || CLASSES.assault;
+        const info = `
+          <div class="flex flex-col flex-1 text-left min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="font-bold text-sm text-white truncate">${escapeLobbyText(p.name || '玩家')}</span>
+              ${isHostPlayer ? '<span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-500 text-slate-950 font-black">房主</span>' : ''}
+              ${p.isReady ? '<span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500 text-slate-950 font-black">已準備</span>' : '<span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-700 text-slate-300">未準備</span>'}
+            </div>
+            <div class="text-[11px] text-slate-400">${clsInfo.icon} ${escapeLobbyText(clsInfo.name)}${p.shape && SHAPES[p.shape] ? ` · ${escapeLobbyText(SHAPES[p.shape].name)}` : ''}</div>
+          </div>
+        `;
+        const kickBtn = (isHost && !isHostPlayer)
+          ? `<button type="button" data-kick="${escapeLobbyText(p.id)}" class="text-[10px] px-2 py-1 rounded bg-red-950/60 border border-red-500/40 text-red-300 font-bold shrink-0">踢出</button>`
+          : '';
+        card.innerHTML = colorDot + info + kickBtn;
+        list.appendChild(card);
+      });
+
+      list.querySelectorAll('[data-kick]').forEach(btn => {
+        btn.addEventListener('pointerup', () => {
+          const kickId = btn.dataset.kick;
+          if (!isHost || kickId === myPlayerId) return;
+          const targetConn = connections.find(c => c && c.metadata && c.metadata.playerId === kickId);
+          if (targetConn && targetConn.open) {
+            try { targetConn.send({ type: 'KICKED' }); } catch (e) {}
+            setTimeout(() => { try { targetConn.close(); } catch (e) {} }, 500);
+          }
+          delete players[kickId];
+          if (disconnectTimeoutTimers[kickId]) { clearTimeout(disconnectTimeoutTimers[kickId]); delete disconnectTimeoutTimers[kickId]; }
+          broadcastLobbyState();
+          if (myHostRoomCode) broadcastRoomInfo();
+        });
+      });
+    }
+
+    function openLobby() {
+      const lobby = document.getElementById('lobbyScreen');
+      if (!lobby) return;
+      lobby.classList.remove('hidden');
+      lobby.classList.add('flex');
+      const mainMenu = document.getElementById('mainMenu');
+      if (mainMenu) mainMenu.classList.add('hidden');
+      document.body.classList.add('modal-open');
+
+      const codeEl = document.getElementById('lobbyRoomCode');
+      if (codeEl) codeEl.innerText = myHostRoomCode || hostPeerIdStore?.replace(/^dungeon_/, '') || '------';
+
+      const settings = document.getElementById('lobbySettings');
+      const startBtn = document.getElementById('lobbyStartBtn');
+      if (isHost) {
+        settings?.classList.remove('hidden');
+        startBtn?.classList.remove('hidden');
+      } else {
+        settings?.classList.add('hidden');
+        startBtn?.classList.add('hidden');
+      }
+
+      const mapSelect = document.getElementById('lobbyMapSelect');
+      if (mapSelect && mapSelect.children.length === 0) {
+        MAPS.forEach(m => {
+          const opt = document.createElement('option');
+          opt.value = m.id; opt.innerText = m.name;
+          mapSelect.appendChild(opt);
+        });
+      }
+      if (mapSelect && currentMap) mapSelect.value = currentMap.id;
+      const diffSelect = document.getElementById('lobbyDifficultySelect');
+      if (diffSelect) diffSelect.value = lobbyDifficulty;
+
+      Object.values(players).forEach(p => { if (p.isReady === undefined) p.isReady = false; });
+      renderLobbyPlayerList(players);
+      updateReadyButton();
+      updateStartButton();
+    }
+
+    function closeLobby() {
+      const lobby = document.getElementById('lobbyScreen');
+      if (lobby) { lobby.classList.add('hidden'); lobby.classList.remove('flex'); }
+      const customize = document.getElementById('lobbyCustomizeModal');
+      if (customize) { customize.classList.add('hidden'); customize.classList.remove('flex'); }
+      document.body.classList.remove('modal-open');
+    }
+
+    function updateReadyButton() {
+      const me = players[myPlayerId];
+      const btn = document.getElementById('lobbyReadyBtn');
+      if (!btn || !me) return;
+      if (me.isReady) {
+        btn.innerText = '取消準備';
+        btn.classList.remove('bg-slate-800');
+        btn.classList.add('bg-emerald-700');
+      } else {
+        btn.innerText = '準備';
+        btn.classList.add('bg-slate-800');
+        btn.classList.remove('bg-emerald-700');
+      }
+    }
+
+    function updateStartButton() {
+      const btn = document.getElementById('lobbyStartBtn');
+      if (!btn) return;
+      if (!isHost) { btn.classList.add('hidden'); return; }
+      btn.classList.remove('hidden');
+      const playerList = Object.values(players);
+      const total = playerList.length;
+      const readyCount = playerList.filter(p => p.isReady).length;
+      if (total > 0 && readyCount >= Math.ceil(total / 2)) {
+        btn.classList.remove('opacity-50', 'pointer-events-none');
+      } else {
+        btn.classList.add('opacity-50', 'pointer-events-none');
+      }
+    }
+
+    function populateLobbyCustomize() {
+      const me = players[myPlayerId];
+      if (!me) return;
+      const nameInput = document.getElementById('lobbyNameInput');
+      const colorSelect = document.getElementById('lobbyColorSelect');
+      const shapeSelect = document.getElementById('lobbyShapeSelect');
+      const classSelect = document.getElementById('lobbyClassSelect');
+      const exSelect = document.getElementById('lobbyExclusiveSkillSelect');
+      const genSelect = document.getElementById('lobbyGeneralSkillSelect');
+
+      if (nameInput) nameInput.value = me.name || '玩家';
+      if (colorSelect) {
+        colorSelect.innerHTML = '';
+        SKIN_COLORS.filter(c => saveData.unlockedSkins.includes(c.hex)).forEach(c => {
+          const opt = document.createElement('option'); opt.value = c.hex; opt.innerText = `${c.name} (${c.hex})`; colorSelect.appendChild(opt);
+        });
+        colorSelect.value = saveData.unlockedSkins.includes(me.color) ? me.color : selectedSkinColor;
+      }
+      if (shapeSelect) {
+        shapeSelect.innerHTML = '';
+        (saveData.unlockedShapes || ['circle']).forEach(id => {
+          if (!SHAPES[id]) return;
+          const opt = document.createElement('option'); opt.value = id; opt.innerText = SHAPES[id].name; shapeSelect.appendChild(opt);
+        });
+        shapeSelect.value = (me.shape && saveData.unlockedShapes.includes(me.shape)) ? me.shape : saveData.currentShape;
+      }
+      if (classSelect) {
+        classSelect.innerHTML = '';
+        Object.values(CLASSES).forEach(cls => {
+          const opt = document.createElement('option'); opt.value = cls.id; opt.innerText = `${cls.icon} ${cls.name}`; classSelect.appendChild(opt);
+        });
+        classSelect.value = me.classId || selectedClassId;
+      }
+      const refreshSkillLists = () => {
+        const classId = classSelect?.value || me.classId || 'assault';
+        if (exSelect) {
+          exSelect.innerHTML = '';
+          (CLASS_EXCLUSIVE_SKILLS[classId] || CLASS_EXCLUSIVE_SKILLS.assault).forEach(id => {
+            if (!saveData.unlockedSkills.includes(id) || !SKILLS[id]) return;
+            const opt = document.createElement('option'); opt.value = id; opt.innerText = `${SKILLS[id].icon} ${SKILLS[id].name}`; exSelect.appendChild(opt);
+          });
+          if (!exSelect.children.length) {
+            const fallback = (CLASS_EXCLUSIVE_SKILLS[classId] || CLASS_EXCLUSIVE_SKILLS.assault)[0];
+            if (SKILLS[fallback]) { const opt = document.createElement('option'); opt.value = fallback; opt.innerText = `${SKILLS[fallback].icon} ${SKILLS[fallback].name}`; exSelect.appendChild(opt); }
+          }
+          exSelect.value = (me.exclusiveSkillId && Array.from(exSelect.options).some(o => o.value === me.exclusiveSkillId)) ? me.exclusiveSkillId : exSelect.options[0]?.value || '';
+        }
+        if (genSelect) {
+          genSelect.innerHTML = '';
+          GENERAL_SKILL_IDS.forEach(id => {
+            if (!saveData.unlockedSkills.includes(id) || !SKILLS[id]) return;
+            const opt = document.createElement('option'); opt.value = id; opt.innerText = `${SKILLS[id].icon} ${SKILLS[id].name}`; genSelect.appendChild(opt);
+          });
+          if (!genSelect.children.length && SKILLS.heal) { const opt = document.createElement('option'); opt.value='heal'; opt.innerText=`${SKILLS.heal.icon} ${SKILLS.heal.name}`; genSelect.appendChild(opt); }
+          genSelect.value = (me.generalSkillId && Array.from(genSelect.options).some(o => o.value === me.generalSkillId)) ? me.generalSkillId : genSelect.options[0]?.value || 'heal';
+        }
+      };
+      refreshSkillLists();
+      classSelect?.addEventListener('change', refreshSkillLists, { once: true });
+      // 允許連續切換職業時更新技能清單
+      if (classSelect) classSelect.onchange = refreshSkillLists;
+    }
+
+    function openLobbyCustomize() {
+      populateLobbyCustomize();
+      const modal = document.getElementById('lobbyCustomizeModal');
+      if (modal) { modal.classList.remove('hidden'); modal.classList.add('flex'); }
+      document.body.classList.add('modal-open');
+    }
+
+    function closeLobbyCustomize() {
+      const modal = document.getElementById('lobbyCustomizeModal');
+      if (modal) { modal.classList.add('hidden'); modal.classList.remove('flex'); }
+      const lobby = document.getElementById('lobbyScreen');
+      if (lobby && !lobby.classList.contains('hidden')) document.body.classList.add('modal-open');
+    }
+
+    function applyLobbyCustomize() {
+      const me = players[myPlayerId];
+      if (!me) return;
+      const nameInput = document.getElementById('lobbyNameInput');
+      const colorSelect = document.getElementById('lobbyColorSelect');
+      const shapeSelect = document.getElementById('lobbyShapeSelect');
+      const classSelect = document.getElementById('lobbyClassSelect');
+      const exSelect = document.getElementById('lobbyExclusiveSkillSelect');
+      const genSelect = document.getElementById('lobbyGeneralSkillSelect');
+      const name = (nameInput?.value || '').trim().slice(0, 12) || '玩家';
+      const color = colorSelect?.value || selectedSkinColor;
+      const shape = shapeSelect?.value || 'circle';
+      const classId = classSelect?.value && CLASSES[classSelect.value] ? classSelect.value : 'assault';
+      const allowedEx = CLASS_EXCLUSIVE_SKILLS[classId] || CLASS_EXCLUSIVE_SKILLS.assault;
+      const exclusiveSkillId = exSelect?.value && allowedEx.includes(exSelect.value) && saveData.unlockedSkills.includes(exSelect.value) ? exSelect.value : allowedEx[0];
+      const generalSkillId = genSelect?.value && GENERAL_SKILL_IDS.includes(genSelect.value) && saveData.unlockedSkills.includes(genSelect.value) ? genSelect.value : 'heal';
+
+      const payload = { type: 'PLAYER_CUSTOMIZE', id: myPlayerId, name, color, classId, shape, exclusiveSkillId, generalSkillId };
+      me.name = name; me.color = color; me.classId = classId; me.shape = shape;
+      me.exclusiveSkillId = exclusiveSkillId; me.generalSkillId = generalSkillId;
+      selectedSkinColor = color; selectedClassId = classId; selectedExclusiveSkillId = exclusiveSkillId; selectedGeneralSkillId = generalSkillId;
+      saveData.currentSkinColor = color;
+      saveData.currentShape = shape;
+      saveGameData();
+
+      if (isHost) {
+        broadcastLobbyState();
+      } else if (hostConn && hostConn.open) {
+        try { hostConn.send(payload); } catch (e) {}
+      }
+      closeLobbyCustomize();
+      renderLobbyPlayerList(players);
+      updateReadyButton();
+      updateStartButton();
+    }
+
+    function startMultiplayerGame(mapId, seed, difficulty) {
+      if (!mapId || !MAPS.some(m => m.id === mapId)) mapId = MAPS[0].id;
+      if (!Number.isFinite(Number(seed))) seed = Math.floor(Math.random() * 1000000);
+      lobbyDifficulty = difficulty || lobbyDifficulty || 'normal';
+      isSinglePlayer = false;
+      hasStartedWave = false;
+      showNextWaveButton = false;
+      currentWaveRewardSessionId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+      generateMap(mapId, Number(seed));
+      const me = players[myPlayerId];
+      if (me) {
+        me.isReady = false;
+        const ids = CLASS_EXCLUSIVE_SKILLS[me.classId] || CLASS_EXCLUSIVE_SKILLS.assault;
+        if (!me.exclusiveSkillId || !ids.includes(me.exclusiveSkillId)) me.exclusiveSkillId = ids[0];
+        if (!me.generalSkillId || !GENERAL_SKILL_IDS.includes(me.generalSkillId)) me.generalSkillId = 'heal';
+      }
+      document.getElementById('mainMenu')?.classList.add('hidden');
+      closeLobby();
+      document.body.classList.remove('modal-open');
+      document.getElementById('hud')?.classList.remove('hidden');
+      document.getElementById('chatContainer')?.classList.remove('hidden');
+      document.getElementById('bottomControls')?.classList.remove('hidden');
+      document.getElementById('miniMapContainer')?.classList.remove('hidden');
+      document.getElementById('defenseBarContainer')?.classList.remove('hidden');
+      initBGMSystem();
+      renderWeaponHotbar();
+      gameRunning = true;
+      lastFrameTime = performance.now();
+      requestAnimationFrame(gameLoop);
+    }
+
     function handleNetworkData(data, conn) {
       if (!data || typeof data !== 'object' || typeof data.type !== 'string') return;
 
@@ -4434,10 +4804,65 @@
         const allowedIds = CLASS_EXCLUSIVE_SKILLS[joinedPlayer.classId] || CLASS_EXCLUSIVE_SKILLS.assault;
         joinedPlayer.exclusiveSkillId = (typeof data.exclusiveSkillId === 'string' && allowedIds.includes(data.exclusiveSkillId)) ? data.exclusiveSkillId : allowedIds[0];
         joinedPlayer.generalSkillId = GENERAL_SKILL_IDS.includes(data.generalSkillId) ? data.generalSkillId : 'heal';
+        joinedPlayer.shape = (typeof data.shape === 'string' && SHAPES[data.shape] && saveData.unlockedShapes.includes(data.shape)) ? data.shape : (joinedPlayer.shape || 'circle');
+        joinedPlayer.isReady = false;
         joinedPlayer.skillCooldowns = joinedPlayer.skillCooldowns || { exclusive: 0, general: 0 };
         const connTxt = document.getElementById('connectedPlayersText');
         if (connTxt) connTxt.innerText = `已連接 ${connections.filter(c => c && c.open).length} 位隊友`;
+        broadcastLobbyState();
         broadcastState(); if (myHostRoomCode) broadcastRoomInfo();
+      } else if (data.type === 'LOBBY_READY' && isHost) {
+        const senderId = conn?.metadata?.playerId;
+        if (!senderId || data.id !== senderId || !players[senderId]) return;
+        players[senderId].isReady = !!data.ready;
+        broadcastLobbyState();
+      } else if (data.type === 'PLAYER_CUSTOMIZE' && isHost) {
+        const senderId = conn?.metadata?.playerId;
+        if (!senderId || data.id !== senderId || !players[senderId]) return;
+        const p = players[senderId];
+        const safeName = typeof data.name === 'string' ? data.name.trim().slice(0, 12) : p.name;
+        const safeColor = typeof data.color === 'string' && SKIN_COLORS.some(c => c.hex.toLowerCase() === data.color.toLowerCase()) ? data.color : p.color;
+        const safeClass = data.classId && CLASSES[data.classId] ? data.classId : p.classId;
+        const safeShape = typeof data.shape === 'string' && SHAPES[data.shape] ? data.shape : (p.shape || 'circle');
+        const allowedEx = CLASS_EXCLUSIVE_SKILLS[safeClass] || CLASS_EXCLUSIVE_SKILLS.assault;
+        const safeEx = typeof data.exclusiveSkillId === 'string' && allowedEx.includes(data.exclusiveSkillId) && SKILLS[data.exclusiveSkillId] ? data.exclusiveSkillId : allowedEx[0];
+        const safeGeneral = typeof data.generalSkillId === 'string' && GENERAL_SKILL_IDS.includes(data.generalSkillId) && SKILLS[data.generalSkillId] ? data.generalSkillId : 'heal';
+        p.name = safeName || '玩家'; p.color = safeColor; p.classId = safeClass; p.shape = safeShape;
+        p.exclusiveSkillId = safeEx; p.generalSkillId = safeGeneral;
+        broadcastLobbyState();
+      } else if (data.type === 'LOBBY_START' && !isHost) {
+        hostPlayerId = data.hostId || hostPlayerId;
+        closeLobby();
+        startMultiplayerGame(data.mapId, data.seed, data.difficulty);
+      } else if (data.type === 'KICKED' && !isHost) {
+        showDebugToast('🚫 你已被踢出房間');
+        manualRoomLeave = true;
+        try { if (hostConn) hostConn.close(); } catch (e) {}
+        try { if (peer) peer.destroy(); } catch (e) {}
+        hostConn = null; peer = null; hostPeerIdStore = null; hostPlayerId = null;
+        closeLobby();
+        const joinBtn = document.getElementById('joinRoomBtn');
+        if (joinBtn) { joinBtn.disabled = false; joinBtn.classList.remove('opacity-50', 'pointer-events-none'); }
+        const mainMenu = document.getElementById('mainMenu');
+        if (mainMenu) mainMenu.classList.remove('hidden');
+        document.body.classList.add('modal-open');
+        setTimeout(() => { showDebugToast('🚫 你已被踢出房間'); }, 10);
+      } else if (data.type === 'LOBBY_STATE' && !isHost) {
+        if (!data.players || typeof data.players !== 'object' || Array.isArray(data.players)) return;
+        hostPlayerId = data.hostId || hostPlayerId;
+        players = data.players;
+        const me = players[myPlayerId];
+        if (me) {
+          selectedSkinColor = me.color || selectedSkinColor;
+          selectedClassId = me.classId || selectedClassId;
+          selectedExclusiveSkillId = me.exclusiveSkillId || selectedExclusiveSkillId;
+          selectedGeneralSkillId = me.generalSkillId || selectedGeneralSkillId;
+          if (me.shape && SHAPES[me.shape] && saveData.unlockedShapes.includes(me.shape)) saveData.currentShape = me.shape;
+        }
+        openLobby();
+        renderLobbyPlayerList(players);
+        updateReadyButton();
+        updateStartButton();
       } else if (data.type === 'USE_SKILL' && isHost) {
         const p = players[data.id];
         if (p && typeof data.skillId === 'string' && Number.isFinite(data.angle) && (data.skillId === p.generalSkillId || data.skillId === p.exclusiveSkillId)) { p.angle=data.angle; triggerSkill(data.id,data.skillId,data.angle); broadcastState(); }
@@ -4924,23 +5349,78 @@
       if(results.length) showGachaResults(results);
     }
 
-    function updateLoginStatusDisplay() {
-      const el = document.getElementById('loginStatusDisplay');
-      if (!el) return;
-      if (isGuestMode || !currentFirebaseUid) {
-        el.innerHTML = '👤 訪客模式（存檔僅本機）';
-        return;
-      }
-      el.innerHTML = '✅ 已登入 Google <button id="logoutBtn" type="button" class="ml-2 px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700">登出</button>';
-      const logoutBtn = document.getElementById('logoutBtn');
-      if (logoutBtn) logoutBtn.addEventListener('pointerup', () => {
-        auth.signOut().then(() => {
-          location.reload();
-        }).catch(err => {
-          console.error('sign out failed', err);
-          showDebugToast('登出失敗');
+    function updateLoginStatusUI() {
+      const container = document.getElementById('loginStatusDisplay');
+      if (!container) return;
+      if (isGuestMode) {
+        container.innerHTML = `
+          <div class="text-xs text-slate-400 text-center">👤 訪客模式（存檔僅本機）</div>
+          <button id="upgradeToGoogleBtn" type="button" class="w-full bg-white hover:bg-gray-100 text-slate-900 font-bold py-2 rounded-xl text-xs shadow-md active:scale-95 transition-all">
+            🔗 升級為 Google 帳號
+          </button>
+        `;
+        document.getElementById('upgradeToGoogleBtn')?.addEventListener('pointerup', () => {
+          if (firebaseLoginInProgress) return;
+          firebaseLoginInProgress = true;
+          const btn = document.getElementById('upgradeToGoogleBtn');
+          if (btn) { btn.disabled = true; btn.innerText = '連結 Google 中...'; }
+          const provider = new firebase.auth.GoogleAuthProvider();
+          auth.signInWithPopup(provider).then((result) => {
+            const uid = result.user.uid;
+            return db.ref('saves/' + uid).once('value').then((snapshot) => {
+              const cloud = snapshot.val();
+              if (!cloud) {
+                currentFirebaseUid = uid;
+                isGuestMode = false;
+                return db.ref('saves/' + uid).set(saveData);
+              }
+              saveData.coins = Math.max(saveData.coins || 0, cloud.coins || 0);
+              saveData.diamonds = Math.max(saveData.diamonds || 0, cloud.diamonds || 0);
+              saveData.unlockedSkins = Array.from(new Set([...(saveData.unlockedSkins || []), ...(cloud.unlockedSkins || [])]));
+              saveData.unlockedShapes = Array.from(new Set([...(saveData.unlockedShapes || []), ...(cloud.unlockedShapes || [])]));
+              saveData.unlockedSkills = Array.from(new Set([...(saveData.unlockedSkills || []), ...(cloud.unlockedSkills || [])]));
+              saveData.unlockedGunSkins = { ...(cloud.unlockedGunSkins || {}), ...(saveData.unlockedGunSkins || {}) };
+              Object.keys(saveData.unlockedGunSkins).forEach(k => {
+                saveData.unlockedGunSkins[k] = Array.from(new Set([...(cloud.unlockedGunSkins?.[k] || []), ...(saveData.unlockedGunSkins[k] || [])]));
+              });
+              currentFirebaseUid = uid;
+              isGuestMode = false;
+              return db.ref('saves/' + uid).set(saveData);
+            });
+          }).then(() => {
+            firebaseLoginInProgress = false;
+            updateLoginStatusUI();
+            updateCoinDisplay();
+            updateDiamondDisplay();
+            if (typeof initSkinColorPicker === 'function') initSkinColorPicker();
+            if (typeof initSkillPickers === 'function') initSkillPickers();
+            if (typeof renderShop === 'function') renderShop();
+          }).catch(err => {
+            console.error('升級失敗', err);
+            firebaseLoginInProgress = false;
+            if (btn) { btn.disabled = false; btn.innerText = '🔗 升級為 Google 帳號'; }
+            showDebugToast('Google 帳號連結失敗');
+          });
         });
-      });
+      } else {
+        const user = auth.currentUser;
+        container.innerHTML = `
+          <div class="text-xs text-emerald-400 text-center">✅ 已登入 Google${user ? '：' + escapeLobbyText(user.displayName || user.email || '') : ''}</div>
+          <button id="logoutBtn" type="button" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold py-2 rounded-xl text-xs border border-slate-700 active:scale-95 transition-all">
+            🚪 登出
+          </button>
+        `;
+        document.getElementById('logoutBtn')?.addEventListener('pointerup', () => {
+          auth.signOut().then(() => location.reload()).catch(err => {
+            console.error('sign out failed', err);
+            showDebugToast('登出失敗');
+          });
+        });
+      }
+    }
+
+    function updateLoginStatusDisplay() {
+      updateLoginStatusUI();
     }
 
     function finishLoginUI() {
@@ -4953,7 +5433,7 @@
       if (typeof initSkinColorPicker === 'function') initSkinColorPicker();
       if (typeof initSkillPickers === 'function') initSkillPickers();
       if (typeof renderShop === 'function') renderShop();
-      if (typeof updateLoginStatusDisplay === 'function') updateLoginStatusDisplay();
+      if (typeof updateLoginStatusUI === 'function') updateLoginStatusUI();
     }
 
     function loadCloudSaveForUser(user) {
@@ -5000,6 +5480,7 @@
         currentFirebaseUid = null;
         if (loginStatusText) loginStatusText.classList.add('hidden');
         finishLoginUI();
+        updateLoginStatusUI();
       });
 
       if (googleLoginBtn) googleLoginBtn.addEventListener('pointerup', () => {
@@ -5043,6 +5524,7 @@
         if (!user || firebaseLoginInProgress) return;
         loadCloudSaveForUser(user).then(() => {
           finishLoginUI();
+          updateLoginStatusUI();
         }).catch(err => {
           console.error('cloud load failed', err);
           if (loginStatusText) {
@@ -5224,20 +5706,97 @@
         startGame(true);
       };
 
+      const lobbyReadyBtn = document.getElementById('lobbyReadyBtn');
+      if (lobbyReadyBtn) lobbyReadyBtn.addEventListener('pointerup', () => {
+        const me = players[myPlayerId];
+        if (!me) return;
+        const nextReady = !me.isReady;
+        if (isHost) {
+          me.isReady = nextReady;
+          broadcastLobbyState();
+        } else if (hostConn && hostConn.open) {
+          try { hostConn.send({ type: 'LOBBY_READY', id: myPlayerId, ready: nextReady }); } catch (e) {}
+          me.isReady = nextReady;
+          updateReadyButton();
+        }
+      });
+
+      const lobbyStartBtn = document.getElementById('lobbyStartBtn');
+      if (lobbyStartBtn) lobbyStartBtn.addEventListener('pointerup', () => {
+        if (!isHost) return;
+        const total = Object.keys(players).length;
+        const readyCount = Object.values(players).filter(p => p.isReady).length;
+        if (!total || readyCount < Math.ceil(total / 2)) {
+          updateStartButton();
+          return;
+        }
+        const mapId = document.getElementById('lobbyMapSelect')?.value || MAPS[0].id;
+        const difficulty = document.getElementById('lobbyDifficultySelect')?.value || 'normal';
+        const seed = (window.crypto && window.crypto.getRandomValues) ? (() => { const a=new Uint32Array(1); window.crypto.getRandomValues(a); return a[0] % 1000000; })() : Math.floor(Math.random()*1000000);
+        lobbyDifficulty = difficulty;
+        const message = { type: 'LOBBY_START', mapId, seed, difficulty, hostId: hostPlayerId || myPlayerId };
+        connections.forEach(conn => { if (conn && conn.open) { try { conn.send(message); } catch (e) {} } });
+        startMultiplayerGame(mapId, seed, difficulty);
+      });
+
+      const lobbyCustomizeBtn = document.getElementById('lobbyCustomizeBtn');
+      if (lobbyCustomizeBtn) lobbyCustomizeBtn.addEventListener('pointerup', openLobbyCustomize);
+      const lobbyCustomizeCloseBtn = document.getElementById('lobbyCustomizeCloseBtn');
+      if (lobbyCustomizeCloseBtn) lobbyCustomizeCloseBtn.addEventListener('pointerup', closeLobbyCustomize);
+      const lobbyCustomizeCancelBtn = document.getElementById('lobbyCustomizeCancelBtn');
+      if (lobbyCustomizeCancelBtn) lobbyCustomizeCancelBtn.addEventListener('pointerup', closeLobbyCustomize);
+      const lobbyCustomizeConfirmBtn = document.getElementById('lobbyCustomizeConfirmBtn');
+      if (lobbyCustomizeConfirmBtn) lobbyCustomizeConfirmBtn.addEventListener('pointerup', applyLobbyCustomize);
+      const lobbyCustomizeModal = document.getElementById('lobbyCustomizeModal');
+      if (lobbyCustomizeModal) lobbyCustomizeModal.addEventListener('pointerup', e => { if (e.target === lobbyCustomizeModal) closeLobbyCustomize(); });
+      const lobbyMapSelect = document.getElementById('lobbyMapSelect');
+      if (lobbyMapSelect) lobbyMapSelect.addEventListener('change', () => { if (isHost) { currentMap = MAPS.find(m => m.id === lobbyMapSelect.value) || MAPS[0]; renderLobbyPlayerList(players); } });
+      const lobbyDifficultySelect = document.getElementById('lobbyDifficultySelect');
+      if (lobbyDifficultySelect) lobbyDifficultySelect.addEventListener('change', () => { if (isHost) lobbyDifficulty = lobbyDifficultySelect.value; });
+
+      const leaveLobbyBtn = document.getElementById('leaveLobbyBtn');
+      if (leaveLobbyBtn) leaveLobbyBtn.addEventListener('pointerup', () => {
+        manualRoomLeave = true;
+        gameRunning = false;
+        if (isHost) {
+          stopHostingBroadcast();
+          connections.forEach(c => { try { if (c && c.open) c.close(); } catch (e) {} });
+          connections = [];
+        } else {
+          try { if (hostConn) hostConn.close(); } catch (e) {}
+          try { if (peer) peer.destroy(); } catch (e) {}
+          hostConn = null; peer = null; hostPeerIdStore = null;
+        }
+        hostPlayerId = null;
+        closeLobby();
+        const joinBtn = document.getElementById('joinRoomBtn');
+        if (joinBtn) { joinBtn.disabled = false; joinBtn.classList.remove('opacity-50', 'pointer-events-none'); }
+        const mainMenu = document.getElementById('mainMenu');
+        if (mainMenu) mainMenu.classList.remove('hidden');
+        document.body.classList.add('modal-open');
+        updateLoginStatusUI();
+      });
+
       const crRoomBtn = document.getElementById('createRoomBtn');
       if (crRoomBtn) crRoomBtn.onclick = () => {
-        initAudio(); isHost = true;
+        initAudio(); isHost = true; hostPlayerId = myPlayerId; manualRoomLeave = false;
         const shortCode = generateShortRoomCode();
         const nickInput = document.getElementById('nicknameInput');
         let nick = (nickInput && nickInput.value) ? nickInput.value.trim() : '';
         if (!nick) nick = '房主';
         players[myPlayerId] = createPlayerWithClass(myPlayerId, nick, selectedSkinColor, selectedClassId);
+        players[myPlayerId].shape = saveData.currentShape || 'circle';
+        players[myPlayerId].isReady = false;
         try {
           peer = new Peer('dungeon_' + shortCode);
           peer.on('open', () => {
             document.getElementById('roomInfo').classList.remove('hidden');
             document.getElementById('myPeerIdText').innerText = shortCode;
             startHostingBroadcast(shortCode);
+            const joinBtn = document.getElementById('joinRoomBtn');
+            if (joinBtn) { joinBtn.disabled = true; joinBtn.classList.add('opacity-50', 'pointer-events-none'); }
+            openLobby();
+            broadcastLobbyState();
           });
           peer.on('connection', (conn) => {
             conn.metadata = {};
@@ -5246,6 +5805,7 @@
             conn.on('close', () => {
               connections = connections.filter(c => c !== conn);
               handleClientDisconnectionInHost(conn);
+              broadcastLobbyState();
               const cTxt = document.getElementById('connectedPlayersText');
               if (cTxt) cTxt.innerText = `已連接 ${connections.length} 位隊友`;
               if (myHostRoomCode) broadcastRoomInfo();
@@ -5269,20 +5829,22 @@
         const rawCode = jInput ? jInput.value.trim().toUpperCase() : '';
         if (!rawCode || rawCode.length !== 6) { alert('請輸入 6 位數房間碼！'); return; }
         hostPeerIdStore = 'dungeon_' + rawCode;
-        isHost = false; manualRoomLeave = false; stopHostingBroadcast();
+        isHost = false; hostPlayerId = null; manualRoomLeave = false; stopHostingBroadcast();
         const nickInput = document.getElementById('nicknameInput');
         let nick = (nickInput && nickInput.value) ? nickInput.value.trim() : '';
         if (!nick) nick = '隊友';
         players[myPlayerId] = createPlayerWithClass(myPlayerId, nick, selectedSkinColor, selectedClassId);
+        players[myPlayerId].shape = saveData.currentShape || 'circle';
+        players[myPlayerId].isReady = false;
         try {
           peer = new Peer();
           peer.on('open', () => {
             hostConn = peer.connect(hostPeerIdStore);
             hostConn.on('open', () => {
-              document.getElementById('waitingRoomOverlay').classList.remove('hidden');
               document.getElementById('joinRoomBtn').disabled = true;
               document.getElementById('joinRoomBtn').classList.add('opacity-50', 'pointer-events-none');
-              hostConn.send({ type: 'JOIN_PLAYER', id: myPlayerId, name: nick, color: selectedSkinColor, classId: selectedClassId, exclusiveSkillId: selectedExclusiveSkillId || (CLASS_EXCLUSIVE_SKILLS[selectedClassId] || CLASS_EXCLUSIVE_SKILLS.assault)[0], generalSkillId: selectedGeneralSkillId });
+              openLobby();
+              hostConn.send({ type: 'JOIN_PLAYER', id: myPlayerId, name: nick, color: selectedSkinColor, classId: selectedClassId, shape: saveData.currentShape || 'circle', exclusiveSkillId: selectedExclusiveSkillId || (CLASS_EXCLUSIVE_SKILLS[selectedClassId] || CLASS_EXCLUSIVE_SKILLS.assault)[0], generalSkillId: selectedGeneralSkillId });
             });
             hostConn.on('data', (data) => handleNetworkData(data));
             hostConn.on('close', () => { if (!manualRoomLeave) handleHostDisconnection(); });
@@ -5298,6 +5860,8 @@
         try { if (peer) peer.destroy(); } catch (e) {}
         hostConn = null; peer = null; hostPeerIdStore = null;
         document.getElementById('waitingRoomOverlay').classList.add('hidden');
+        closeLobby();
+        hostPlayerId = null;
         const joinBtn = document.getElementById('joinRoomBtn');
         if (joinBtn) {
           joinBtn.disabled = false;
