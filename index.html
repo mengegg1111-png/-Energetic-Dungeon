@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>元氣地牢:登陸系統</title>
+  <title>元氣地牢:大廳與鑽石</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- PeerJS CDN -->
@@ -475,8 +475,13 @@
         </button>
       </div>
 
-      <div id="coinDisplay" class="text-amber-400 font-black text-sm text-center">💰 0</div>
-      <div id="diamondDisplay" class="text-cyan-300 font-black text-sm text-center">💎 0</div>
+      <div class="flex items-center justify-center gap-3">
+        <div id="coinDisplay" class="text-amber-400 font-black text-sm text-center">💰 0</div>
+        <div id="diamondDisplay" class="text-cyan-300 font-black text-sm text-center">💎 0</div>
+      </div>
+      <button id="exchangeDiamondBtn" type="button" class="w-full bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-500 hover:to-yellow-500 text-white font-bold py-2 rounded-2xl text-xs shadow-lg active:scale-95 transition-all">
+        💰 500 金幣兌換 💎 1 鑽石
+      </button>
 
       <!-- 遊戲模式按鈕 -->
       <div class="flex flex-col gap-2 pt-1">
@@ -1246,6 +1251,9 @@
     ];
     let currentBrokerIndex = 0;
     const MQTT_TOPIC = 'zombie-game-lobby-mengegg-v1';
+    // MQTT 房間列表即時同步：事件觸發 + 短心跳，讓公開房間狀態更即時
+    const MQTT_ROOM_HEARTBEAT_MS = 1500;
+    const MQTT_ROOM_STALE_MS = 5000;
     let mqttClient = null;
     let roomList = {};
     let roomBroadcastInterval = null;
@@ -1685,7 +1693,10 @@
     }
 
     function initMqttLobby() {
-      if (mqttClient && mqttClient.connected) return;
+      if (mqttClient && mqttClient.connected) {
+        if (myHostRoomCode) broadcastRoomInfo();
+        return;
+      }
       const brokerUrl = MQTT_BROKERS[currentBrokerIndex];
       const statusBox = document.getElementById('lobbyStatus');
 
@@ -1700,8 +1711,11 @@
           try {
             const data = JSON.parse(payload.toString());
             if (data && data.roomCode) {
-              if (data.closed) delete roomList[data.roomCode];
-              else roomList[data.roomCode] = data;
+              if (data.closed || data.type === 'ROOM_CLOSED') {
+                delete roomList[data.roomCode];
+              } else if (data.type === 'ROOM_PRESENCE' || !data.type) {
+                roomList[data.roomCode] = data;
+              }
               scheduleRenderLobby();
             }
           } catch(e) {}
@@ -1719,7 +1733,7 @@
         roomCleanupInterval = setInterval(() => {
           const now = Date.now();
           Object.keys(roomList).forEach(code => {
-            if (now - roomList[code].timestamp > 15000) delete roomList[code];
+            if (now - roomList[code].timestamp > MQTT_ROOM_STALE_MS) delete roomList[code];
           });
           scheduleRenderLobby();
         }, 1000);
@@ -1742,9 +1756,17 @@
       const nickInput = document.getElementById('nicknameInput');
       const nick = (nickInput && nickInput.value) ? nickInput.value.trim() : '房主';
       const info = {
-        roomCode: myHostRoomCode, hostName: nick, playerCount: Object.keys(players).length,
-        maxPlayers: 8, mapName: currentMap ? currentMap.name : '黑森林', wave: currentWave,
-        isPlaying: gameRunning, timestamp: Date.now()
+        type: 'ROOM_PRESENCE',
+        roomCode: myHostRoomCode,
+        hostName: nick,
+        playerCount: Object.keys(players).length,
+        maxPlayers: 8,
+        mapName: currentMap ? currentMap.name : '黑森林',
+        mapId: currentMap ? currentMap.id : null,
+        difficulty: lobbyDifficulty || 'normal',
+        wave: currentWave,
+        isPlaying: !!gameRunning,
+        timestamp: Date.now()
       };
       try { mqttClient.publish(MQTT_TOPIC, JSON.stringify(info)); } catch(e) {}
     }
@@ -1753,12 +1775,12 @@
       myHostRoomCode = shortCode; initMqttLobby();
       if (roomBroadcastInterval) clearInterval(roomBroadcastInterval);
       broadcastRoomInfo();
-      roomBroadcastInterval = setInterval(broadcastRoomInfo, 5000);
+      roomBroadcastInterval = setInterval(broadcastRoomInfo, MQTT_ROOM_HEARTBEAT_MS);
     }
 
     function stopHostingBroadcast() {
       if (myHostRoomCode && mqttClient && mqttClient.connected) {
-        try { mqttClient.publish(MQTT_TOPIC, JSON.stringify({ roomCode: myHostRoomCode, closed: true })); } catch(e) {}
+        try { mqttClient.publish(MQTT_TOPIC, JSON.stringify({ type: 'ROOM_CLOSED', roomCode: myHostRoomCode, closed: true, timestamp: Date.now() })); } catch(e) {}
       }
       myHostRoomCode = null;
       if (roomBroadcastInterval) { clearInterval(roomBroadcastInterval); roomBroadcastInterval = null; }
@@ -2231,9 +2253,23 @@
     }
     window.startDailyChallengeGame = startDailyChallengeGame;
 
+    function exchangeCoinsForDiamond() {
+      const cost = 500;
+      if ((saveData.coins || 0) < cost) {
+        showDebugToast('💰 金幣不足（需要 500）');
+        return;
+      }
+      saveData.coins -= cost;
+      saveData.diamonds = (saveData.diamonds || 0) + 1;
+      saveGameData();
+      updateCoinDisplay();
+      updateDiamondDisplay();
+      showDebugToast('💎 兌換成功！獲得 1 鑽石');
+    }
+
     function checkDailyChallengeWin() {
       if (!dailyChallenge) return;
-      if (currentWave >= 10) {
+      if (currentWave >= 5) {
         const todayStr = new Date().toISOString().slice(0, 10);
         const dailyKey = `dailyChallengeCompleted_${todayStr}`;
         if (localStorage.getItem(dailyKey) !== 'true') {
@@ -4816,6 +4852,7 @@
         if (!senderId || data.id !== senderId || !players[senderId]) return;
         players[senderId].isReady = !!data.ready;
         broadcastLobbyState();
+        if (myHostRoomCode) broadcastRoomInfo();
       } else if (data.type === 'PLAYER_CUSTOMIZE' && isHost) {
         const senderId = conn?.metadata?.playerId;
         if (!senderId || data.id !== senderId || !players[senderId]) return;
@@ -4830,6 +4867,7 @@
         p.name = safeName || '玩家'; p.color = safeColor; p.classId = safeClass; p.shape = safeShape;
         p.exclusiveSkillId = safeEx; p.generalSkillId = safeGeneral;
         broadcastLobbyState();
+        if (myHostRoomCode) broadcastRoomInfo();
       } else if (data.type === 'LOBBY_START' && !isHost) {
         hostPlayerId = data.hostId || hostPlayerId;
         closeLobby();
@@ -5535,6 +5573,9 @@
         });
       });
 
+      const exchangeDiamondBtn = document.getElementById('exchangeDiamondBtn');
+      if (exchangeDiamondBtn) exchangeDiamondBtn.addEventListener('pointerup', exchangeCoinsForDiamond);
+
       const shopBtn = document.getElementById('shopBtn');
       if (shopBtn) shopBtn.addEventListener('pointerup', openShop);
       const gachaBtn=document.getElementById('gachaBtn'); if(gachaBtn) gachaBtn.addEventListener('pointerup', openGacha);
@@ -5714,6 +5755,7 @@
         if (isHost) {
           me.isReady = nextReady;
           broadcastLobbyState();
+          if (myHostRoomCode) broadcastRoomInfo();
         } else if (hostConn && hostConn.open) {
           try { hostConn.send({ type: 'LOBBY_READY', id: myPlayerId, ready: nextReady }); } catch (e) {}
           me.isReady = nextReady;
@@ -5750,9 +5792,20 @@
       const lobbyCustomizeModal = document.getElementById('lobbyCustomizeModal');
       if (lobbyCustomizeModal) lobbyCustomizeModal.addEventListener('pointerup', e => { if (e.target === lobbyCustomizeModal) closeLobbyCustomize(); });
       const lobbyMapSelect = document.getElementById('lobbyMapSelect');
-      if (lobbyMapSelect) lobbyMapSelect.addEventListener('change', () => { if (isHost) { currentMap = MAPS.find(m => m.id === lobbyMapSelect.value) || MAPS[0]; renderLobbyPlayerList(players); } });
+      if (lobbyMapSelect) lobbyMapSelect.addEventListener('change', () => {
+        if (isHost) {
+          currentMap = MAPS.find(m => m.id === lobbyMapSelect.value) || MAPS[0];
+          renderLobbyPlayerList(players);
+          if (myHostRoomCode) broadcastRoomInfo();
+        }
+      });
       const lobbyDifficultySelect = document.getElementById('lobbyDifficultySelect');
-      if (lobbyDifficultySelect) lobbyDifficultySelect.addEventListener('change', () => { if (isHost) lobbyDifficulty = lobbyDifficultySelect.value; });
+      if (lobbyDifficultySelect) lobbyDifficultySelect.addEventListener('change', () => {
+        if (isHost) {
+          lobbyDifficulty = lobbyDifficultySelect.value;
+          if (myHostRoomCode) broadcastRoomInfo();
+        }
+      });
 
       const leaveLobbyBtn = document.getElementById('leaveLobbyBtn');
       if (leaveLobbyBtn) leaveLobbyBtn.addEventListener('pointerup', () => {
