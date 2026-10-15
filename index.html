@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>元氣地牢:武器大更新2.0</title>
+  <title>元氣地牢:武器大更新3.0</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- PeerJS CDN -->
@@ -1530,6 +1530,21 @@
     let camera = { x: 0, y: 0 };
     // 相機追蹤狀態：遊戲開始時立即對準玩家，之後每幀以玩家世界座標為中心追蹤。
     let cameraFollowInitialized = false;
+
+    // 相機永遠跟隨自己的玩家；這只影響畫面，不改變任何遊戲判定。
+    function updateCameraToPlayer(force = false) {
+      const me = players[myPlayerId];
+      if (!me || !Number.isFinite(me.x) || !Number.isFinite(me.y)) return;
+      const viewW = canvas.width || window.innerWidth || 1;
+      const viewH = canvas.height || window.innerHeight || 1;
+      const targetX = me.x - viewW / 2;
+      const targetY = me.y - viewH / 2;
+      const maxX = Math.max(MAP_BOUNDS.minX, MAP_BOUNDS.maxX - viewW);
+      const maxY = Math.max(MAP_BOUNDS.minY, MAP_BOUNDS.maxY - viewH);
+      camera.x = Math.max(MAP_BOUNDS.minX, Math.min(maxX, targetX));
+      camera.y = Math.max(MAP_BOUNDS.minY, Math.min(maxY, targetY));
+      cameraFollowInitialized = true;
+    }
     let screenShakeTime = 0;
     let hasShownExclusiveBanner = false;
     let isUpgradeModalOpen = false;
@@ -3849,16 +3864,7 @@
         me.x = 0; me.y = 0; me.vx = 0; me.vy = 0;
       }
       if (me && isFinite(me.x) && isFinite(me.y)) {
-        const targetCameraX = me.x - canvas.width / 2;
-        const targetCameraY = me.y - canvas.height / 2;
-
-        // 相機直接依照自己的玩家座標追蹤，不再使用可能累積延遲的舊相機位置。
-        // 同時限制在地圖範圍內，避免玩家靠近邊界時看到地圖外的區域。
-        const maxCameraX = MAP_BOUNDS.maxX - canvas.width;
-        const maxCameraY = MAP_BOUNDS.maxY - canvas.height;
-        camera.x = Math.max(MAP_BOUNDS.minX, Math.min(maxCameraX, targetCameraX));
-        camera.y = Math.max(MAP_BOUNDS.minY, Math.min(maxCameraY, targetCameraY));
-        cameraFollowInitialized = true;
+        updateCameraToPlayer();
       } else if (!cameraFollowInitialized) {
         camera.x = MAP_BOUNDS.minX;
         camera.y = MAP_BOUNDS.minY;
@@ -4487,6 +4493,9 @@
       }
 
       if (isHost) updateWorldHost();
+
+      // 移動/主機同步都完成後再更新相機，確保鏡頭追的是這一幀最後的玩家位置。
+      updateCameraToPlayer();
       render();
       renderMiniMap();
       updateBossHealthBarUI();
@@ -4568,12 +4577,8 @@
       document.getElementById('defenseBarContainer').classList.remove('hidden');
 
       initBGMSystem(); renderWeaponHotbar(); gameRunning = true;
-      // 遊戲開始時先把相機放到玩家位置，避免從 (0,0) 緩慢追過去造成畫面看起來像沒跟隨。
-      if (players[myPlayerId]) {
-        camera.x = players[myPlayerId].x - canvas.width / 2;
-        camera.y = players[myPlayerId].y - canvas.height / 2;
-        cameraFollowInitialized = true;
-      }
+      resizeCanvas();
+      updateCameraToPlayer(true);
       if (isHost && myHostRoomCode) broadcastRoomInfo();
       lastFrameTime = performance.now(); requestAnimationFrame(gameLoop);
     }
@@ -4858,12 +4863,8 @@
       initBGMSystem();
       renderWeaponHotbar();
       gameRunning = true;
-      // 多人遊戲開始時同樣立即將相機鎖定到自己的玩家，避免沿用上一局相機座標。
-      if (players[myPlayerId]) {
-        camera.x = players[myPlayerId].x - canvas.width / 2;
-        camera.y = players[myPlayerId].y - canvas.height / 2;
-        cameraFollowInitialized = true;
-      }
+      resizeCanvas();
+      updateCameraToPlayer(true);
       lastFrameTime = performance.now();
       requestAnimationFrame(gameLoop);
     }
