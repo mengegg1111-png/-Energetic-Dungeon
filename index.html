@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>元氣地牢:武器大更新3.0</title>
+  <title>元氣地牢 :武器大更新4.0</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- PeerJS CDN -->
@@ -1528,23 +1528,6 @@
     let moveJoystickData = { active: false, x: 0, y: 0 };
     let aimJoystickData = { active: false, x: 0, y: 0 };
     let camera = { x: 0, y: 0 };
-    // 相機追蹤狀態：遊戲開始時立即對準玩家，之後每幀以玩家世界座標為中心追蹤。
-    let cameraFollowInitialized = false;
-
-    // 相機永遠跟隨自己的玩家；這只影響畫面，不改變任何遊戲判定。
-    function updateCameraToPlayer(force = false) {
-      const me = players[myPlayerId];
-      if (!me || !Number.isFinite(me.x) || !Number.isFinite(me.y)) return;
-      const viewW = canvas.width || window.innerWidth || 1;
-      const viewH = canvas.height || window.innerHeight || 1;
-      const targetX = me.x - viewW / 2;
-      const targetY = me.y - viewH / 2;
-      const maxX = Math.max(MAP_BOUNDS.minX, MAP_BOUNDS.maxX - viewW);
-      const maxY = Math.max(MAP_BOUNDS.minY, MAP_BOUNDS.maxY - viewH);
-      camera.x = Math.max(MAP_BOUNDS.minX, Math.min(maxX, targetX));
-      camera.y = Math.max(MAP_BOUNDS.minY, Math.min(maxY, targetY));
-      cameraFollowInitialized = true;
-    }
     let screenShakeTime = 0;
     let hasShownExclusiveBanner = false;
     let isUpgradeModalOpen = false;
@@ -3863,11 +3846,9 @@
       if (me && (!isFinite(me.x) || !isFinite(me.y))) {
         me.x = 0; me.y = 0; me.vx = 0; me.vy = 0;
       }
-      if (me && isFinite(me.x) && isFinite(me.y)) {
-        updateCameraToPlayer();
-      } else if (!cameraFollowInitialized) {
-        camera.x = MAP_BOUNDS.minX;
-        camera.y = MAP_BOUNDS.minY;
+      if (me) {
+        camera.x += ((me.x - canvas.width / 2) - camera.x) * 0.1;
+        camera.y += ((me.y - canvas.height / 2) - camera.y) * 0.1;
       }
 
       ctx.save();
@@ -4267,7 +4248,7 @@
       ctx.save();
       ctx.rotate(angle);
 
-      const shapeId = (p.shape && SHAPES[p.shape]) ? p.shape : (SHAPES[saveData.currentShape] ? saveData.currentShape : 'circle');
+      const shapeId = SHAPES[saveData.currentShape] ? saveData.currentShape : 'circle';
       const bodyColor = p.color || '#38bdf8';
       const weapon = WEAPONS[p.weapon];
 
@@ -4276,9 +4257,37 @@
 
       // 角色本體仍完全交給既有的 drawShapeBody，不改角色形狀系統。
       ctx.fillStyle = bodyColor;
-      ctx.shadowBlur = 0;
+      ctx.shadowColor = bodyColor;
+      ctx.shadowBlur = 10;
       drawShapeBody(ctx, shapeId, radius, bodyColor);
+      ctx.shadowBlur = 0;
       drawShapeGunDecor(ctx, shapeId, radius, weapon, bodyColor);
+
+      ctx.restore();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 12px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText(`${clsDef.icon} ${p.name}`, 0, -radius - 12);
+
+      if (p.chatBubble && Date.now() - p.chatBubble.time < 4000) {
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 1;
+        ctx.font = '11px system-ui';
+        const textWidth = ctx.measureText(p.chatBubble.text).width;
+        const bWidth = textWidth + 16, bHeight = 20;
+
+        ctx.beginPath();
+        ctx.roundRect(-bWidth / 2, -radius - 38, bWidth, bHeight, 8);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#38bdf8';
+        ctx.textAlign = 'center';
+        ctx.fillText(p.chatBubble.text, 0, -radius - 24);
+      }
+
       ctx.restore();
     }
 
@@ -4493,9 +4502,6 @@
       }
 
       if (isHost) updateWorldHost();
-
-      // 移動/主機同步都完成後再更新相機，確保鏡頭追的是這一幀最後的玩家位置。
-      updateCameraToPlayer();
       render();
       renderMiniMap();
       updateBossHealthBarUI();
@@ -4577,8 +4583,6 @@
       document.getElementById('defenseBarContainer').classList.remove('hidden');
 
       initBGMSystem(); renderWeaponHotbar(); gameRunning = true;
-      resizeCanvas();
-      updateCameraToPlayer(true);
       if (isHost && myHostRoomCode) broadcastRoomInfo();
       lastFrameTime = performance.now(); requestAnimationFrame(gameLoop);
     }
@@ -4863,8 +4867,6 @@
       initBGMSystem();
       renderWeaponHotbar();
       gameRunning = true;
-      resizeCanvas();
-      updateCameraToPlayer(true);
       lastFrameTime = performance.now();
       requestAnimationFrame(gameLoop);
     }
@@ -5277,7 +5279,7 @@
           return card(`<span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${c.hex};margin-right:6px"></span>${c.name}`, `${c.hex} · ${owned?'已解鎖':'未解鎖'}`, action);
         }).join('');
       } else if (currentShopTab === 'guns') {
-        const weaponKeys = Object.keys(WEAPONS).filter(key => WEAPONS[key].exclusiveTo);
+        const weaponKeys = Object.keys(WEAPONS);
         content.innerHTML = weaponKeys.map(key => {
           const w = WEAPONS[key], owned = saveData.unlockedGunSkins[key] || [], equipped = saveData.currentGunSkin[key] || null;
           const options = [{id:'base',name:'原色',color:w.color,price:0}, {id:'gold',...GUN_SKINS.gold}, {id:'shadow',...GUN_SKINS.shadow}];
