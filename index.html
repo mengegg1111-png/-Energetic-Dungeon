@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>元氣地牢:繽重界</title>
+  <title>元氣地牢:繽紛?</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- PeerJS CDN -->
@@ -1139,148 +1139,6 @@
       shadow: { name: '暗影', color: '#7c3aed', price: 300 }
     };
 
-    // 武器外觀與皮膚分離：形狀只由 weaponKey 決定，顏色只由 skinId 決定。
-    // base = 原色；gold / shadow = 可購買皮膚。
-    const WEAPON_DRAW_STYLES = {
-      pistol:      { barrel: 17, thick: 5 },
-      shotgun:     { barrel: 19, thick: 8 },
-      rifle:       { barrel: 24, thick: 5 },
-      laser:       { barrel: 25, thick: 6 },
-      healBeam:    { barrel: 22, thick: 6 },
-      grenade:     { barrel: 18, thick: 9 },
-      sniperRifle: { barrel: 30, thick: 4 },
-      throwingAxe: { barrel: 13, thick: 5 },
-      teslaGun:    { barrel: 17, thick: 7 },
-      dualSMG:     { barrel: 16, thick: 5 },
-      fireBeam:    { barrel: 15, thick: 8 },
-      frostBow:    { barrel: 18, thick: 4 },
-      holyHammer:  { barrel: 14, thick: 6 },
-      necroStaff:  { barrel: 21, thick: 5 }
-    };
-
-    function getWeaponSkinId(p, weaponKey) {
-      const id = p && p.gunSkins && typeof p.gunSkins[weaponKey] === 'string' ? p.gunSkins[weaponKey] : null;
-      return id === 'gold' || id === 'shadow' ? id : 'base';
-    }
-
-    function getWeaponSkinColors(weapon, skinId) {
-      if (skinId === 'gold') return { main: '#fbbf24', accent: '#92400e', border: '#fef3c7' };
-      if (skinId === 'shadow') return { main: '#7c3aed', accent: '#312e81', border: '#c4b5fd' };
-      return { main: weapon?.color || '#475569', accent: '#0f172a', border: '#e2e8f0' };
-    }
-
-    function drawWeaponVisual(ctx, p, weaponKey, radius) {
-      const weapon = WEAPONS[weaponKey];
-      if (!weapon) return;
-      const skinId = getWeaponSkinId(p, weaponKey);
-      const colors = getWeaponSkinColors(weapon, skinId);
-      const style = WEAPON_DRAW_STYLES[weaponKey] || { barrel: 16, thick: 6 };
-      const r = radius;
-      const handX = Math.max(5, r * 0.52);
-
-      ctx.save();
-      ctx.lineJoin = 'round';
-      ctx.lineCap = 'round';
-      ctx.shadowBlur = 0;
-      ctx.shadowColor = 'transparent';
-      ctx.fillStyle = colors.main;
-      ctx.strokeStyle = colors.border;
-      ctx.lineWidth = 1.5;
-
-      // 近戰武器直接固定在角色前方的手部位置，不使用槍管座標。
-      if (weaponKey === 'throwingAxe') {
-        ctx.save();
-        ctx.translate(handX, 0);
-        ctx.rotate(-0.35);
-        ctx.fillStyle = colors.accent;
-        ctx.fillRect(0, -2, 13, 4);
-        ctx.fillStyle = colors.main;
-        ctx.beginPath();
-        ctx.moveTo(8, -10); ctx.lineTo(20, -7); ctx.lineTo(22, 0);
-        ctx.lineTo(20, 7); ctx.lineTo(8, 10); ctx.lineTo(12, 2); ctx.lineTo(12, -2); ctx.closePath();
-        ctx.fill(); ctx.stroke();
-        ctx.restore();
-        return;
-      }
-      if (weaponKey === 'holyHammer') {
-        ctx.save();
-        ctx.translate(handX, 0);
-        ctx.rotate(-0.18);
-        ctx.fillStyle = colors.accent;
-        ctx.fillRect(3, -2, 13, 4);
-        ctx.fillStyle = colors.main;
-        ctx.fillRect(13, -9, 10, 18);
-        ctx.strokeRect(13, -9, 10, 18);
-        ctx.fillStyle = colors.border;
-        ctx.fillRect(16, -11, 4, 22);
-        ctx.restore();
-        return;
-      }
-
-      // 一般武器：槍管位於角色皮膚後方（y 軸偏移），保留角色旋轉方向。
-      const gunX = -style.barrel * 0.35;
-      const gunY = r - style.thick * 0.25;
-      const gunLength = style.barrel;
-      const gunThick = style.thick;
-
-      if (weaponKey === 'pistol') {
-        ctx.fillRect(gunX + 2, gunY, 12, 5); ctx.strokeRect(gunX + 2, gunY, 12, 5);
-        ctx.fillRect(gunX + 12, gunY - 1, 6, 3); ctx.strokeRect(gunX + 12, gunY - 1, 6, 3);
-        ctx.fillStyle = colors.accent; ctx.fillRect(gunX + 5, gunY + 5, 5, 7);
-      } else if (weaponKey === 'shotgun') {
-        ctx.fillRect(gunX - 2, gunY, gunLength, gunThick); ctx.strokeRect(gunX - 2, gunY, gunLength, gunThick);
-        ctx.fillStyle = colors.accent; ctx.fillRect(gunX + 2, gunY + gunThick, 13, 4);
-        ctx.fillStyle = colors.border; ctx.fillRect(gunX + gunLength - 2, gunY + 1, 4, gunThick - 2);
-      } else if (weaponKey === 'rifle') {
-        ctx.fillRect(gunX - 3, gunY + 1, gunLength, gunThick); ctx.strokeRect(gunX - 3, gunY + 1, gunLength, gunThick);
-        ctx.fillStyle = colors.accent; ctx.fillRect(gunX + 2, gunY + gunThick, 5, 8);
-        ctx.fillStyle = colors.main; ctx.fillRect(gunX - 7, gunY + 1, 5, gunThick + 3); ctx.strokeRect(gunX - 7, gunY + 1, 5, gunThick + 3);
-      } else if (weaponKey === 'laser') {
-        ctx.fillRect(gunX - 3, gunY - 1, gunLength, gunThick + 2); ctx.strokeRect(gunX - 3, gunY - 1, gunLength, gunThick + 2);
-        ctx.fillStyle = colors.border; ctx.fillRect(gunX + 3, gunY - 3, 8, 2);
-        ctx.fillStyle = colors.accent; ctx.fillRect(gunX + gunLength - 3, gunY, 5, gunThick);
-      } else if (weaponKey === 'healBeam') {
-        ctx.fillRect(gunX, gunY - 1, gunLength - 2, gunThick + 2); ctx.strokeRect(gunX, gunY - 1, gunLength - 2, gunThick + 2);
-        ctx.fillStyle = colors.border; ctx.fillRect(gunX + gunLength - 5, gunY - 4, 5, gunThick + 8);
-        ctx.fillStyle = colors.accent; ctx.fillRect(gunX + 3, gunY + gunThick + 1, 7, 5);
-      } else if (weaponKey === 'grenade') {
-        ctx.fillRect(gunX, gunY - 1, gunLength - 2, gunThick); ctx.strokeRect(gunX, gunY - 1, gunLength - 2, gunThick);
-        ctx.fillStyle = colors.accent; ctx.fillRect(gunX + 3, gunY + gunThick - 1, 5, 7);
-        ctx.fillStyle = colors.border; ctx.beginPath(); ctx.arc(gunX + gunLength - 1, gunY + gunThick / 2 - 1, 4, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-      } else if (weaponKey === 'sniperRifle') {
-        ctx.fillRect(gunX - 7, gunY + 1, 25, 4); ctx.strokeRect(gunX - 7, gunY + 1, 25, 4);
-        ctx.fillRect(gunX + 18, gunY, gunLength - 5, 3); ctx.strokeRect(gunX + 18, gunY, gunLength - 5, 3);
-        ctx.fillStyle = colors.accent; ctx.fillRect(gunX + 3, gunY + 5, 5, 7);
-        ctx.fillStyle = colors.border; ctx.fillRect(gunX + 7, gunY - 5, 9, 4); ctx.strokeRect(gunX + 7, gunY - 5, 9, 4);
-      } else if (weaponKey === 'teslaGun') {
-        ctx.fillRect(gunX, gunY - 2, 13, 8); ctx.strokeRect(gunX, gunY - 2, 13, 8);
-        ctx.fillStyle = colors.accent; ctx.beginPath(); ctx.arc(gunX + 9, gunY + 2, 4, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-        ctx.fillStyle = colors.border; ctx.fillRect(gunX + 13, gunY, 7, 4);
-      } else if (weaponKey === 'dualSMG') {
-        ctx.fillRect(gunX, gunY - 5, 15, 4); ctx.strokeRect(gunX, gunY - 5, 15, 4);
-        ctx.fillRect(gunX, gunY + 4, 15, 4); ctx.strokeRect(gunX, gunY + 4, 15, 4);
-        ctx.fillStyle = colors.accent; ctx.fillRect(gunX + 4, gunY - 1, 5, 4);
-        ctx.fillRect(gunX + 4, gunY + 8, 5, 4);
-      } else if (weaponKey === 'fireBeam') {
-        ctx.fillRect(gunX, gunY - 2, 12, 9); ctx.strokeRect(gunX, gunY - 2, 12, 9);
-        ctx.fillStyle = colors.accent; ctx.fillRect(gunX + 3, gunY + 7, 6, 6);
-        ctx.fillStyle = colors.border; ctx.beginPath(); ctx.arc(gunX + 17, gunY + 2, 5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-      } else if (weaponKey === 'frostBow') {
-        ctx.strokeStyle = colors.main; ctx.lineWidth = 4;
-        ctx.beginPath(); ctx.arc(gunX + 5, gunY + 2, 11, -Math.PI * 0.65, Math.PI * 0.65); ctx.stroke();
-        ctx.strokeStyle = colors.border; ctx.lineWidth = 1.5;
-        ctx.beginPath(); ctx.moveTo(gunX + 5, gunY - 8); ctx.lineTo(gunX + 5, gunY + 12); ctx.stroke();
-        ctx.fillStyle = colors.main; ctx.fillRect(gunX + 4, gunY, 18, 4); ctx.strokeRect(gunX + 4, gunY, 18, 4);
-      } else if (weaponKey === 'necroStaff') {
-        ctx.fillStyle = colors.accent; ctx.fillRect(gunX + 3, gunY - 3, gunLength, 5); ctx.strokeRect(gunX + 3, gunY - 3, gunLength, 5);
-        ctx.fillStyle = colors.main; ctx.beginPath(); ctx.arc(gunX + gunLength + 3, gunY - 1, 7, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-        ctx.fillStyle = colors.border; ctx.fillRect(gunX + gunLength + 1, gunY - 3, 2, 2); ctx.fillRect(gunX + gunLength + 4, gunY - 3, 2, 2);
-      } else {
-        ctx.fillRect(gunX, gunY, gunLength, gunThick); ctx.strokeRect(gunX, gunY, gunLength, gunThick);
-      }
-      ctx.restore();
-    }
-
     const SKIN_COLORS = [
       { name: '極光藍', hex: '#38bdf8' },
       { name: '琥珀金', hex: '#f59e0b' },
@@ -2128,7 +1986,7 @@
           newConn.on('open', () => {
             hostConn = newConn;
             const me = players[myPlayerId];
-            hostConn.send({ type: 'JOIN_PLAYER', id: myPlayerId, name: me ? me.name : '隊友', color: selectedSkinColor, classId: selectedClassId, exclusiveSkillId: selectedExclusiveSkillId || (CLASS_EXCLUSIVE_SKILLS[selectedClassId] || CLASS_EXCLUSIVE_SKILLS.assault)[0], generalSkillId: selectedGeneralSkillId, gunSkins: { ...(saveData.currentGunSkin || {}) } });
+            hostConn.send({ type: 'JOIN_PLAYER', id: myPlayerId, name: me ? me.name : '隊友', color: selectedSkinColor, classId: selectedClassId, exclusiveSkillId: selectedExclusiveSkillId || (CLASS_EXCLUSIVE_SKILLS[selectedClassId] || CLASS_EXCLUSIVE_SKILLS.assault)[0], generalSkillId: selectedGeneralSkillId });
             const modal = document.getElementById('hostDisconnectedModal');
             if (modal) modal.classList.add('hidden');
             document.body.classList.remove('modal-open');
@@ -2673,7 +2531,7 @@
         speed: stats.speed, dmgMult: stats.dmgMult, bulletScale: stats.bulletScale,
         magnetRange: stats.magnetRange, dashMaxCooldown: stats.dashMaxCooldown,
         invulnDuration: stats.invulnDuration, lifesteal: stats.lifesteal,
-        weapon: 'pistol', unlockedWeapons, gunSkins: { ...(saveData.currentGunSkin || {}) }, level: 1, exp: 0, maxExp: 10, angle: 0,
+        weapon: 'pistol', unlockedWeapons, level: 1, exp: 0, maxExp: 10, angle: 0,
         penetrate: false, dashCooldown: 0, invulnerableTime: 0,
         isDowned: false, reviveProgress: 0, chatBubble: null, isDead: false,
         takenExclusiveTalents: [],
@@ -4251,15 +4109,71 @@
       const shapeId = (p.shape && SHAPES[p.shape]) ? p.shape : (SHAPES[saveData.currentShape] ? saveData.currentShape : 'circle');
       const bodyColor = p.color || '#38bdf8';
       const weapon = WEAPONS[p.weapon];
+      let gunColor = '#475569';
+      let gunLength = 14;
+      let gunThick = 6;
 
-      // 武器獨特外觀：先畫在角色皮膚後方；近戰武器則直接固定在手部。
-      drawWeaponVisual(ctx, p, p.weapon, radius);
+      if (weapon) {
+        if (weapon.isBeam) { gunColor = weapon.color || '#a855f7'; gunLength = 20; gunThick = 5; }
+        else if (weapon.isGrenade) { gunColor = '#f59e0b'; gunLength = 16; gunThick = 8; }
+        else if (weapon.isAxe) { gunColor = '#ef4444'; gunLength = 10; gunThick = 10; }
+        else if (weapon.isMelee) { gunColor = '#fbbf24'; gunLength = 12; gunThick = 8; }
+        else if (weapon.isFlame) { gunColor = '#f97316'; gunLength = 12; gunThick = 7; }
+        else if (weapon.isFrost) { gunColor = '#67e8f9'; gunLength = 16; gunThick = 5; }
+        else if (weapon.isNecro) { gunColor = '#a78bfa'; gunLength = 18; gunThick = 5; }
+        else if (weapon.isTesla) { gunColor = '#a855f7'; gunLength = 14; gunThick = 6; }
+        else if (weapon.name === '霰彈槍') { gunColor = '#ef4444'; gunLength = 14; gunThick = 8; }
+        else if (weapon.name === '突擊步槍') { gunColor = '#38bdf8'; gunLength = 16; gunThick = 5; }
+        const equippedGunSkin = saveData.currentGunSkin[p.weapon];
+        if (equippedGunSkin && GUN_SKINS[equippedGunSkin]) gunColor = GUN_SKINS[equippedGunSkin].color;
+      }
 
-      // 角色本體仍完全交給既有的 drawShapeBody，不改角色形狀系統。
+      // 槍管位於角色圓形／皮膚的下方位置，保留原本旋轉方向
+      const gunX = -gunLength * 0.35;
+      const gunY = radius - gunThick * 0.25;
+      ctx.fillStyle = gunColor;
+      ctx.fillRect(gunX, gunY, gunLength, gunThick);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(gunX + gunLength - 3, gunY + (gunThick - 4) / 2, 4, 4);
+
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(2, -5, 6, 10);
+      ctx.fillStyle = p.color || '#38bdf8';
+      ctx.fillRect(4, -3, 3, 6);
+
       ctx.fillStyle = bodyColor;
-      ctx.shadowBlur = 0;
+      ctx.shadowColor = bodyColor;
+      ctx.shadowBlur = 10;
       drawShapeBody(ctx, shapeId, radius, bodyColor);
+      ctx.shadowBlur = 0;
       drawShapeGunDecor(ctx, shapeId, radius, weapon, bodyColor);
+
+      ctx.restore();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 12px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText(`${clsDef.icon} ${p.name}`, 0, -radius - 12);
+
+      if (p.chatBubble && Date.now() - p.chatBubble.time < 4000) {
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 1;
+        ctx.font = '11px system-ui';
+        const textWidth = ctx.measureText(p.chatBubble.text).width;
+        const bWidth = textWidth + 16, bHeight = 20;
+
+        ctx.beginPath();
+        ctx.roundRect(-bWidth / 2, -radius - 38, bWidth, bHeight, 8);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#38bdf8';
+        ctx.textAlign = 'center';
+        ctx.fillText(p.chatBubble.text, 0, -radius - 24);
+      }
+
       ctx.restore();
     }
 
@@ -4894,16 +4808,6 @@
         joinedPlayer.exclusiveSkillId = (typeof data.exclusiveSkillId === 'string' && allowedIds.includes(data.exclusiveSkillId)) ? data.exclusiveSkillId : allowedIds[0];
         joinedPlayer.generalSkillId = GENERAL_SKILL_IDS.includes(data.generalSkillId) ? data.generalSkillId : 'heal';
         joinedPlayer.shape = (typeof data.shape === 'string' && SHAPES[data.shape] && saveData.unlockedShapes.includes(data.shape)) ? data.shape : (joinedPlayer.shape || 'circle');
-        if (data.gunSkins && typeof data.gunSkins === 'object' && !Array.isArray(data.gunSkins)) {
-          const safeGunSkins = {};
-          Object.keys(WEAPONS).forEach(key => {
-            const skinId = data.gunSkins[key];
-            if (skinId === 'gold' || skinId === 'shadow') safeGunSkins[key] = skinId;
-          });
-          joinedPlayer.gunSkins = safeGunSkins;
-        } else if (!joinedPlayer.gunSkins) {
-          joinedPlayer.gunSkins = {};
-        }
         joinedPlayer.isReady = false;
         joinedPlayer.skillCooldowns = joinedPlayer.skillCooldowns || { exclusive: 0, general: 0 };
         const connTxt = document.getElementById('connectedPlayersText');
@@ -4985,16 +4889,6 @@
       } else if (data.type === 'WEAPON_CHANGE' && isHost) {
         const p = players[data.id];
         if (p) p.weapon = data.weapon;
-      } else if (data.type === 'PLAYER_GUN_SKINS' && isHost) {
-        const senderId = conn?.metadata?.playerId;
-        if (!senderId || data.id !== senderId || !players[senderId] || !data.gunSkins || typeof data.gunSkins !== 'object' || Array.isArray(data.gunSkins)) return;
-        const safeGunSkins = {};
-        Object.keys(WEAPONS).forEach(key => {
-          const skinId = data.gunSkins[key];
-          if (skinId === 'gold' || skinId === 'shadow') safeGunSkins[key] = skinId;
-        });
-        players[senderId].gunSkins = safeGunSkins;
-        broadcastState();
       } else if (data.type === 'PLAYER_UPGRADE' && isHost) {
         // 僅同步允許的升級屬性，不以客戶端整份物件覆蓋主機權威狀態。
         if (players[data.id] && data.playerState && typeof data.playerState === 'object') {
@@ -5013,14 +4907,6 @@
           ['penetrate', 'hasClutch'].forEach(key => { if (typeof u[key] === 'boolean') p[key] = u[key]; });
           if (Array.isArray(u.unlockedWeapons)) {
             p.unlockedWeapons = Array.from(new Set([...(p.unlockedWeapons || []), ...u.unlockedWeapons.filter(key => WEAPONS[key])]));
-          }
-          if (u.gunSkins && typeof u.gunSkins === 'object' && !Array.isArray(u.gunSkins)) {
-            const safeGunSkins = {};
-            Object.keys(WEAPONS).forEach(key => {
-              const skinId = u.gunSkins[key];
-              if (skinId === 'gold' || skinId === 'shadow') safeGunSkins[key] = skinId;
-            });
-            p.gunSkins = safeGunSkins;
           }
           if (typeof u.weapon === 'string' && WEAPONS[u.weapon] && p.unlockedWeapons.includes(u.weapon)) p.weapon = u.weapon;
           if (Array.isArray(u.takenExclusiveTalents)) p.takenExclusiveTalents = u.takenExclusiveTalents.filter(v => typeof v === 'string').slice(0, 100);
@@ -5078,8 +4964,6 @@
             const serverP = data.players[pid];
             serverP.unlockedWeapons = myLocalP.unlockedWeapons;
             serverP.weapon = myLocalP.weapon;
-            serverP.gunSkins = (serverP.gunSkins && typeof serverP.gunSkins === 'object') ? serverP.gunSkins : (myLocalP.gunSkins || {});
-            myLocalP.gunSkins = serverP.gunSkins;
             serverP.classId = myLocalP.classId;
             serverP.maxHp = myLocalP.maxHp;
             serverP.maxShield = myLocalP.maxShield;
@@ -5297,28 +5181,8 @@
         const weaponKey=parts[1], skinKey=parts[2]; if (GUN_SKINS[skinKey]) purchaseItem('gunSkin', `${weaponKey}:${skinKey}`, GUN_SKINS[skinKey].price);
       } else if (parts[0] === 'equip-gun') {
         const weaponKey=parts[1], skinKey=parts[2];
-        if (skinKey === 'base') {
-          saveData.currentGunSkin[weaponKey]=null;
-          if (players[myPlayerId]) {
-            if (!players[myPlayerId].gunSkins) players[myPlayerId].gunSkins = {};
-            players[myPlayerId].gunSkins[weaponKey] = null;
-          }
-          saveGameData();
-          if (!isHost && hostConn && hostConn.open) { try { hostConn.send({ type: 'PLAYER_GUN_SKINS', id: myPlayerId, gunSkins: { ...(players[myPlayerId]?.gunSkins || {}) } }); } catch(e) {} }
-          else if (isHost) broadcastState();
-          renderShop();
-        }
-        else if ((saveData.unlockedGunSkins[weaponKey]||[]).includes(skinKey)) {
-          saveData.currentGunSkin[weaponKey]=skinKey;
-          if (players[myPlayerId]) {
-            if (!players[myPlayerId].gunSkins) players[myPlayerId].gunSkins = {};
-            players[myPlayerId].gunSkins[weaponKey] = skinKey;
-          }
-          saveGameData();
-          if (!isHost && hostConn && hostConn.open) { try { hostConn.send({ type: 'PLAYER_GUN_SKINS', id: myPlayerId, gunSkins: { ...(players[myPlayerId]?.gunSkins || {}) } }); } catch(e) {} }
-          else if (isHost) broadcastState();
-          renderShop();
-        }
+        if (skinKey === 'base') { saveData.currentGunSkin[weaponKey]=null; saveGameData(); renderShop(); }
+        else if ((saveData.unlockedGunSkins[weaponKey]||[]).includes(skinKey)) { saveData.currentGunSkin[weaponKey]=skinKey; saveGameData(); renderShop(); }
       } else if (parts[0] === 'buy-skill') {
         const id=parts.slice(1).join(':'), sk=SKILLS[id]; if (sk) { const price=sk.slot==='exclusive'?500:300; if (purchaseItem('skill',id,price)) initSkillPickers(); }
       }
@@ -5925,7 +5789,6 @@
         if (!nick) nick = '房主';
         players[myPlayerId] = createPlayerWithClass(myPlayerId, nick, selectedSkinColor, selectedClassId);
         players[myPlayerId].shape = saveData.currentShape || 'circle';
-        players[myPlayerId].gunSkins = { ...(saveData.currentGunSkin || {}) };
         players[myPlayerId].isReady = false;
         try {
           peer = new Peer('dungeon_' + shortCode);
@@ -5975,7 +5838,6 @@
         if (!nick) nick = '隊友';
         players[myPlayerId] = createPlayerWithClass(myPlayerId, nick, selectedSkinColor, selectedClassId);
         players[myPlayerId].shape = saveData.currentShape || 'circle';
-        players[myPlayerId].gunSkins = { ...(saveData.currentGunSkin || {}) };
         players[myPlayerId].isReady = false;
         try {
           peer = new Peer();
@@ -5985,7 +5847,7 @@
               document.getElementById('joinRoomBtn').disabled = true;
               document.getElementById('joinRoomBtn').classList.add('opacity-50', 'pointer-events-none');
               openLobby();
-              hostConn.send({ type: 'JOIN_PLAYER', id: myPlayerId, name: nick, color: selectedSkinColor, classId: selectedClassId, shape: saveData.currentShape || 'circle', exclusiveSkillId: selectedExclusiveSkillId || (CLASS_EXCLUSIVE_SKILLS[selectedClassId] || CLASS_EXCLUSIVE_SKILLS.assault)[0], generalSkillId: selectedGeneralSkillId, gunSkins: { ...(saveData.currentGunSkin || {}) } });
+              hostConn.send({ type: 'JOIN_PLAYER', id: myPlayerId, name: nick, color: selectedSkinColor, classId: selectedClassId, shape: saveData.currentShape || 'circle', exclusiveSkillId: selectedExclusiveSkillId || (CLASS_EXCLUSIVE_SKILLS[selectedClassId] || CLASS_EXCLUSIVE_SKILLS.assault)[0], generalSkillId: selectedGeneralSkillId });
             });
             hostConn.on('data', (data) => handleNetworkData(data));
             hostConn.on('close', () => { if (!manualRoomLeave) handleHostDisconnection(); });
