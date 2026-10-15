@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>元氣地牢:大廳修復</title>
+  <title>元氣地牢:卡?
+</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- PeerJS CDN -->
@@ -2639,7 +2640,23 @@
       const skillId = slot === 'exclusive' ? (p.exclusiveSkillId || (CLASS_EXCLUSIVE_SKILLS[p.classId] || CLASS_EXCLUSIVE_SKILLS.assault)[0]) : (p.generalSkillId || 'heal');
       if (!SKILLS[skillId] || (p.skillCooldowns?.[slot] || 0) > 0) return;
       if (isHost) triggerSkill(myPlayerId, skillId, p.angle);
-      else if (hostConn && hostConn.open) hostConn.send({ type: 'USE_SKILL', id: myPlayerId, skillId, angle: p.angle });
+      else {
+        const a = p.angle || 0;
+        const skill = SKILLS[skillId];
+        if (skill) {
+          skillAreas.push({
+            id: 'local_' + Math.random().toString(36).slice(2),
+            ownerId: myPlayerId,
+            x: p.x, y: p.y,
+            type: 'localPredict',
+            radius: 60,
+            duration: 0.3,
+            maxDuration: 0.3,
+            isLocalPredict: true
+          });
+        }
+        if (hostConn && hostConn.open) hostConn.send({ type: 'USE_SKILL', id: myPlayerId, skillId, angle: p.angle });
+      }
     }
 
     function processSkillZombieDeaths(owner) {
@@ -3018,8 +3035,14 @@
             healsTeammates: me.weapon === 'healBeam'
           };
 
-          if (isHost) bullets.push(bullet);
-          else if (hostConn) hostConn.send({ type: 'SPAWN_BULLET', bullet });
+          if (isHost) {
+            bullets.push(bullet);
+          } else {
+            bullet.isPredicted = true;
+            bullet.predictedAt = performance.now();
+            bullets.push(bullet);
+            if (hostConn && hostConn.open) hostConn.send({ type: 'SPAWN_BULLET', bullet });
+          }
         }
       }
     }
@@ -3813,7 +3836,19 @@
         }
       });
 
-      skillAreas.forEach(a => { ctx.save(); ctx.globalAlpha=Math.max(0.15,Math.min(0.45,a.duration/(a.maxDuration||1))); ctx.fillStyle=a.type==='fire'?'#f97316':a.type==='poison'?'#a3e635':a.type==='mark'?'#f472b6':a.type==='smoke'?'#94a3b8':a.type==='wall'?'#cbd5e1':a.type==='shield'?'#60a5fa':a.type==='healBurst'?'#4ade80':a.type==='smite'?'#fbbf24':a.type==='freeze'?'#67e8f9':a.type==='heal'?'#4ade80':a.type==='frost'?'#38bdf8':'#fbbf24'; ctx.strokeStyle=ctx.fillStyle; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(a.x,a.y,a.radius,0,Math.PI*2); ctx.fill(); ctx.stroke(); ctx.restore(); });
+      skillAreas.forEach(a => {
+        if (a.type === 'localPredict') {
+          ctx.save();
+          ctx.globalAlpha = Math.max(0, Math.min(0.3, a.duration / (a.maxDuration || 0.3)));
+          ctx.fillStyle = 'rgba(255,255,255,0.15)';
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.arc(a.x, a.y, a.radius || 60, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+          ctx.restore();
+          return;
+        }
+        ctx.save(); ctx.globalAlpha=Math.max(0.15,Math.min(0.45,a.duration/(a.maxDuration||1))); ctx.fillStyle=a.type==='fire'?'#f97316':a.type==='poison'?'#a3e635':a.type==='mark'?'#f472b6':a.type==='smoke'?'#94a3b8':a.type==='wall'?'#cbd5e1':a.type==='shield'?'#60a5fa':a.type==='healBurst'?'#4ade80':a.type==='smite'?'#fbbf24':a.type==='freeze'?'#67e8f9':a.type==='heal'?'#4ade80':a.type==='frost'?'#38bdf8':'#fbbf24'; ctx.strokeStyle=ctx.fillStyle; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(a.x,a.y,a.radius,0,Math.PI*2); ctx.fill(); ctx.stroke(); ctx.restore();
+      });
       skillTurrets.forEach(t=>{ctx.save();ctx.fillStyle='#c084fc';ctx.strokeStyle='#e9d5ff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(t.x,t.y,15,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#fff';ctx.font='16px system-ui';ctx.textAlign='center';ctx.fillText('🔧',t.x,t.y+5);ctx.restore();});
       renderDefenses();
 
@@ -4382,6 +4417,14 @@
       if (screenShakeTime > 0) screenShakeTime = Math.max(0, screenShakeTime - deltaTime);
       updateDayNightAndWeather(deltaTime);
       updateWeatherAudio();
+      if (!isHost) {
+        for (let i = skillAreas.length - 1; i >= 0; i--) {
+          if (skillAreas[i].type === 'localPredict') {
+            skillAreas[i].duration -= deltaTime;
+            if (skillAreas[i].duration <= 0) skillAreas.splice(i, 1);
+          }
+        }
+      }
 
       zombieGrowlTimer += deltaTime;
       if (zombieGrowlTimer >= 5 + Math.random() * 5) {
@@ -5027,7 +5070,11 @@
         Object.keys(data.players).forEach(pid => {
           if (pid === myPlayerId && myLocalP) {
             const serverP = data.players[pid];
-            serverP.unlockedWeapons = myLocalP.unlockedWeapons;
+            serverP.unlockedWeapons = Array.from(new Set([
+              ...(myLocalP.unlockedWeapons || []),
+              ...(serverP.unlockedWeapons || []),
+              ...(myLocalP.unlockedWeapons || []).filter(k => WEAPONS[k])
+            ])).filter(k => WEAPONS[k]);
             serverP.weapon = myLocalP.weapon;
             serverP.classId = myLocalP.classId;
             serverP.maxHp = myLocalP.maxHp;
@@ -5055,10 +5102,27 @@
               myLocalP.maxExp = serverP.maxExp; 
             }
             serverP.level = myLocalP.level; serverP.exp = myLocalP.exp; serverP.maxExp = myLocalP.maxExp;
+            if (myLocalP) {
+              const dx = serverP.x - myLocalP.x;
+              const dy = serverP.y - myLocalP.y;
+              const distSq = dx * dx + dy * dy;
+              if (distSq < 150 * 150) {
+                serverP.x = myLocalP.x;
+                serverP.y = myLocalP.y;
+              } else {
+                serverP.x = myLocalP.x + dx * 0.2;
+                serverP.y = myLocalP.y + dy * 0.2;
+              }
+            }
             players[pid] = serverP;
           } else { players[pid] = data.players[pid]; }
         });
-        zombies = data.zombies; bullets = data.bullets; enemyBullets = data.enemyBullets || [];
+        zombies = data.zombies;
+        const now = performance.now();
+        const myPredicted = bullets.filter(b => b.isPredicted && (now - b.predictedAt < 3000));
+        const hostBullets = (data.bullets || []).filter(b => b.ownerId !== myPlayerId);
+        bullets = [...myPredicted, ...hostBullets];
+        enemyBullets = data.enemyBullets || [];
         expGems = data.expGems; drops = data.drops || []; currentWave = data.currentWave;
         dayNightTime = data.dayNightTime; currentWeather = data.currentWeather;
         defenses = data.defenses || [];
