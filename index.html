@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>元氣地牢:繽紛?</title>
+  <title>元氣地牢:搜打撤</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- PeerJS CDN -->
@@ -477,6 +477,9 @@
 
       <div id="coinDisplay" class="text-amber-400 font-black text-sm text-center">💰 0</div>
       <div id="diamondDisplay" class="text-cyan-300 font-black text-sm text-center">💎 0</div>
+      <button id="exchangeDiamondBtn" type="button" class="w-full bg-slate-800 hover:bg-slate-700 text-cyan-300 font-bold py-2 rounded-2xl text-xs border border-cyan-500/30 active:scale-95 transition-all">
+        💰 500 金幣兌換 1 💎
+      </button>
 
       <!-- 遊戲模式按鈕 -->
       <div class="flex flex-col gap-2 pt-1">
@@ -492,6 +495,12 @@
         <div id="loginStatusDisplay" class="flex flex-col gap-2 mt-2"></div>
         <button id="singlePlayerBtn" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black py-2.5 rounded-2xl text-sm shadow-xl active:scale-95 transition-all">
           🎮 單人快速開始
+        </button>
+        <button id="endlessModeBtn" type="button" class="w-full bg-gradient-to-r from-slate-700 to-cyan-700 hover:from-slate-600 hover:to-cyan-600 text-white font-black py-2.5 rounded-2xl text-sm shadow-xl active:scale-95 transition-all">
+          ♾️ 無限模式
+        </button>
+        <button id="evacuationModeBtn" type="button" class="w-full bg-gradient-to-r from-slate-700 to-emerald-700 hover:from-slate-600 hover:to-emerald-600 text-white font-black py-2.5 rounded-2xl text-sm shadow-xl active:scale-95 transition-all">
+          🚁 撤離模式
         </button>
         <div class="grid grid-cols-2 gap-2">
           <button id="openLobbyBtn" class="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-2 rounded-2xl text-xs shadow-lg active:scale-95 transition-all">
@@ -558,6 +567,11 @@
           <option value="easy">簡單</option>
           <option value="normal" selected>普通</option>
           <option value="hard">困難</option>
+        </select>
+        <select id="lobbyGameModeSelect" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white col-span-2">
+          <option value="normal" selected>一般波次</option>
+          <option value="endless">♾️ 無限模式</option>
+          <option value="evacuation">🚁 撤離模式</option>
         </select>
       </div>
     </div>
@@ -699,6 +713,28 @@
           🏠 主選單
         </button>
       </div>
+    </div>
+  </div>
+
+  <!-- 撤離模式進度 UI -->
+  <div id="evacuationProgressUI" class="absolute top-4 left-1/2 -translate-x-1/2 z-30 w-[min(90vw,360px)] hidden pointer-events-none">
+    <div class="glass-panel p-3 rounded-2xl border border-emerald-500/50 bg-slate-950/85 text-center shadow-xl">
+      <div class="text-sm font-black text-emerald-300">🚁 撤離中...</div>
+      <div id="evacuationCountText" class="text-[11px] text-slate-300 mt-1">0 / 1 人到齊</div>
+      <div class="w-full h-2 bg-slate-900 rounded-full overflow-hidden border border-slate-700 mt-2">
+        <div id="evacuationProgressBar" class="h-full bg-emerald-400 transition-all duration-100" style="width:0%"></div>
+      </div>
+      <div id="evacuationTimeText" class="text-[10px] text-slate-500 mt-1">0.0 / 3.0 秒</div>
+    </div>
+  </div>
+
+  <!-- 撤離成功 Modal -->
+  <div id="evacuationVictoryModal" class="absolute inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 hidden">
+    <div class="glass-panel p-6 rounded-3xl border border-emerald-500/50 shadow-2xl max-w-sm w-full flex flex-col gap-4 text-center">
+      <span class="text-4xl">🚁</span>
+      <h2 class="text-2xl font-black text-emerald-400 tracking-wider">🚁 撤離成功！</h2>
+      <p id="evacuationVictoryDesc" class="text-xs text-slate-300 whitespace-pre-line"></p>
+      <button id="evacuationVictoryReturnBtn" type="button" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold py-2.5 rounded-2xl text-xs border border-slate-700 active:scale-95 transition-all">🏠 主選單</button>
     </div>
   </div>
 
@@ -1134,6 +1170,46 @@
       necroStaff: { name: '亡靈權杖', fireRate: 400, speed: 16, damage: 35, color: '#a78bfa', size: 5, count: 1, spread: 0, recoil: 2, penetrate: true, range: 100, exclusiveTo: 'necromancer', icon: '💀', isNecro: true, summonChance: 0.3 }
     };
 
+    const WEAPON_AFFIX_POOL = [
+      { id: 'dmg', name: '+傷害', value: 0.15, desc: '傷害 +15%' },
+      { id: 'atkSpeed', name: '+攻速', value: 0.15, desc: '攻速 +15%' },
+      { id: 'pierce', name: '+穿透', value: 1, desc: '穿透 +1' },
+      { id: 'crit', name: '+暴擊', value: 0.10, desc: '暴擊率 +10%，暴擊傷害 ×2' },
+      { id: 'lifesteal', name: '+吸血', value: 0.05, desc: '造成傷害的 5% 回血' },
+      { id: 'moveSpeed', name: '+移速', value: 0.10, desc: '移動速度 +10%' }
+    ];
+
+    function rollWeaponAffixes() {
+      const count = 1 + Math.floor(Math.random() * 2);
+      const pool = [...WEAPON_AFFIX_POOL];
+      const result = [];
+      for (let i = 0; i < count && pool.length > 0; i++) {
+        const index = Math.floor(Math.random() * pool.length);
+        const affix = pool.splice(index, 1)[0];
+        result.push({ id: affix.id, value: affix.value });
+      }
+      return result;
+    }
+
+    function getWeaponAffixes(player, weaponKey) {
+      if (!player || !player.weaponAffixes || !Array.isArray(player.weaponAffixes[weaponKey])) return [];
+      return player.weaponAffixes[weaponKey];
+    }
+
+    function getWeaponAffixValue(player, weaponKey, affixId) {
+      const affix = getWeaponAffixes(player, weaponKey).find(a => a && a.id === affixId);
+      return affix && Number.isFinite(affix.value) ? affix.value : 0;
+    }
+
+    function formatWeaponAffixes(player, weaponKey) {
+      const affixes = getWeaponAffixes(player, weaponKey);
+      if (!affixes.length) return '';
+      return affixes.map(a => {
+        const def = WEAPON_AFFIX_POOL.find(x => x.id === a.id);
+        return def ? def.name : '';
+      }).filter(Boolean).join(' ');
+    }
+
     const GUN_SKINS = {
       gold: { name: '黃金', color: '#fbbf24', price: 300 },
       shadow: { name: '暗影', color: '#7c3aed', price: 300 }
@@ -1347,6 +1423,19 @@
       if (hudEl) hudEl.innerText = `💎 ${amount}`;
     }
 
+    function exchangeCoinsForDiamond() {
+      if ((Number(saveData.coins) || 0) < 500) {
+        showDebugToast('💰 金幣不足，需要 500 金幣');
+        return;
+      }
+      saveData.coins -= 500;
+      saveData.diamonds = (Number(saveData.diamonds) || 0) + 1;
+      saveGameData();
+      updateCoinDisplay();
+      updateDiamondDisplay();
+      showDebugToast('💎 兌換成功：500 金幣 → 1 鑽石');
+    }
+
     let waveStartKillCount = 0;
     let currentWaveKills = 0;
 
@@ -1364,6 +1453,13 @@
 
     let currentWave = 1;
     let currentWaveRewardSessionId = '';
+    let gameMode = 'normal';
+    let endlessWaveTimer = null;
+    let evacuationPoint = null;
+    let evacuationProgress = 0;
+    let evacuationInsideCount = 0;
+    let evacuationRequiredCount = 0;
+    let evacuationSuccess = false;
     let zombiesToSpawn = 0;
     let lastSpawnTime = 0;
 
@@ -1959,7 +2055,8 @@
     }
 
     function handleHostDisconnection() {
-      gameRunning = false;
+      gameRunning = false; evacuationProgress = 0; evacuationInsideCount = 0; evacuationRequiredCount = 0;
+      const evacUI = document.getElementById('evacuationProgressUI'); if (evacUI) evacUI.classList.add('hidden');
       document.body.classList.add('modal-open');
       const modal = document.getElementById('hostDisconnectedModal');
       if (modal) modal.classList.remove('hidden');
@@ -2221,6 +2318,7 @@
     }
 
     function startDailyChallengeGame() {
+      gameMode = 'normal';
       dailyChallenge = initDailyChallengeSystem();
       const hudTag = document.getElementById('dailyChallengeHudTag');
       const hudName = document.getElementById('hudChallengeName');
@@ -2531,7 +2629,7 @@
         speed: stats.speed, dmgMult: stats.dmgMult, bulletScale: stats.bulletScale,
         magnetRange: stats.magnetRange, dashMaxCooldown: stats.dashMaxCooldown,
         invulnDuration: stats.invulnDuration, lifesteal: stats.lifesteal,
-        weapon: 'pistol', unlockedWeapons, level: 1, exp: 0, maxExp: 10, angle: 0,
+        weapon: 'pistol', unlockedWeapons, weaponAffixes: {}, level: 1, exp: 0, maxExp: 10, angle: 0,
         penetrate: false, dashCooldown: 0, invulnerableTime: 0,
         isDowned: false, reviveProgress: 0, chatBubble: null, isDead: false,
         takenExclusiveTalents: [],
@@ -2818,7 +2916,8 @@
 
         if (isExclusive && !isSelected) { borderStyle = 'border-2 shadow-md'; btn.style.borderColor = clsDef.color; }
         btn.className = `px-2.5 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1 border ${borderStyle} ${bgStyle}`;
-        btn.innerHTML = `<span class="opacity-60">[${slot.key}]</span> ${isExclusive ? clsDef.icon : ''} ${w.name}`;
+        const affixText = formatWeaponAffixes(p, wKey);
+        btn.innerHTML = `<span class="opacity-60">[${slot.key}]</span> ${isExclusive ? clsDef.icon : ''} ${w.name}${affixText ? `<span class="block text-[9px] leading-tight opacity-80">${affixText}</span>` : ''}`;
         btn.onclick = () => switchWeapon(wKey); bar.appendChild(btn);
       });
       renderSkillButtons();
@@ -2841,7 +2940,9 @@
       const now = Date.now(); const w = WEAPONS[me.weapon];
       if (!w || !w.isMelee) return;
 
-      if (now - lastShootTime >= w.fireRate / (((me.skillEffects?.rage > 0) ? 1.5 : 1) * ((me.skillEffects?.rapidFire > 0) ? 2 : 1))) {
+      const weaponAtkSpeed = getWeaponAffixValue(me, me.weapon, 'atkSpeed');
+      const fireRateMultiplier = Math.max(0.05, 1 - weaponAtkSpeed);
+      if (now - lastShootTime >= (w.fireRate * fireRateMultiplier) / (((me.skillEffects?.rage > 0) ? 1.5 : 1) * ((me.skillEffects?.rapidFire > 0) ? 2 : 1))) {
         lastShootTime = now;
         let attackAngle = me.angle;
         if (aimJoystickData.active) { attackAngle = Math.atan2(aimJoystickData.y, aimJoystickData.x); me.angle = attackAngle; }
@@ -2868,8 +2969,17 @@
         if (angleDiff > Math.PI) angleDiff = Math.PI * 2 - angleDiff;
 
         if (angleDiff <= halfArc) {
-          let actualDmg = Math.round(weapon.damage * (player.dmgMult || 1) * ((player.skillEffects?.rageBoost > 0) ? 2 : 1));
+          const weaponDmgAffix = getWeaponAffixValue(player, player.weapon, 'dmg');
+          const weaponCritAffix = getWeaponAffixValue(player, player.weapon, 'crit');
+          const weaponLifestealAffix = getWeaponAffixValue(player, player.weapon, 'lifesteal');
+          let actualDmg = Math.round(weapon.damage * (player.dmgMult || 1) * (1 + weaponDmgAffix) * ((player.skillEffects?.rageBoost > 0) ? 2 : 1));
+          if (weaponCritAffix > 0 && Math.random() < weaponCritAffix) actualDmg *= 2;
           z.hp -= actualDmg; createFloatingText(z.x, z.y - z.size / 2 - 5, `-${actualDmg}`, weapon.color || '#fbbf24', 22);
+          if (weaponLifestealAffix > 0) {
+            const heal = Math.max(0, Math.round(actualDmg * weaponLifestealAffix));
+            player.hp = Math.min(player.maxHp, player.hp + heal);
+            if (heal > 0) createFloatingText(player.x, player.y - 35, `+${heal} HP`, '#4ade80', 14);
+          }
           z.vx += Math.cos(angleToZombie) * ((weapon.knockback || 30) / 5); z.vy += Math.sin(angleToZombie) * ((weapon.knockback || 30) / 5);
 
           if (Math.random() < (weapon.stunChance || 0.3) + (player.stunBonus || 0)) z.stunTimer = (weapon.stunDuration || 1.0) + (player.stunBonus ? 0.5 : 0);
@@ -2916,7 +3026,9 @@
 
       if (w.isAxe && bullets.filter(b => b.isAxe && b.ownerId === myPlayerId).length >= 1) return;
 
-      if (now - lastShootTime >= w.fireRate / (((me.skillEffects?.rage > 0) ? 1.5 : 1) * ((me.skillEffects?.rapidFire > 0) ? 2 : 1))) {
+      const weaponAtkSpeed = getWeaponAffixValue(me, me.weapon, 'atkSpeed');
+      const fireRateMultiplier = Math.max(0.05, 1 - weaponAtkSpeed);
+      if (now - lastShootTime >= (w.fireRate * fireRateMultiplier) / (((me.skillEffects?.rage > 0) ? 1.5 : 1) * ((me.skillEffects?.rapidFire > 0) ? 2 : 1))) {
         lastShootTime = now; let fireAngle = me.angle;
         if (aimJoystickData.active) { fireAngle = Math.atan2(aimJoystickData.y, aimJoystickData.x); me.angle = fireAngle; }
 
@@ -2932,7 +3044,9 @@
         else playSound('shoot');
 
         flashLightIntensity = 80;
-        let finalDmgMult = (me.dmgMult || 1) * ((me.skillEffects?.critBoost > 0) ? 1.5 : 1) * ((me.skillEffects?.rageBoost > 0) ? 2 : 1);
+        const weaponDmgAffix = getWeaponAffixValue(me, me.weapon, 'dmg');
+        const weaponPierceAffix = getWeaponAffixValue(me, me.weapon, 'pierce');
+        let finalDmgMult = (me.dmgMult || 1) * (1 + weaponDmgAffix) * ((me.skillEffects?.critBoost > 0) ? 1.5 : 1) * ((me.skillEffects?.rageBoost > 0) ? 2 : 1);
         if (me.hp / me.maxHp <= 0.3 && me.hasClutch) finalDmgMult *= 2.0;
 
         const clsDef = CLASSES[me.classId] || CLASSES.assault;
@@ -2946,10 +3060,10 @@
             x: spawnX, y: spawnY, startX: spawnX, startY: spawnY,
             vx: Math.cos(spreadAngle) * w.speed, vy: Math.sin(spreadAngle) * w.speed,
             damage: Math.round(w.damage * finalDmgMult), color: w.color, size: w.size * (me.bulletScale || 1),
-            penetrate: w.penetrate || me.penetrate, range: Math.round((w.range || 75) * rangeMult),
+            penetrate: !!(w.penetrate || me.penetrate || weaponPierceAffix > 0), extraPenetrate: weaponPierceAffix > 0 ? Math.max(1, Math.round(weaponPierceAffix)) : 0, pierceHits: 0, range: Math.round((w.range || 75) * rangeMult),
             isBeam: !!w.isBeam, beamLength: w.beamLength || 400, beamWidth: w.beamWidth || 6,
             angle: spreadAngle, weaponKey: me.weapon, isGrenade: !!w.isGrenade,
-            splashDamage: w.splashDamage || 0, splashRadius: (w.splashRadius || 0) * (me.grenadeRadiusMult || 1.0),
+            splashDamage: Math.round((w.splashDamage || 0) * finalDmgMult), splashRadius: (w.splashRadius || 0) * (me.grenadeRadiusMult || 1.0),
             isAxe: !!w.isAxe, returning: false, rotationAngle: 0,
             isTesla: !!w.isTesla, isFlame: !!w.isFlame, isFrost: !!w.isFrost,
             healsTeammates: me.weapon === 'healBeam'
@@ -2962,6 +3076,7 @@
     }
 
     function startNextWave() {
+      if (gameMode === 'evacuation' && currentWave >= 5) return;
       showNextWaveButton = false;
       if (hasStartedWave) {
         // 金幣與每 5 波的鑽石已在上一波結束時直接發放，這裡只切換到下一波。
@@ -3036,6 +3151,14 @@
         const z = zombies[i]; const d = Math.hypot(z.x - x, z.y - y);
         if (d < radius + z.size / 2) {
           z.hp -= damage; createFloatingText(z.x, z.y - z.size / 2 - 5, `-${damage}`, '#f59e0b', 18);
+          if (owner) {
+            const grenadeLifesteal = getWeaponAffixValue(owner, owner.weapon, 'lifesteal');
+            if (grenadeLifesteal > 0) {
+              const heal = Math.max(0, Math.round(damage * grenadeLifesteal));
+              owner.hp = Math.min(owner.maxHp, owner.hp + heal);
+              if (heal > 0) createFloatingText(owner.x, owner.y - 35, `+${heal} HP`, '#4ade80', 14);
+            }
+          }
           if (z.hp <= 0) {
             triggerZombieDeathEffects(z.x, z.y, z.type === 'boss');
             if (damage > 100) triggerCritFlashOverlay();
@@ -3127,6 +3250,99 @@
       }
     }
 
+    function grantEndlessGameOverReward() {
+      if (!isHost || gameMode !== 'endless') return;
+      if (!Array.isArray(saveData.waveRewardIdsClaimed)) saveData.waveRewardIdsClaimed = [];
+      const rewardId = `endless:${currentWaveRewardSessionId || currentSeed}`;
+      if (saveData.waveRewardIdsClaimed.includes(rewardId)) return;
+      const coins = Math.max(0, Math.floor(currentWave * 10 + currentWaveKills));
+      saveData.coins += coins;
+      saveData.stats.totalKills += currentWaveKills;
+      if (currentWave > saveData.stats.bestWave) saveData.stats.bestWave = currentWave;
+      saveData.waveRewardIdsClaimed.push(rewardId);
+      saveGameData();
+      updateCoinDisplay();
+      updateDiamondDisplay();
+      if (!isSinglePlayer) {
+        const message = { type: 'WAVE_REWARD', rewardId, wave: currentWave, coins, diamonds: 0 };
+        connections.forEach(conn => { if (conn && conn.open) { try { conn.send(message); } catch (e) {} } });
+      }
+    }
+
+    function resetEvacuationState() {
+      evacuationPoint = null; evacuationProgress = 0; evacuationInsideCount = 0; evacuationRequiredCount = 0; evacuationSuccess = false;
+      const ui = document.getElementById('evacuationProgressUI'); if (ui) ui.classList.add('hidden');
+    }
+
+    function generateEvacuationPoint() {
+      const radius = 60;
+      const livingPlayers = Object.values(players).filter(p => p && !p.isDowned && !p.isDead);
+      let candidate = { x: MAP_BOUNDS.minX + radius + Math.random() * (MAP_WIDTH - radius * 2), y: MAP_BOUNDS.minY + radius + Math.random() * (MAP_HEIGHT - radius * 2) };
+      for (let attempt = 0; attempt < 10; attempt++) {
+        candidate = { x: MAP_BOUNDS.minX + radius + Math.random() * (MAP_WIDTH - radius * 2), y: MAP_BOUNDS.minY + radius + Math.random() * (MAP_HEIGHT - radius * 2) };
+        const farEnough = livingPlayers.every(p => Math.hypot(candidate.x - p.x, candidate.y - p.y) >= 300);
+        const clearTrees = trees.every(t => Math.hypot(candidate.x - t.x, candidate.y - t.y) >= t.r + radius + 20);
+        if (farEnough && clearTrees) break;
+      }
+      evacuationPoint = { x: candidate.x, y: candidate.y, radius }; evacuationProgress = 0; evacuationInsideCount = 0;
+      evacuationRequiredCount = livingPlayers.length === 1 ? 1 : Math.floor(livingPlayers.length / 2) + 1;
+    }
+
+    function updateEvacuationHost(deltaTime) {
+      if (!isHost || gameMode !== 'evacuation' || !evacuationPoint || evacuationSuccess) return false;
+      const living = Object.values(players).filter(p => p && !p.isDowned && !p.isDead);
+      const aliveCount = living.length;
+      if (aliveCount === 0) { evacuationProgress = 0; evacuationInsideCount = 0; evacuationRequiredCount = 0; return false; }
+      const required = aliveCount === 1 ? 1 : Math.floor(aliveCount / 2) + 1;
+      const inside = living.filter(p => Math.hypot(p.x - evacuationPoint.x, p.y - evacuationPoint.y) < evacuationPoint.radius).length;
+      evacuationInsideCount = inside; evacuationRequiredCount = required;
+      evacuationProgress = inside >= required ? Math.min(3, evacuationProgress + deltaTime) : 0;
+      if (evacuationProgress >= 3) { completeEvacuation(); return true; }
+      return false;
+    }
+
+    function updateEvacuationUI() {
+      const ui = document.getElementById('evacuationProgressUI'); if (!ui) return;
+      const show = gameMode === 'evacuation' && !!evacuationPoint && gameRunning && !evacuationSuccess && !isTutorialMode;
+      if (!show) { ui.classList.add('hidden'); return; }
+      ui.classList.remove('hidden');
+      const required = Math.max(1, evacuationRequiredCount || 1), inside = Math.max(0, evacuationInsideCount || 0), progress = Math.max(0, Math.min(3, evacuationProgress || 0));
+      const count = document.getElementById('evacuationCountText'), bar = document.getElementById('evacuationProgressBar'), time = document.getElementById('evacuationTimeText');
+      if (count) count.innerText = `${inside} / ${required} 人到齊`;
+      if (bar) bar.style.width = `${progress / 3 * 100}%`;
+      if (time) time.innerText = `${progress.toFixed(1)} / 3.0 秒`;
+    }
+
+    function grantEvacuationReward() {
+      if (!isHost || gameMode !== 'evacuation') return 0;
+      if (!Array.isArray(saveData.waveRewardIdsClaimed)) saveData.waveRewardIdsClaimed = [];
+      const rewardId = `evacuation:${currentWaveRewardSessionId || currentSeed}`;
+      if (saveData.waveRewardIdsClaimed.includes(rewardId)) return 0;
+      const coins = Math.max(0, Math.floor(currentWave * 10 + currentWaveKills));
+      saveData.coins += coins; saveData.stats.totalKills += currentWaveKills;
+      if (currentWave > saveData.stats.bestWave) saveData.stats.bestWave = currentWave;
+      saveData.waveRewardIdsClaimed.push(rewardId); saveGameData(); updateCoinDisplay(); updateDiamondDisplay();
+      if (!isSinglePlayer) {
+        const msg = { type: 'EVACUATION_SUCCESS', rewardId, wave: currentWave, kills: currentWaveKills, coins };
+        connections.forEach(c => { if (c && c.open) { try { c.send(msg); } catch(e) {} } });
+      }
+      return coins;
+    }
+
+    function showEvacuationVictory(wave, kills, coins) {
+      const modal = document.getElementById('evacuationVictoryModal');
+      const desc = document.getElementById('evacuationVictoryDesc');
+      if (desc) desc.innerText = `存活到第 ${wave} 波\n擊殺 ${kills} 隻殭屍\n獲得金幣 ${coins}`;
+      if (modal) modal.classList.remove('hidden');
+      document.body.classList.add('modal-open');
+    }
+
+    function completeEvacuation() {
+      if (evacuationSuccess || gameMode !== 'evacuation') return;
+      evacuationSuccess = true; const wave = currentWave, kills = currentWaveKills;
+      const coins = grantEvacuationReward(); gameRunning = false; updateEvacuationUI(); showEvacuationVictory(wave, kills, coins);
+    }
+
     function updateWorldHost() {
       const now = Date.now(), deltaTime = 0.016;
       const { darkFactor } = getDayNightColorOverlay();
@@ -3138,10 +3354,23 @@
       if (zombiesToSpawn > 0 && now - lastSpawnTime > spawnDelay) {
         lastSpawnTime = now; spawnZombie();
       } else if (zombiesToSpawn <= 0 && zombies.length === 0 && !isTutorialMode) {
-        // 波次結束後立即發放獎勵，再等待玩家手動開始下一波。
-        if (!showNextWaveButton) {
-          showNextWaveButton = true;
-          grantWaveEndRewards(currentWave);
+        if (gameMode === 'endless') {
+          showNextWaveButton = false;
+          if (!endlessWaveTimer && gameRunning) {
+            endlessWaveTimer = setTimeout(() => {
+              endlessWaveTimer = null;
+              if (gameRunning && isHost && gameMode === 'endless' && !isTutorialMode && zombiesToSpawn <= 0 && zombies.length === 0) startNextWave();
+            }, 2000);
+          }
+        } else if (gameMode === 'evacuation') {
+          showNextWaveButton = false;
+          if (currentWave === 5 && !evacuationPoint) generateEvacuationPoint();
+        } else {
+          // 波次結束後立即發放獎勵，再等待玩家手動開始下一波。
+          if (!showNextWaveButton) {
+            showNextWaveButton = true;
+            grantWaveEndRewards(currentWave);
+          }
         }
       }
 
@@ -3241,7 +3470,31 @@
         }
       });
 
+      if (gameMode === 'evacuation' && evacuationPoint && !evacuationSuccess) {
+        if (updateEvacuationHost(deltaTime)) return;
+      }
+
       if (livingCount === 0 && playerList.length > 0) {
+        if (endlessWaveTimer) { clearTimeout(endlessWaveTimer); endlessWaveTimer = null; }
+        if (gameMode === 'endless' && isHost) {
+          grantEndlessGameOverReward();
+          const modal = document.getElementById('gameOverModal');
+          const title = modal?.querySelector('h2');
+          const desc = modal?.querySelector('p');
+          const icon = modal?.querySelector('span');
+          if (icon) icon.innerText = '♾️';
+          if (title) { title.innerText = '♾️ 無限模式結束'; title.className = 'text-2xl font-black text-cyan-400 tracking-wider'; }
+          if (desc) desc.innerText = `存活到第 ${currentWave} 波\n擊殺 ${currentWaveKills} 隻殭屍\n獲得金幣 ${currentWave * 10 + currentWaveKills}`;
+        } else if (gameMode === 'evacuation') {
+          const modal = document.getElementById('gameOverModal');
+          const title = modal?.querySelector('h2');
+          const desc = modal?.querySelector('p');
+          const icon = modal?.querySelector('span');
+          if (icon) icon.innerText = '💀';
+          if (title) { title.innerText = '💀 撤離失敗'; title.className = 'text-2xl font-black text-red-500 tracking-wider'; }
+          if (desc) desc.innerText = '全體隊友倒地，撤離失敗。';
+          evacuationProgress = 0; evacuationInsideCount = 0; evacuationRequiredCount = 0; updateEvacuationUI();
+        }
         document.body.classList.add('modal-open');
         document.getElementById('gameOverModal').classList.remove('hidden');
       }
@@ -3296,6 +3549,16 @@
               if (distToSegment(z.x, z.y, startX, startY, endX, endY) < (z.size / 2) + b.beamWidth) {
                 let actualDamage = b.damage;
                 if (skillAreas.some(area => area.type === 'mark' && Math.hypot(z.x-area.x,z.y-area.y) <= area.radius + (z.size || 0)/2)) actualDamage = Math.round(actualDamage * 1.5);
+                if (owner) {
+                  const beamCrit = getWeaponAffixValue(owner, b.weaponKey, 'crit');
+                  if (beamCrit > 0 && Math.random() < beamCrit) actualDamage *= 2;
+                  const beamLifesteal = getWeaponAffixValue(owner, b.weaponKey, 'lifesteal');
+                  if (beamLifesteal > 0) {
+                    const heal = Math.max(0, Math.round(actualDamage * beamLifesteal));
+                    owner.hp = Math.min(owner.maxHp, owner.hp + heal);
+                    if (heal > 0) createFloatingText(owner.x, owner.y - 35, `+${heal} HP`, '#4ade80', 14);
+                  }
+                }
                 z.hp -= actualDamage; playSound('hit');
                 createFloatingText(z.x, z.y - z.size / 2 - 5, `-${actualDamage}`, '#38bdf8', 20);
                 if (z.hp <= 0) {
@@ -3329,6 +3592,16 @@
             let actualDamage = b.damage;
             if (skillAreas.some(area => area.type === 'mark' && Math.hypot(z.x-area.x,z.y-area.y) <= area.radius + (z.size || 0)/2)) actualDamage = Math.round(actualDamage * 1.5);
             if (owner && owner.critChance && Math.random() < owner.critChance) actualDamage *= 2;
+            if (owner) {
+              const bulletCrit = getWeaponAffixValue(owner, b.weaponKey, 'crit');
+              if (bulletCrit > 0 && Math.random() < bulletCrit) actualDamage *= 2;
+              const bulletLifesteal = getWeaponAffixValue(owner, b.weaponKey, 'lifesteal');
+              if (bulletLifesteal > 0) {
+                const heal = Math.max(0, Math.round(actualDamage * bulletLifesteal));
+                owner.hp = Math.min(owner.maxHp, owner.hp + heal);
+                if (heal > 0) createFloatingText(owner.x, owner.y - 35, `+${heal} HP`, '#4ade80', 14);
+              }
+            }
             if (owner && owner.slowDmgBonus && z.slowTimer > 0) actualDamage *= owner.slowDmgBonus;
 
             if (b.isFlame) {
@@ -3345,7 +3618,8 @@
             if (b.isGrenade) { triggerGrenadeExplosion(b.x, b.y, b.splashDamage, b.splashRadius, b.ownerId); bullets.splice(i, 1); break; }
             if (b.isTesla) triggerTeslaChain(z, actualDamage, b.ownerId);
 
-            if (!b.penetrate) bullets.splice(i, 1);
+            b.pierceHits = (b.pierceHits || 0) + 1;
+            if (!b.penetrate || (b.extraPenetrate > 0 && b.pierceHits >= 1 + b.extraPenetrate)) bullets.splice(i, 1);
             if (z.hp <= 0) {
               triggerZombieDeathEffects(z.x, z.y, z.type === 'boss');
               if (actualDamage > 100) triggerCritFlashOverlay();
@@ -3356,7 +3630,7 @@
               }
               expGems.push({ x: z.x, y: z.y, value: z.type === 'boss' ? 25 : 2 }); zombies.splice(j, 1);
             }
-            if (!b.penetrate) break;
+            if (!b.penetrate || (b.extraPenetrate > 0 && b.pierceHits >= 1 + b.extraPenetrate)) break;
           }
         }
       }
@@ -3536,6 +3810,8 @@
                 if (locked.length > 0) {
                   const newW = locked[Math.floor(Math.random() * locked.length)];
                   p.unlockedWeapons.push(newW); p.weapon = newW;
+                  p.weaponAffixes = p.weaponAffixes || {};
+                  p.weaponAffixes[newW] = rollWeaponAffixes();
                   playSound('pickup');
                   createFloatingText(p.x, p.y - 30, `解鎖：${WEAPONS[newW].name}！`, '#38bdf8', 18);
                   if (p.id === myPlayerId) renderWeaponHotbar();
@@ -3721,6 +3997,16 @@
       ctx.drawImage(bgOffscreenCanvas, MAP_BOUNDS.minX, MAP_BOUNDS.minY);
       ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 6;
       ctx.strokeRect(MAP_BOUNDS.minX, MAP_BOUNDS.minY, MAP_WIDTH, MAP_HEIGHT);
+
+      if (gameMode === 'evacuation' && evacuationPoint && !evacuationSuccess) {
+        const pulse = 1 + Math.sin(performance.now() / 180) * 0.06;
+        ctx.save(); ctx.globalAlpha = 0.22; ctx.fillStyle = '#22c55e';
+        ctx.beginPath(); ctx.arc(evacuationPoint.x, evacuationPoint.y, evacuationPoint.radius * pulse, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 0.9; ctx.strokeStyle = '#4ade80'; ctx.lineWidth = 4; ctx.setLineDash([10, 7]);
+        ctx.beginPath(); ctx.arc(evacuationPoint.x, evacuationPoint.y, evacuationPoint.radius * pulse, 0, Math.PI * 2); ctx.stroke();
+        ctx.setLineDash([]); ctx.fillStyle = '#ffffff'; ctx.font = '28px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('🚁', evacuationPoint.x, evacuationPoint.y); ctx.restore();
+      }
 
       drops.forEach(drop => {
         if (drop.type === 'potion') {
@@ -4264,12 +4550,12 @@
       const btn = document.getElementById('nextWaveBtn');
       const waitText = document.getElementById('waitingNextWaveText');
       if (btn) {
-        const shouldShow = showNextWaveButton && isHost && !isTutorialMode;
+        const shouldShow = gameMode === 'normal' && showNextWaveButton && isHost && !isTutorialMode;
         if (shouldShow) btn.classList.remove('hidden');
         else btn.classList.add('hidden');
       }
       if (waitText) {
-        const shouldShow = showNextWaveButton && !isHost && !isTutorialMode;
+        const shouldShow = gameMode === 'normal' && showNextWaveButton && !isHost && !isTutorialMode;
         if (shouldShow) waitText.classList.remove('hidden');
         else waitText.classList.add('hidden');
       }
@@ -4345,7 +4631,8 @@
         if (dx !== 0 || dy !== 0) {
           const len = Math.hypot(dx, dy);
           if (isFinite(len) && len > 0) {
-            const moveSpeed = me.speed * ((me.skillEffects?.rage > 0) ? 1.3 : 1) * ((me.skillEffects?.dashStep > 0) ? 1.5 : 1);
+            const weaponMoveSpeed = getWeaponAffixValue(me, me.weapon, 'moveSpeed');
+            const moveSpeed = me.speed * (1 + weaponMoveSpeed) * ((me.skillEffects?.rage > 0) ? 1.3 : 1) * ((me.skillEffects?.dashStep > 0) ? 1.5 : 1);
             me.vx = (dx / len) * moveSpeed;
             me.vy = (dy / len) * moveSpeed;
             if (isFinite(me.vx) && isFinite(me.vy)) {
@@ -4392,7 +4679,7 @@
       render();
       renderMiniMap();
       updateBossHealthBarUI();
-      updateDefenseUI(); updateSkillCooldownUI(); updateNextWaveButton();
+      updateDefenseUI(); updateSkillCooldownUI(); updateNextWaveButton(); updateEvacuationUI();
       } catch (err) {
         console.error(err);
       }
@@ -4402,7 +4689,8 @@
     function broadcastState() {
       const state = {
         type: 'STATE_UPDATE', players, zombies, bullets, enemyBullets, expGems, drops, minions, defenses, skillAreas, skillTurrets,
-        currentWave, dayNightTime, currentWeather, mapId: currentMap.id, seed: currentSeed, showNextWaveButton
+        currentWave, dayNightTime, currentWeather, mapId: currentMap.id, seed: currentSeed, showNextWaveButton,
+        evacuationPoint, evacuationProgress, evacuationInsideCount, evacuationRequiredCount
       };
       for (let i = connections.length - 1; i >= 0; i--) {
         const conn = connections[i];
@@ -4439,6 +4727,10 @@
     window.sendPresetChat = function(presetText) { sendChatMessage(presetText); };
 
     function startGame(singlePlayerMode = true) {
+      if (isTutorialMode || dailyChallenge) gameMode = 'normal';
+      if (gameMode !== 'endless' && gameMode !== 'evacuation') gameMode = 'normal';
+      if (endlessWaveTimer) { clearTimeout(endlessWaveTimer); endlessWaveTimer = null; }
+      resetEvacuationState();
       currentWaveRewardSessionId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
       isSinglePlayer = singlePlayerMode;
       hasStartedWave = false;
@@ -4569,6 +4861,8 @@
       if (mapSelect && currentMap) mapSelect.value = currentMap.id;
       const diffSelect = document.getElementById('lobbyDifficultySelect');
       if (diffSelect) diffSelect.value = lobbyDifficulty;
+      const modeSelect = document.getElementById('lobbyGameModeSelect');
+      if (modeSelect) modeSelect.value = gameMode === 'endless' ? 'endless' : (gameMode === 'evacuation' ? 'evacuation' : 'normal');
 
       Object.values(players).forEach(p => { if (p.isReady === undefined) p.isReady = false; });
       renderLobbyPlayerList(players);
@@ -4727,7 +5021,10 @@
       updateStartButton();
     }
 
-    function startMultiplayerGame(mapId, seed, difficulty) {
+    function startMultiplayerGame(mapId, seed, difficulty, selectedGameMode = 'normal') {
+      gameMode = selectedGameMode === 'endless' || selectedGameMode === 'evacuation' ? selectedGameMode : 'normal';
+      if (endlessWaveTimer) { clearTimeout(endlessWaveTimer); endlessWaveTimer = null; }
+      resetEvacuationState();
       if (!mapId || !MAPS.some(m => m.id === mapId)) mapId = MAPS[0].id;
       if (!Number.isFinite(Number(seed))) seed = Math.floor(Math.random() * 1000000);
       lobbyDifficulty = difficulty || lobbyDifficulty || 'normal';
@@ -4836,8 +5133,9 @@
         broadcastLobbyState();
       } else if (data.type === 'LOBBY_START' && !isHost) {
         hostPlayerId = data.hostId || hostPlayerId;
+        gameMode = data.gameMode === 'endless' || data.gameMode === 'evacuation' ? data.gameMode : 'normal';
         closeLobby();
-        startMultiplayerGame(data.mapId, data.seed, data.difficulty);
+        startMultiplayerGame(data.mapId, data.seed, data.difficulty, gameMode);
       } else if (data.type === 'KICKED' && !isHost) {
         showDebugToast('🚫 你已被踢出房間');
         manualRoomLeave = true;
@@ -4932,6 +5230,17 @@
           players[data.id].name = data.name;
           broadcastState(); if (myHostRoomCode) broadcastRoomInfo();
         }
+      } else if (data.type === 'EVACUATION_SUCCESS' && !isHost) {
+        const wave = Number(data.wave), kills = Number(data.kills), coins = Number(data.coins);
+        const rewardId = typeof data.rewardId === 'string' ? data.rewardId : '';
+        if (!Number.isInteger(wave) || wave < 1 || !rewardId || rewardId.length > 160 || !Number.isFinite(kills) || kills < 0 || !Number.isFinite(coins) || coins < 0) return;
+        if (!Array.isArray(saveData.waveRewardIdsClaimed)) saveData.waveRewardIdsClaimed = [];
+        if (!saveData.waveRewardIdsClaimed.includes(rewardId)) {
+          saveData.coins += Math.floor(coins); saveData.stats.totalKills += Math.floor(kills);
+          if (wave > saveData.stats.bestWave) saveData.stats.bestWave = wave;
+          saveData.waveRewardIdsClaimed.push(rewardId); saveGameData(); updateCoinDisplay(); updateDiamondDisplay();
+        }
+        gameRunning = false; evacuationSuccess = true; updateEvacuationUI(); showEvacuationVictory(wave, Math.floor(kills), Math.floor(coins));
       } else if (data.type === 'WAVE_REWARD' && !isHost) {
         const wave = Number(data.wave);
         const coins = Number(data.coins);
@@ -4984,6 +5293,7 @@
             serverP.bulletScale = myLocalP.bulletScale;
             serverP.hasClutch = myLocalP.hasClutch;
             serverP.takenExclusiveTalents = myLocalP.takenExclusiveTalents;
+            serverP.weaponAffixes = myLocalP.weaponAffixes || serverP.weaponAffixes || {};
             if (serverP.level > myLocalP.level) {
               myLocalP.level = serverP.level; 
               myLocalP.maxExp = serverP.maxExp; 
@@ -5005,10 +5315,15 @@
         dayNightTime = data.dayNightTime; currentWeather = data.currentWeather;
         defenses = data.defenses || [];
         minions = data.minions || []; skillAreas = data.skillAreas || []; skillTurrets = data.skillTurrets || [];
-        updateHud(); renderWeaponHotbar(); updateSkillCooldownUI();
+        evacuationPoint = data.evacuationPoint || null;
+        evacuationProgress = Number.isFinite(data.evacuationProgress) ? data.evacuationProgress : 0;
+        evacuationInsideCount = Number.isFinite(data.evacuationInsideCount) ? data.evacuationInsideCount : 0;
+        evacuationRequiredCount = Number.isFinite(data.evacuationRequiredCount) ? data.evacuationRequiredCount : 0;
+        updateHud(); renderWeaponHotbar(); updateSkillCooldownUI(); updateEvacuationUI();
       } else if (data.type === 'GAME_START' && !isHost) {
         document.getElementById('waitingRoomOverlay').classList.add('hidden');
         if (data.mapId && data.seed) generateMap(data.mapId, data.seed);
+        gameMode = data.gameMode === 'endless' || data.gameMode === 'evacuation' ? data.gameMode : 'normal';
         startGame(false);
       }
     }
@@ -5545,6 +5860,9 @@
         });
       });
 
+      const exchangeDiamondBtn = document.getElementById('exchangeDiamondBtn');
+      if (exchangeDiamondBtn) exchangeDiamondBtn.addEventListener('pointerup', exchangeCoinsForDiamond);
+
       const shopBtn = document.getElementById('shopBtn');
       if (shopBtn) shopBtn.addEventListener('pointerup', openShop);
       const gachaBtn=document.getElementById('gachaBtn'); if(gachaBtn) gachaBtn.addEventListener('pointerup', openGacha);
@@ -5716,6 +6034,11 @@
         startGame(true);
       };
 
+      const evacuationModeBtn = document.getElementById('evacuationModeBtn');
+      if (evacuationModeBtn) evacuationModeBtn.addEventListener('pointerup', () => {
+        initAudio(); isHost = true; stopHostingBroadcast(); gameMode = 'evacuation'; startGame(true);
+      });
+
       const lobbyReadyBtn = document.getElementById('lobbyReadyBtn');
       if (lobbyReadyBtn) lobbyReadyBtn.addEventListener('pointerup', () => {
         const me = players[myPlayerId];
@@ -5742,11 +6065,14 @@
         }
         const mapId = document.getElementById('lobbyMapSelect')?.value || MAPS[0].id;
         const difficulty = document.getElementById('lobbyDifficultySelect')?.value || 'normal';
+        const modeValue = document.getElementById('lobbyGameModeSelect')?.value;
+        const selectedGameMode = modeValue === 'endless' || modeValue === 'evacuation' ? modeValue : 'normal';
+        gameMode = selectedGameMode;
         const seed = (window.crypto && window.crypto.getRandomValues) ? (() => { const a=new Uint32Array(1); window.crypto.getRandomValues(a); return a[0] % 1000000; })() : Math.floor(Math.random()*1000000);
         lobbyDifficulty = difficulty;
-        const message = { type: 'LOBBY_START', mapId, seed, difficulty, hostId: hostPlayerId || myPlayerId };
+        const message = { type: 'LOBBY_START', mapId, seed, difficulty, gameMode: selectedGameMode, hostId: hostPlayerId || myPlayerId };
         connections.forEach(conn => { if (conn && conn.open) { try { conn.send(message); } catch (e) {} } });
-        startMultiplayerGame(mapId, seed, difficulty);
+        startMultiplayerGame(mapId, seed, difficulty, selectedGameMode);
       });
 
       const lobbyCustomizeBtn = document.getElementById('lobbyCustomizeBtn');
@@ -5763,6 +6089,8 @@
       if (lobbyMapSelect) lobbyMapSelect.addEventListener('change', () => { if (isHost) { currentMap = MAPS.find(m => m.id === lobbyMapSelect.value) || MAPS[0]; renderLobbyPlayerList(players); } });
       const lobbyDifficultySelect = document.getElementById('lobbyDifficultySelect');
       if (lobbyDifficultySelect) lobbyDifficultySelect.addEventListener('change', () => { if (isHost) lobbyDifficulty = lobbyDifficultySelect.value; });
+       const lobbyGameModeSelect = document.getElementById('lobbyGameModeSelect');
+       if (lobbyGameModeSelect) lobbyGameModeSelect.addEventListener('change', () => { if (isHost) gameMode = lobbyGameModeSelect.value === 'endless' || lobbyGameModeSelect.value === 'evacuation' ? lobbyGameModeSelect.value : 'normal'; });
 
       const leaveLobbyBtn = document.getElementById('leaveLobbyBtn');
       if (leaveLobbyBtn) leaveLobbyBtn.addEventListener('pointerup', () => {
@@ -5778,6 +6106,7 @@
           hostConn = null; peer = null; hostPeerIdStore = null;
         }
         hostPlayerId = null;
+        gameMode = 'normal'; resetEvacuationState();
         closeLobby();
         const joinBtn = document.getElementById('joinRoomBtn');
         if (joinBtn) { joinBtn.disabled = false; joinBtn.classList.remove('opacity-50', 'pointer-events-none'); }
@@ -5828,7 +6157,7 @@
       const stHostBtn = document.getElementById('startHostGameBtn');
       if (stHostBtn) stHostBtn.onclick = () => {
         startGame(false);
-        connections.forEach(c => { if (c.open) c.send({ type: 'GAME_START', mapId: currentMap.id, seed: currentSeed }); });
+        connections.forEach(c => { if (c.open) c.send({ type: 'GAME_START', mapId: currentMap.id, seed: currentSeed, gameMode }); });
         if (myHostRoomCode) broadcastRoomInfo();
       };
 
@@ -5884,7 +6213,16 @@
       if (rstBtn) rstBtn.onclick = () => { location.reload(); };
 
       const returnMenuBtn = document.getElementById('returnToMenuBtn');
-      if (returnMenuBtn) returnMenuBtn.onclick = () => { location.reload(); };
+      if (returnMenuBtn) returnMenuBtn.onclick = () => {
+         gameMode = 'normal'; resetEvacuationState();
+         if (endlessWaveTimer) { clearTimeout(endlessWaveTimer); endlessWaveTimer = null; }
+         location.reload();
+       };
+
+      const evacuationVictoryReturnBtn = document.getElementById('evacuationVictoryReturnBtn');
+      if (evacuationVictoryReturnBtn) evacuationVictoryReturnBtn.addEventListener('pointerup', () => {
+        gameMode = 'normal'; resetEvacuationState(); location.reload();
+      });
 
       const cpBtn = document.getElementById('copyIdBtn');
       if (cpBtn) cpBtn.onclick = () => {
