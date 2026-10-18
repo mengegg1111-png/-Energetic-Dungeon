@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>元氣地牢:搜打撤</title>
+  <title>元氣地牢:依舊搜打撤</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- PeerJS CDN -->
@@ -3364,7 +3364,17 @@
           }
         } else if (gameMode === 'evacuation') {
           showNextWaveButton = false;
-          if (currentWave === 5 && !evacuationPoint) generateEvacuationPoint();
+          if (currentWave < 5) {
+            // 前 5 波自動連續進行；不顯示一般模式的手動下一波按鈕。
+            if (!endlessWaveTimer && gameRunning) {
+              endlessWaveTimer = setTimeout(() => {
+                endlessWaveTimer = null;
+                if (gameRunning && isHost && gameMode === 'evacuation' && !isTutorialMode && zombiesToSpawn <= 0 && zombies.length === 0) startNextWave();
+              }, 2000);
+            }
+          } else if (currentWave === 5 && !evacuationPoint) {
+            generateEvacuationPoint();
+          }
         } else {
           // 波次結束後立即發放獎勵，再等待玩家手動開始下一波。
           if (!showNextWaveButton) {
@@ -4763,6 +4773,8 @@
 
       initBGMSystem(); renderWeaponHotbar(); gameRunning = true;
       if (isHost && myHostRoomCode) broadcastRoomInfo();
+      // 撤離模式沒有「開始下一波」按鈕：由房主自動啟動第 1 波。
+      if (isHost && gameMode === 'evacuation') startNextWave();
       lastFrameTime = performance.now(); requestAnimationFrame(gameLoop);
     }
 
@@ -5051,6 +5063,8 @@
       initBGMSystem();
       renderWeaponHotbar();
       gameRunning = true;
+      // 撤離模式沒有「開始下一波」按鈕：由房主自動啟動第 1 波。
+      if (isHost && gameMode === 'evacuation') startNextWave();
       lastFrameTime = performance.now();
       requestAnimationFrame(gameLoop);
     }
@@ -6033,6 +6047,11 @@
         if (!nick) nick = '勇者';
         startGame(true);
       };
+
+      const endlessModeBtn = document.getElementById('endlessModeBtn');
+      if (endlessModeBtn) endlessModeBtn.addEventListener('pointerup', () => {
+        initAudio(); isHost = true; stopHostingBroadcast(); gameMode = 'endless'; startGame(true);
+      });
 
       const evacuationModeBtn = document.getElementById('evacuationModeBtn');
       if (evacuationModeBtn) evacuationModeBtn.addEventListener('pointerup', () => {
