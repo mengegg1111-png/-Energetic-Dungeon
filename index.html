@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>元氣地牢:武器大更新</title>
+  <title>元氣地牢:繽紛?</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- PeerJS CDN -->
@@ -2453,11 +2453,9 @@
         if (localStorage.getItem(dailyKey) !== 'true') {
           localStorage.setItem(dailyKey, 'true');
           saveData.coins += 200;
-          saveData.diamonds += 10;
           saveGameData();
           updateCoinDisplay();
-          updateDiamondDisplay();
-          showDebugToast('🎉 每日挑戰通關！獲得 200 金幣與 10 鑽石');
+          showDebugToast('🎉 每日挑戰通關！獲得 200 金幣');
         }
         createFloatingText(0, -200, '🎉 今日挑戰通關！成就已達成！', '#f59e0b', 28);
         playSound('levelup');
@@ -3336,17 +3334,23 @@
     function grantWaveEndRewards(wave) {
       if (!isHost || !Number.isInteger(wave) || wave < 1) return;
       if (!Array.isArray(saveData.waveRewardIdsClaimed)) saveData.waveRewardIdsClaimed = [];
-      const rewardId = `${currentWaveRewardSessionId || currentSeed}:${wave}`;
+      // 每日挑戰以「日期 + 挑戰 + 波數」作為固定 ID，同一天同一波只能領一次；波數沒有上限。
+      const dailyRewardDate = new Date().toISOString().slice(0, 10);
+      const rewardId = dailyChallenge
+        ? `dailyChallenge:${dailyRewardDate}:${dailyChallenge.id}:${wave}`
+        : `${currentWaveRewardSessionId || currentSeed}:${wave}`;
       if (saveData.waveRewardIdsClaimed.includes(rewardId)) return;
 
       const coinReward = wave * 10 + currentWaveKills;
-      let diamondReward = 0;
+      let diamondReward = dailyChallenge ? 1 : 0;
       saveData.coins += coinReward;
       saveData.stats.totalKills += currentWaveKills;
       if (wave > saveData.stats.bestWave) saveData.stats.bestWave = wave;
       saveData.waveRewardIdsClaimed.push(rewardId);
 
-      if (!isSinglePlayer && wave % 5 === 0) {
+      if (dailyChallenge) {
+        saveData.diamonds += 1;
+      } else if (!isSinglePlayer && wave % 5 === 0) {
         diamondReward = 5;
         saveData.diamonds += diamondReward;
         if (!saveData.multiplayerDiamondWavesClaimed.includes(wave)) saveData.multiplayerDiamondWavesClaimed.push(wave);
@@ -3356,8 +3360,9 @@
       saveGameData();
       updateCoinDisplay();
       updateDiamondDisplay();
-      createFloatingText(0, -250, `💰 +${coinReward} 金幣${diamondReward ? '　💎 +5 鑽石' : ''}`, '#fbbf24', 24);
-      if (diamondReward) showDebugToast(`💎 多人模式第 ${wave} 波完成，獲得 5 鑽石`);
+      createFloatingText(0, -250, `💰 +${coinReward} 金幣${diamondReward ? `　💎 +${diamondReward} 鑽石` : ''}`, '#fbbf24', 24);
+      if (dailyChallenge && diamondReward) showDebugToast(`💎 每日挑戰第 ${wave} 波完成，獲得 1 鑽石`);
+      else if (diamondReward) showDebugToast(`💎 多人模式第 ${wave} 波完成，獲得 5 鑽石`);
 
       // 房主是權威發獎者；通知每位客機把同一份波次獎勵存入自己的本機存檔。
       if (!isSinglePlayer) {
